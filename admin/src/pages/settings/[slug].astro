@@ -1,0 +1,149 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import i18next from '../../lib/i18n';
+import { globals } from "../../lib/config";
+import { SettingsPage } from "../../components/SettingsPage";
+import { getGlobal } from "../../lib/globals";
+
+import { adminPath } from "../../lib/paths";
+
+const slug = Astro.props.slug || Astro.params.slug || Astro.params.id;
+
+// Validate global exists
+if (!slug || !globals[slug]) {
+  return Astro.redirect(adminPath);
+}
+
+const config = globals[slug];
+const data = (await getGlobal(slug, { request: Astro.request })) || {};
+const hasVersioning = !!config.versions;
+
+const activeSlug = slug;
+const allGlobals = Object.values(globals);
+
+const title = config.label || slug;
+const description =
+  (config as any).admin?.description ||
+  `Manage your ${title.toLowerCase()} configurations.`;
+---
+
+<AdminLayout title={`Settings - ${title}`}>
+  <div class="flex-1 overflow-y-auto">
+    { !hasVersioning && (
+      <div class="surface-tile p-8 pb-0 mb-6">
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <h1
+              class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]"
+            >
+              Settings
+            </h1>
+            <p
+              class="text-sm text-[var(--kyro-text-secondary)] mt-1 font-regular"
+            >
+              Global system configurations
+            </p>
+          </div>
+          <button
+            type="button"
+            id="settings-save-btn"
+            class="px-6 py-2.5 text-sm bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-full transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-black/10"
+          >
+            Save Changes
+          </button>
+        </div>
+
+        <!-- Tabs Bar -->
+        <div
+          class="flex items-center gap-8 border-b border-[var(--kyro-border)] overflow-x-auto no-scrollbar"
+        >
+          {
+            allGlobals.map((g) => (
+              <a
+                href={`${adminPath}/settings/${g.slug}`}
+                class={`pb-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
+                  activeSlug === g.slug
+                    ? "text-[var(--kyro-text-primary)] border-[var(--kyro-text-primary)]"
+                    : "text-[var(--kyro-text-secondary)] border-transparent hover:text-[var(--kyro-text-primary)]"
+                }`}
+              >
+                {g.label || g.slug}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    )}
+
+    <!-- Form Section -->
+    <div class={hasVersioning ? "" : "surface-tile p-10 pt-4 mb-6 rounded-4xl"}>
+      { !hasVersioning && (
+        <div class="mb-8">
+          <h2
+            class="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tight"
+          >
+            {config.label || slug}
+          </h2>
+          <p class="text-sm text-[var(--kyro-text-secondary)] mt-1">
+            {description}
+          </p>
+        </div>
+      )}
+      <form id="settings-form">
+        <input type="hidden" id="form-slug" value={slug} />
+        <SettingsPage
+          client:load
+          config={config}
+          globalSlug={slug}
+          layout={hasVersioning ? "split" : "single"}
+          data={data}
+        />
+        <input type="hidden" id="form-data" name="form-data" value="{}" />
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const initSettingsPage = () => {
+      console.log("[Astro] Settings page init");
+      const saveBtn = document.getElementById("settings-save-btn");
+      
+      saveBtn?.addEventListener("click", () => {
+        console.log("[Astro] Header save clicked");
+        const btn = document.getElementById("btn-save");
+        if (btn) {
+          console.log("[Astro] Triggering hidden button click");
+          btn.click();
+        } else {
+          console.error("[Astro] Hidden save button not found!");
+        }
+      });
+    };
+
+    document.addEventListener("astro:page-load", initSettingsPage);
+
+    // Global listeners should only be attached once
+    // @ts-ignore
+    if (!window.__kyroSettingsGlobalListenersAttached) {
+      window.addEventListener("kyro:global-save-start", () => {
+        const saveBtn = document.getElementById("settings-save-btn");
+        if (saveBtn) {
+          saveBtn.setAttribute("disabled", "true");
+          saveBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Saving...`;
+          saveBtn.classList.add("opacity-50", "cursor-wait");
+        }
+      });
+
+      window.addEventListener("kyro:global-save-end", () => {
+        const saveBtn = document.getElementById("settings-save-btn");
+        if (saveBtn) {
+          saveBtn.removeAttribute("disabled");
+          saveBtn.innerHTML = "Save Changes";
+          saveBtn.classList.remove("opacity-50", "cursor-wait");
+        }
+      });
+      // @ts-ignore
+      window.__kyroSettingsGlobalListenersAttached = true;
+    }
+  </script>
+</AdminLayout>

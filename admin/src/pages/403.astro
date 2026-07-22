@@ -1,0 +1,68 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { adminPath } from "../lib/paths";
+
+// Ensure this page looks premium
+---
+
+<AdminLayout title={i18next.t("pages." + "Access Denied".replace(/ /g, ""), { defaultValue: "Access Denied" })}> 
+  <div class="flex-1 flex items-center justify-center p-8">
+    <div class="max-w-md w-full text-center space-y-8">
+      <div class="relative">
+        <div class="absolute inset-0 bg-red-500/20 blur-3xl rounded-full"></div>
+        <div
+          class="relative w-24 h-24 mx-auto bg-red-500/10 border border-red-500/20 rounded-3xl flex items-center justify-center text-red-500"
+        >
+          <svg
+            class="w-12 h-12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            ></path>
+          </svg>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <h1
+          class="text-4xl font-bold tracking-tighter text-[var(--kyro-text-primary)]"
+        >
+          Access Denied
+        </h1>
+        <p class="text-[var(--kyro-text-secondary)] font-medium">
+          You don't have the required permissions to access this page. Please
+          contact your administrator if you believe this is an error.
+        </p>
+      </div>
+
+      <div class="pt-4">
+        <a
+          href={adminPath}
+          class="inline-flex items-center gap-2 px-8 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold transition-all hover:opacity-90 active:scale-95 shadow-lg"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            ></path>
+          </svg>
+          Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</AdminLayout>

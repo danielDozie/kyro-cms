@@ -1,0 +1,23 @@
+{
+  "name": "@kyro-cms/docs",
+  "version": "0.12.16",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview --port 80",
+    "docs:build": "typedoc"
+  },
+  "devDependencies": {
+    "@braintree/sanitize-url": "^7.0.4",
+    "cytoscape": "^3.30.4",
+    "cytoscape-cose-bilkent": "^4.1.0",
+    "dayjs": "^1.11.13",
+    "debug": "^4.4.0",
+    "mermaid": "^11.4.1",
+    "typedoc": "^0.26.0",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  }
+}

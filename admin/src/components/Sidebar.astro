@@ -1,0 +1,341 @@
+---
+import "../styles/main.css";
+import { nonAuthCollections } from "../lib/config";
+import { adminPath } from "../lib/paths";
+import { getSiteSettings, getBrandSettings } from "../lib/globals";
+import * as Icons from "lucide-react";
+import { UserMenu } from "./UserMenu";
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  order?: number;
+}
+
+const siteSettings = await getSiteSettings({ request: Astro.request });
+const brandSettings = await getBrandSettings({ request: Astro.request });
+
+const siteName = siteSettings?.siteName || brandSettings?.companyInfo?.companyName || "KYRO.";
+const siteLogo = brandSettings?.identity?.primaryLogo;
+const darkLogo = brandSettings?.identity?.darkLogo;
+const logoWidth = siteLogo?.width || darkLogo?.width;
+const logoHeight = siteLogo?.height || darkLogo?.height;
+const logoAlt = siteLogo?.altText || darkLogo?.altText || siteName;
+const showSiteName = brandSettings?.identity?.showSiteName ?? true;
+
+import i18next from "../lib/i18n";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+const groupedCollections = new Map<string, NavItem[]>();
+
+nonAuthCollections
+  .filter((col) => col.slug !== "media") //removed here cos it's been added manually in the navSections.
+  .forEach((col) => {
+    const item: NavItem = {
+      href: `${adminPath}/${col.slug}`,
+      label: col.label || col.slug,
+      icon: (col.admin?.icon as string) || "collection",
+      order: typeof col.admin?.order === 'number' ? col.admin.order : 999,
+    };
+    
+    const groupName = (col.admin?.group as string) || "Content";
+    if (!groupedCollections.has(groupName)) {
+      groupedCollections.set(groupName, []);
+    }
+    groupedCollections.get(groupName)!.push(item);
+  });
+
+const dynamicSections = Array.from(groupedCollections.entries()).map(([group, items]) => ({
+  label: group,
+  items: items.sort((a, b) => (a.order || 999) - (b.order || 999)),
+}));
+
+const navSections: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Dashboard",
+    items: [
+      { href: adminPath, label: "nav.dashboard", icon: "home" },
+      {
+        href: adminPath + "/media",
+        label: "nav.media",
+        icon: "media",
+      },
+    ],
+  },
+  ...dynamicSections,
+  {
+    label: "Settings",
+    items: [
+      { href: adminPath + "/users", label: "nav.users", icon: "users" },
+      { href: adminPath + "/plugins", label: "nav.plugins", icon: "plugins" },
+      {
+        href: adminPath + "/settings",
+        label: "nav.settings",
+        icon: "settings",
+      },
+    ],
+  },
+];
+
+const iconAliases: Record<string, string> = {
+  collection: "Dot",
+  media: "Grid",
+  home: "Home",
+  users: "Users",
+  plugins: "Blocks",
+  settings: "Settings",
+};
+
+function isActive(item: NavItem): boolean {
+  if (item.href === adminPath) return title === "Dashboard";
+  if (item.href.startsWith(adminPath + "/settings"))
+    return currentPath.startsWith(adminPath + "/settings");
+  if (item.href === adminPath + "/users") return title === "Users";
+  if (item.href === adminPath + "/roles") return title === "Permissions";
+  if (item.href === adminPath + "/audit") return title === "Audit Logs";
+  if (item.href === adminPath + "/keys") return title === "API Keys";
+  if (item.href === adminPath + "/webhooks") return title === "Webhooks";
+  if (item.href === adminPath + "/plugins") return title === "Plugins";
+  if (item.href === adminPath + "/marketplace") return title === "Marketplace";
+  // Collections: match /collection-name and /collection-name/* paths
+  if (currentPath === item.href || currentPath.startsWith(item.href + "/"))
+    return true;
+  return false;
+}
+---
+
+<aside
+  id="kyro-sidebar"
+  class="surface-tile w-[280px] md:w-[320px] flex flex-col flex-shrink-0 overflow-hidden fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r md:border-r-0 border-[var(--kyro-border)] rounded-r-2xl md:rounded-3xl rounded-l-none md:rounded-l-3xl shadow-2xl md:shadow-none"
+>
+  <div class="px-6 md:px-8 py-6 md:py-8 flex items-center justify-between gap-3">
+    {
+      siteLogo || darkLogo ? (
+        <div class="flex items-center gap-3">
+          <div class="flex items-center">
+            {siteLogo && (
+              <img
+                src={siteLogo.url}
+                alt={logoAlt}
+                style={{
+                  width: logoWidth ? `${logoWidth}px` : "auto",
+                  height: logoHeight ? `${logoHeight}px` : "32px",
+                  objectFit: "contain",
+                }}
+                class={`rounded-lg ${darkLogo ? "block dark:hidden" : ""}`}
+              />
+            )}
+            {darkLogo && (
+              <img
+                src={darkLogo.url}
+                alt={logoAlt}
+                style={{
+                  width: logoWidth ? `${logoWidth}px` : "auto",
+                  height: logoHeight ? `${logoHeight}px` : "32px",
+                  objectFit: "contain",
+                }}
+                class={`rounded-lg ${siteLogo ? "hidden dark:block" : ""}`}
+              />
+            )}
+          </div>
+          {showSiteName && (
+            <span class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">
+              {siteName}
+            </span>
+          )}
+        </div>
+      ) : (
+        <div class="flex items-center gap-3">
+          <img src="/logo-white.svg" alt="Kyro CMS" class="w-7 h-7 hidden dark:block" />
+          <img src="/logo.svg" alt="Kyro CMS" class="w-7 h-7 block dark:hidden" />
+          <span class="text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)]">
+            {siteName}
+          </span>
+        </div>
+      )
+    }
+    <button id="mobile-close-btn" class="md:hidden p-2 -mr-2 rounded-lg text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+
+  <nav class="flex-1 px-4 overflow-y-auto" id="sidebar-nav">
+    <div class="space-y-4">
+      {
+        navSections.map((section) => (
+          <div class="space-y-2 group/section" data-section={section.label}>
+            <div class="pt-4 pb-2">
+              <button type="button" class="w-full flex items-center justify-between px-6 focus:outline-none sidebar-section-toggle transition-opacity hover:opacity-80">
+                <p class="text-[10px] font-medium text-[var(--kyro-text-secondary)] tracking-[0.2em] opacity-40 uppercase">
+                  {i18next.t(section.label, { defaultValue: section.label.split('.').pop()?.toUpperCase() || section.label }) || (section.label.split('.').pop()?.toUpperCase() || section.label)}
+                </p>
+                <Icons.ChevronDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 transition-transform duration-200 group-data-[collapsed=true]/section:-rotate-90" />
+              </button>
+            </div>
+            <div class="section-items space-y-1">
+              {section.items.map((item) => {
+                const slug = item.href.split("/").pop();
+                const type = item.href.includes("/settings")
+                  ? "global"
+                  : "collection";
+                return (
+                  <a
+                    href={item.href}
+                    data-nav-item
+                    data-slug={slug}
+                    data-type={type}
+                    class={`flex items-center gap-4 px-6 py-2 rounded-2xl transition-all font-medium text-[13px] ${
+                      item.icon === "collection"
+                        ? currentPath === item.href ||
+                          currentPath.startsWith(item.href + "/")
+                          ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] active-nav-item"
+                          : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"
+                        : isActive(item)
+                          ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-lg active-nav-item"
+                          : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"
+                    }`}
+                  >
+                    {(() => {
+                      const iconName = iconAliases[item.icon] || item.icon;
+                      const Icon = (Icons as any)[iconName] || Icons.Dot;
+                      return <Icon className="w-4 h-4" strokeWidth={2.5} />;
+                    })()}
+                    <span>
+                      {(() => {
+                        const fallback = item.label.split('.').pop() || item.label;
+                        const capitalized = fallback.charAt(0).toUpperCase() + fallback.slice(1);
+                        return i18next.t(item.label, { defaultValue: capitalized }) || capitalized;
+                      })()}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </nav>
+
+  <script>
+    function initSidebar() {
+      const sections = document.querySelectorAll("[data-section]");
+      sections.forEach((section) => {
+        const label = section.getAttribute("data-section");
+        const toggleBtn = section.querySelector('.sidebar-section-toggle');
+        const itemsContainer = section.querySelector('.section-items');
+        
+        const isCollapsed = localStorage.getItem(`kyro-sidebar-collapsed-${label}`) === 'true';
+        if (isCollapsed) {
+          section.setAttribute('data-collapsed', 'true');
+          if (itemsContainer) itemsContainer.classList.add('hidden');
+        }
+
+        const activeItem = section.querySelector('.active-nav-item');
+        if (activeItem && isCollapsed) {
+          section.removeAttribute('data-collapsed');
+          if (itemsContainer) itemsContainer.classList.remove('hidden');
+          localStorage.setItem(`kyro-sidebar-collapsed-${label}`, 'false');
+        }
+        
+        // Remove old listeners to prevent duplicates
+        const newToggleBtn = toggleBtn?.cloneNode(true);
+        if (toggleBtn && newToggleBtn && toggleBtn.parentNode) {
+          toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+          newToggleBtn.addEventListener('click', () => {
+             const currentlyCollapsed = section.getAttribute('data-collapsed') === 'true';
+             if (currentlyCollapsed) {
+               section.removeAttribute('data-collapsed');
+               if (itemsContainer) itemsContainer.classList.remove('hidden');
+               localStorage.setItem(`kyro-sidebar-collapsed-${label}`, 'false');
+             } else {
+               section.setAttribute('data-collapsed', 'true');
+               if (itemsContainer) itemsContainer.classList.add('hidden');
+               localStorage.setItem(`kyro-sidebar-collapsed-${label}`, 'true');
+             }
+          });
+        }
+      });
+    }
+
+    // Run on load and view transitions
+    initSidebar();
+    document.addEventListener('astro:page-load', initSidebar);
+
+    // Handle frontend RBAC pruning in the sidebar
+    window.addEventListener("kyro:auth-ready", (event) => {
+      // @ts-ignore
+      const { permissions } = event.detail;
+      if (!permissions) return;
+
+      const navItems = document.querySelectorAll("[data-nav-item]");
+      navItems.forEach((item) => {
+        const slug = item.getAttribute("data-slug");
+        const type = item.getAttribute("data-type");
+
+        let hasAccess = true;
+        if (type === "collection" && permissions.collections) {
+          const colPerms = permissions.collections[slug];
+          if (colPerms && colPerms.read === false) hasAccess = false;
+        } else if (type === "global" && permissions.globals) {
+          const globalPerms = permissions.globals[slug];
+          if (globalPerms && globalPerms.read === false) hasAccess = false;
+        }
+
+        if (!hasAccess) {
+          // @ts-ignore
+          item.style.display = "none";
+        }
+      });
+
+      // Hide empty sections after RBAC
+      const sections = document.querySelectorAll("[data-section]");
+      sections.forEach((section) => {
+        const visibleItems = section.querySelectorAll(
+          '[data-nav-item]:not([style*="display: none"])'
+        );
+        if (visibleItems.length === 0) {
+          // @ts-ignore
+          section.style.display = "none";
+        }
+      });
+    });
+  </script>
+
+  <div class="px-6 py-4 mt-auto">
+    <div
+      class="flex items-center justify-between p-2 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-2xl"
+    >
+      <div
+        class="flex p-1 bg-[var(--kyro-bg)] rounded-xl border border-[var(--kyro-border)] shadow-inner"
+      >
+        <button
+          id="theme-light-btn"
+          class="p-2 rounded-lg transition-all active:scale-95"
+          title={i18next.t("sidebar.lightMode", { defaultValue: "Light Mode" })}
+        >
+          <Icons.Sun className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+        <button
+          id="theme-dark-btn"
+          class="p-2 rounded-lg transition-all active:scale-95"
+          title={i18next.t("sidebar.darkMode", { defaultValue: "Dark Mode" })}
+        >
+          <Icons.Moon className="w-4 h-4" strokeWidth={2.5} />
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <UserMenu client:load adminPath={adminPath} />
+        <button id="logout-btn" class="hidden"></button>
+      </div>
+    </div>
+  </div>
+</aside>

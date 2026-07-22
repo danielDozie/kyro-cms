@@ -1,0 +1,5 @@
+*.map
+src/**/*.test.*
+src/**/*.spec.*
+*.ts
+*.tsx

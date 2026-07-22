@@ -1,0 +1,152 @@
+---
+import "../styles/main.css";
+import { adminPath, apiPath } from "../lib/paths";
+import { getSiteSettings, getGlobal, getBrandSettings } from "../lib/globals";
+import { ClientRouter } from 'astro:transitions';
+import LoadingIndicator from 'astro-loading-indicator/component';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const siteSettings = await getSiteSettings({ request: Astro.request });
+const brandSettings = await getBrandSettings({ request: Astro.request });
+const seoSettings = await getGlobal("seo-settings", { request: Astro.request });
+
+const siteName = siteSettings?.siteName || brandSettings?.companyInfo?.companyName || "Kyro CMS";
+const showSiteName = brandSettings?.identity?.showSiteName ?? true;
+const siteFavicon = siteSettings?.siteFavicon || brandSettings?.identity?.favicon;
+const siteLogo = brandSettings?.identity?.primaryLogo || siteSettings?.siteLogo;
+const darkLogo = brandSettings?.identity?.darkLogo;
+const logoWidth = siteLogo?.width;
+const logoHeight = siteLogo?.height;
+const logoAlt = siteLogo?.altText || siteName;
+const siteDescription = siteSettings?.siteDescription || "";
+
+// SEO Logic
+const seoMode = seoSettings?.seoMode || "simple";
+const includeSiteName = seoSettings?.siteNameInTitle ?? true;
+const titleSeparator = seoSettings?.separator || " - ";
+const defaultTitle = seoSettings?.defaultTitle || title;
+const defaultDescription = seoSettings?.defaultDescription || siteDescription;
+const canonicalUrl = seoMode === "advanced" ? seoSettings?.meta?.canonicalUrl : "";
+const robots = seoMode === "advanced" && seoSettings?.meta?.robots ? seoSettings.meta.robots : "noindex, nofollow";
+
+let displayTitle = title === "Login" && defaultTitle !== "Login" ? defaultTitle : title;
+if (includeSiteName) {
+  displayTitle = `${displayTitle}${titleSeparator}${siteName}`;
+}
+const defaultLang = siteSettings?.defaultLanguage || "en";
+---
+
+<!doctype html>
+<html lang={defaultLang}>
+  <head>
+    <ClientRouter />
+    <LoadingIndicator color="var(--kyro-primary)" height="3px" />
+    <script is:inline define:vars={{ lang: defaultLang }}>
+      window.KYRO_LANG = lang;
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{displayTitle}</title>
+    {defaultDescription && <meta name="description" content={defaultDescription} />}
+    {robots && <meta name="robots" content={robots} />}
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    <link
+      rel="icon"
+      type={siteFavicon?.mimeType || "image/svg+xml"}
+      href={siteFavicon?.url || "/favicon.svg"}
+    />
+    <script is:inline define:vars={{ adminPath, apiPath }}>
+      (async () => {
+        try {
+          const res = await fetch(apiPath + "/auth/me", { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.user) {
+              window.location.href = adminPath;
+              return;
+            }
+          }
+        } catch {}
+        const getTheme = () => {
+          const stored = localStorage.getItem("theme");
+          if (stored) return stored;
+          return window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+        };
+        const theme = getTheme();
+        if (theme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-[var(--kyro-bg)] antialiased text-[var(--kyro-text-primary)]">
+    <div class="min-h-screen flex flex-col items-center justify-center p-6">
+      <div class="w-full max-w-md flex flex-col items-center">
+        <!-- Logo -->
+        <div class="w-full text-center mb-8">
+          <a href="/" class="inline-flex items-center justify-center gap-2">
+            {
+              siteLogo || darkLogo ? (
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center">
+                    {siteLogo && (
+                      <img
+                        src={siteLogo.url}
+                        alt={logoAlt}
+                        style={{
+                          width: logoWidth ? `${logoWidth}px` : "auto",
+                          height: logoHeight ? `${logoHeight}px` : "40px",
+                          objectFit: "contain",
+                        }}
+                        class={`rounded-lg ${darkLogo ? "block dark:hidden" : ""}`}
+                      />
+                    )}
+                    {darkLogo && (
+                      <img
+                        src={darkLogo.url}
+                        alt={logoAlt}
+                        style={{
+                          width: logoWidth ? `${logoWidth}px` : "auto",
+                          height: logoHeight ? `${logoHeight}px` : "40px",
+                          objectFit: "contain",
+                        }}
+                        class={`rounded-lg ${siteLogo ? "hidden dark:block" : "block"}`}
+                      />
+                    )}
+                  </div>
+                  {showSiteName && (
+                    <span class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
+                      {siteName}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <img src="/logo-white.svg" alt="Kyro CMS" class="w-7 h-7 hidden dark:block" />
+                  <img src="/logo.svg" alt="Kyro CMS" class="w-7 h-7 block dark:hidden" />
+                  {showSiteName && (
+                    <span class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
+                      {siteName}
+                    </span>
+                  )}
+                </>
+              )
+            }
+          </a>
+        </div>
+
+        <div class="w-full flex justify-center">
+          <slot />
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

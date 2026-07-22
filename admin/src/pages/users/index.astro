@@ -1,0 +1,37 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import i18next from '../../lib/i18n';
+import { UsersList } from "../../components/users/UsersList";
+
+import { adminPath, apiPath } from "../../lib/paths";
+
+let users: any[] = [];
+let totalUsers = 0;
+
+try {
+  const response = await fetch(
+    `${Astro.url.origin}${apiPath}/users?page=1&limit=100&depth=1`,
+    {
+      headers: Astro.request.headers,
+      credentials: "include",
+    },
+  );
+  if (response.ok) {
+    const data = await response.json();
+    users = data.docs || [];
+    totalUsers = data.totalDocs || 0;
+  }
+} catch (error) {
+  console.error("Failed to fetch users:", error);
+}
+---
+
+<AdminLayout title={i18next.t("pages." + "Users".replace(/ /g, ""), { defaultValue: "Users" })}> 
+  <UsersList
+    client:load
+    initialUsers={users}
+    initialTotal={totalUsers}
+    apiPath={apiPath}
+    adminPath={adminPath}
+  />
+</AdminLayout>

@@ -1,0 +1,11 @@
+---
+import { globals } from '../../lib/config';
+
+import { adminPath } from '../../lib/paths';
+
+const firstGlobal = Object.values(globals)[0];
+if (firstGlobal) {
+  return Astro.redirect(`${adminPath}/settings/${firstGlobal.slug}`);
+}
+return Astro.redirect(adminPath);
+---

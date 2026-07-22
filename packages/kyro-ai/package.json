@@ -1,0 +1,51 @@
+{
+  "name": "@kyro-cms/ai",
+  "version": "0.12.16",
+  "description": "AI Plugins for Kyro CMS powered by Vercel AI SDK",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./admin": {
+      "types": "./dist/admin.d.ts",
+      "import": "./dist/admin.js",
+      "require": "./dist/admin.cjs"
+    },
+    "./admin-assistant": {
+      "types": "./dist/admin-assistant.d.ts",
+      "import": "./dist/admin-assistant.js",
+      "require": "./dist/admin-assistant.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^0.0.14",
+    "ai": "^7.0.30",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "@kyro-cms/admin": "workspace:*",
+    "@kyro-cms/core": "workspace:*",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,35 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { GraphQLPlayground } from "../components/GraphQLPlayground";
+import { apiPath } from "../lib/paths";
+import { getGlobal } from "../lib/globals";
+
+const accessSettings = await getGlobal("access-settings");
+const apiAccess = accessSettings?.apiAccess || {};
+const graphqlEnabled = apiAccess.graphqlEnabled !== false;
+---
+
+<AdminLayout title={i18next.t("pages." + "GraphQL Explorer".replace(/ /g, ""), { defaultValue: "GraphQL Explorer" })}> 
+  <div class="flex-1 overflow-hidden h-[calc(100vh-64px)] md:h-[calc(100vh-80px)]">
+    {graphqlEnabled ? (
+      <GraphQLPlayground
+        client:load
+        endpoint={`${apiPath}/graphql`}
+        initialShowDocs={true}
+      />
+    ) : (
+      <div class="flex items-center justify-center h-full">
+        <div class="text-center p-8 max-w-md">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--kyro-surface-accent)] flex items-center justify-center">
+            <svg class="w-8 h-8 text-[var(--kyro-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-[var(--kyro-text-primary)] mb-2">GraphQL Disabled</h2>
+          <p class="text-sm text-[var(--kyro-text-secondary)]">The GraphQL API is currently disabled. Enable it in Access Control settings to use the GraphQL Explorer.</p>
+        </div>
+      </div>
+    )}
+  </div>
+</AdminLayout>

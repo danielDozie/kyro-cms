@@ -1,0 +1,18 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { RestPlayground } from "../components/RestPlayground";
+import { apiPath } from "../lib/paths";
+
+const collectionsResponse = await fetch(
+  `${Astro.url.origin}${apiPath}/collections`,
+);
+const collectionsData = await collectionsResponse.json();
+const collections = collectionsData.collections || [];
+---
+
+<AdminLayout title={i18next.t("pages." + "REST Playground".replace(/ /g, ""), { defaultValue: "REST Playground" })}> 
+  <div class="flex-1 overflow-hidden h-[calc(100vh-64px)] md:h-[calc(100vh-80px)]">
+    <RestPlayground client:load collections={collections} />
+  </div>
+</AdminLayout>

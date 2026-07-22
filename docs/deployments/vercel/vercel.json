@@ -1,0 +1,29 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
+  "installCommand": "npm install",
+  "framework": null,
+  "regions": ["iad1"],
+  "functions": {
+    "src/pages/api/**/*.ts": {
+      "runtime": "nodejs22.x",
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "KYRO_DATABASE_URL": "@kyro-database-url",
+    "KYRO_SECRET": "@kyro-secret",
+    "KYRO_TENANT": "@kyro-tenant"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    }
+  ]
+}

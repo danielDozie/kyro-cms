@@ -1,0 +1,12 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { WebhookManager } from "../components/WebhookManager";
+
+import { adminPath, apiPath } from '../lib/paths';
+
+---
+
+<AdminLayout title={i18next.t("pages." + "Webhooks".replace(/ /g, ""), { defaultValue: "Webhooks" })}> 
+  <WebhookManager client:only="react" />
+</AdminLayout>

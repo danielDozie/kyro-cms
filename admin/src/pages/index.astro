@@ -1,0 +1,249 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { collections } from "../lib/config";
+const authCollections = ["users", "audit_logs"];
+import { adminPath, apiPath } from "../lib/paths";
+import { DashboardMetrics, RevenueChart } from "../components/DashboardMetrics";
+
+const authItems = authCollections.map((slug) => ({
+  slug,
+  label: collections[slug]?.label || slug,
+  icon: slug === "users" ? "users" : "file-text",
+}));
+---
+
+<AdminLayout title={i18next.t("pages." + "Dashboard".replace(/ /g, ""), { defaultValue: "Dashboard" })}> 
+  <div class="flex-1 overflow-y-auto space-y-8">
+    <!-- Header -->
+    <div class="surface-tile p-6 flex items-center justify-between gap-8">
+      <div class="relative flex-1 max-w-2xl">
+        <div class="absolute inset-y-0 left-6 flex items-center pointer-events-none text-[var(--kyro-text-muted)]">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <input
+          type="text"
+          id="header-search-input"
+          placeholder="Search anything..."
+          class="w-full bg-[var(--kyro-surface-accent)] border border-transparent rounded-2xl py-3 pl-16 pr-8 text-lg font-medium focus:outline-none focus:bg-[var(--kyro-surface)] focus:border-[var(--kyro-border)] transition-all shadow-inner text-[var(--kyro-text-primary)] placeholder-[var(--kyro-text-muted)]"
+          autocomplete="off"
+        />
+        <div
+          id="header-search-results"
+          class="hidden absolute top-full left-0 right-0 mt-2 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-xl shadow-xl max-h-80 overflow-y-auto z-50"
+        >
+        </div>
+      </div>
+      <div class="flex p-1.5 bg-[var(--kyro-surface-accent)] rounded-2xl">
+        <button
+          id="cmd-k-btn"
+          class="flex items-center gap-3 px-8 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
+        >
+          <span>⌘ K</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CMS Metrics -->
+    <DashboardMetrics client:load isEcommerce={!!collections['orders'] || !!collections['products']} />
+    {(!!collections['orders'] || !!collections['products']) && <RevenueChart client:load />}
+
+    <!-- Quick Links Section -->
+    <div class="surface-tile overflow-hidden mt-8">
+      <div class="flex items-center justify-between p-6 border-b border-[var(--kyro-border)]">
+        <div class="flex-1">
+          <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] flex items-center gap-2">
+            Quick Links
+          </h2>
+          <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">Create new collection documents</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+        {
+          Object.entries(collections)
+            .filter(([slug]) => !["users", "audit_logs", "media"].includes(slug))
+            .slice(0, 6)
+            .map(([slug, config]: [string, any]) => (
+              <a
+                href={`${adminPath}/${slug}/new`}
+                class="group p-4 bg-[var(--kyro-surface-accent)] rounded-xl hover:bg-[var(--kyro-surface)] transition-all border border-transparent hover:border-[var(--kyro-border)] shadow-sm hover:shadow-md"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--kyro-bg-secondary)] text-[var(--kyro-text-secondary)] group-hover:bg-[var(--kyro-surface-accent)] group-hover:text-[var(--kyro-primary)] transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14" />
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-[var(--kyro-text-primary)]">New {config.label || slug}</span>
+                </div>
+              </a>
+            ))
+        }
+      </div>
+    </div>
+
+    <!-- Security Quick Actions -->
+    <div class="surface-tile overflow-hidden">
+      <div class="p-6 border-b border-[var(--kyro-border)]">
+        <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">Security & Monitoring</h2>
+        <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">
+          Rate limiting, audit logs, and account lockout settings
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
+        <a
+          href={`${adminPath}/audit`}
+          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+        >
+          <div class="w-10 h-10 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              ></path>
+            </svg>
+          </div>
+          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Audit Logs</h4>
+          <p class="text-xs text-[var(--kyro-text-secondary)]">View last 30 days</p>
+        </a>
+
+        <a
+          href={`${adminPath}/users?locked=true`}
+          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+        >
+          <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              ></path>
+            </svg>
+          </div>
+          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Locked Accounts</h4>
+          <p class="text-xs text-[var(--kyro-text-secondary)]">Manage lockouts</p>
+        </a>
+
+        <a
+          href={`${adminPath}/roles`}
+          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+        >
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              ></path>
+            </svg>
+          </div>
+          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Permissions</h4>
+          <p class="text-xs text-[var(--kyro-text-secondary)]">RBAC settings</p>
+        </a>
+
+        <a
+          href={`${adminPath}/health`}
+          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+        >
+          <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-500 flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">API Health</h4>
+          <p class="text-xs text-[var(--kyro-text-secondary)]">System status</p>
+        </a>
+      </div>
+    </div>
+
+    <script is:inline define:vars={{ apiPath, adminPath }}>
+      (function () {
+        var searchInput = document.getElementById("header-search-input");
+        var searchResults = document.getElementById("header-search-results");
+        if (!searchInput || !searchResults) return;
+
+        var debounceTimer = null;
+
+        function renderResults(results) {
+          var html = "";
+          if (!results || results.length === 0) {
+            html = '<div class="p-4 text-center text-[var(--kyro-text-secondary)] opacity-60">No documents found</div>';
+          } else {
+            for (var i = 0; i < Math.min(results.length, 6); i++) {
+              var r = results[i];
+              var href = adminPath + "/" + r.collection + "/" + r.id;
+              if (r.collection === "users") {
+                href = adminPath + "/users/" + r.id;
+              }
+              html +=
+                '<a href="' +
+                href +
+                '" class="flex items-center justify-between px-4 py-3 hover:bg-[var(--kyro-surface-accent)] transition-colors">';
+              html +=
+                '<div class="flex flex-col"><span class="font-bold text-sm text-[var(--kyro-text-primary)]">' +
+                (r.title || "Untitled") +
+                "</span>";
+              html += '<span class="text-[10px] font-bold  tracking-widest opacity-40">' + r.label + "</span></div>";
+              html += '<span class="text-xs text-[var(--kyro-text-muted)]">View</span></a>';
+            }
+          }
+          searchResults.innerHTML = html;
+          searchResults.classList.remove("hidden");
+        }
+
+        function hideResults() {
+          searchResults.classList.add("hidden");
+        }
+
+        searchInput.addEventListener("input", function (e) {
+          var query = e.target.value.trim();
+          if (query.length < 2) {
+            searchResults.classList.add("hidden");
+            return;
+          }
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(function () {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", apiPath + "/search?q=" + encodeURIComponent(query) + "&limit=10", true);
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                try {
+                  var data = JSON.parse(xhr.responseText);
+                  if (data.results) renderResults(data.results);
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+            };
+            xhr.send();
+          }, 300);
+        });
+
+        searchInput.addEventListener("blur", function () {
+          setTimeout(hideResults, 200);
+        });
+
+        document.addEventListener("click", function (e) {
+          if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            hideResults();
+          }
+        });
+      })();
+    </script>
+  </div>
+</AdminLayout>

@@ -1,0 +1,9 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { PluginsManager } from "../components/PluginsManager";
+---
+
+<AdminLayout title={i18next.t("pages." + "Plugins".replace(/ /g, ""), { defaultValue: "Plugins" })}> 
+  <PluginsManager client:only="react" />
+</AdminLayout>

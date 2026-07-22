@@ -1,0 +1,44 @@
+{
+  "name": "@kyro-cms/connect",
+  "version": "0.12.16",
+  "description": "Universal SDK for Kyro CMS. Type-safe client + codegen for any platform.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "bin": {
+    "kyro-codegen": "./dist/bin/kyro-codegen.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "pnpm build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danielDozie/kyro-cms"
+  },
+  "keywords": [
+    "kyro",
+    "cms",
+    "sdk",
+    "client",
+    "typescript"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,54 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import i18next from '../../lib/i18n';
+import { UserDetail } from "../../components/users/UserDetail";
+
+import { adminPath, apiPath } from "../../lib/paths";
+
+const { id } = Astro.params;
+let user: any = null;
+let error: string | null = null;
+
+if (id) {
+  try {
+    const response = await fetch(`${Astro.url.origin}${apiPath}/users/${id}`, {
+      headers: Astro.request.headers,
+      credentials: "include",
+    });
+    if (response.ok) {
+      const data = await response.json();
+      user = data.data;
+    } else {
+      error = "User not found";
+    }
+  } catch (e) {
+    error = "Failed to fetch user";
+  }
+}
+---
+
+<AdminLayout title={user ? user.email : "User"}>
+  {error ? (
+    <div class="flex-1 overflow-y-auto  space-y-8">
+      <div class="surface-tile p-8">
+        <div class="text-center">
+          <p class="text-lg font-bold text-red-500">{error}</p>
+          <a href={`${adminPath}/users`} class="mt-4 inline-block text-[var(--kyro-text-primary)] font-bold underline">← Back to users</a>
+        </div>
+      </div>
+    </div>
+  ) : user ? (
+    <UserDetail
+      client:load
+      user={user}
+      apiPath={apiPath}
+      adminPath={adminPath}
+    />
+  ) : (
+    <div class="flex-1 overflow-y-auto  space-y-8">
+      <div class="surface-tile p-8 text-center">
+        <p class="text-lg font-bold text-[var(--kyro-text-secondary)]">Loading...</p>
+      </div>
+    </div>
+  )}
+</AdminLayout>

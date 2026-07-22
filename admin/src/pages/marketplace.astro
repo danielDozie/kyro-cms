@@ -1,0 +1,12 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { MarketplaceManager } from "../components/MarketplaceManager";
+
+import { adminPath, apiPath } from '../lib/paths';
+
+---
+
+<AdminLayout title={i18next.t("pages." + "Marketplace".replace(/ /g, ""), { defaultValue: "Marketplace" })}> 
+  <MarketplaceManager client:only="react" />
+</AdminLayout>

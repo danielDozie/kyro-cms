@@ -1,0 +1,185 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import i18next from "../../lib/i18n";
+
+const defaultRoles = [
+  {
+    name: "super_admin",
+    level: 100,
+    inherits: ["admin"],
+    description: "Full system access across all tenants",
+    color: "bg-red-500/10 text-red-500 border-red-500/20",
+  },
+  {
+    name: "admin",
+    level: 90,
+    inherits: ["editor"],
+    description: "Full tenant access with all content permissions",
+    color: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  },
+  {
+    name: "editor",
+    level: 70,
+    inherits: ["author"],
+    description: "Edit and publish all content",
+    color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  },
+  {
+    name: "author",
+    level: 50,
+    inherits: ["customer"],
+    description: "Create and edit own content",
+    color: "bg-green-500/10 text-green-500 border-green-500/20",
+  },
+  {
+    name: "customer",
+    level: 30,
+    inherits: [],
+    description: "Access own data and make purchases",
+    color: "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] border-[var(--kyro-border)]",
+  },
+  {
+    name: "guest",
+    level: 10,
+    inherits: [],
+    description: "Public read-only access",
+    color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  },
+];
+
+const permissions: Record<string, string[]> = {
+  super_admin: ["*"],
+  admin: ["users:*", "roles:*", "content:*", "settings:*", "audit:read"],
+  editor: ["content:*", "media:*", "comments:*"],
+  author: ["content:create", "content:read", "content:update:own", "media:*"],
+  customer: ["content:read", "orders:*", "profile:*"],
+  guest: ["content:read"],
+};
+---
+
+<AdminLayout title={i18next.t("pages." + "Roles".replace(/ /g, ""), { defaultValue: "Roles" })}>
+  <div class="flex-1 overflow-y-auto space-y-8">
+    <!-- Header -->
+    <div class="surface-tile p-6">
+      <h1 class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">Roles & Permissions</h1>
+      <p class="text-sm text-[var(--kyro-text-secondary)] mt-1 font-regular">
+        Role-based access control with hierarchical permissions
+      </p>
+    </div>
+
+    <!-- Role Hierarchy -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {
+        defaultRoles.map((role) => (
+          <div class={`surface-tile p-6 border-2 ${role.color.split(" ").slice(2).join(" ")} rounded-2xl`}>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tighter">{role.name}</h3>
+              <span class={`px-3 py-1 rounded-lg text-xs font-bold ${role.color.split(" ").slice(0, 2).join(" ")}`}>
+                Level {role.level}
+              </span>
+            </div>
+            <p class="text-sm text-[var(--kyro-text-secondary)] mb-4">{role.description}</p>
+            {role.inherits.length > 0 && (
+              <div class="mb-4">
+                <span class="text-xs font-bold text-[var(--kyro-text-secondary)]  tracking-[0.1em] opacity-50">
+                  Inherits:
+                </span>
+                <div class="flex gap-2 mt-2">
+                  {role.inherits.map((parent) => (
+                    <span class="px-2 py-1 bg-[var(--kyro-surface-accent)] rounded text-xs font-bold text-[var(--kyro-text-secondary)]">
+                      {parent}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <span class="text-xs font-bold text-[var(--kyro-text-secondary)]  tracking-[0.1em] opacity-50">
+                Permissions:
+              </span>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                {(permissions[role.name] || []).map((perm) => (
+                  <span class="px-2 py-0.5 bg-[var(--kyro-surface-accent)] rounded text-[10px] font-medium text-[var(--kyro-text-primary)]">
+                    {perm}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <!-- Permission Matrix -->
+    <div class="surface-tile overflow-hidden">
+      <div class="p-6 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]">
+        <h2 class="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tighter">Permission Matrix</h2>
+      </div>
+      <table class="w-full text-left">
+        <thead>
+          <tr
+            class="text-[var(--kyro-text-secondary)] font-bold text-[10px] tracking-[0.3em] border-b border-[var(--kyro-border)]"
+          >
+            <th class="px-6 py-4">Resource</th>
+            {defaultRoles.map((role) => <th class="px-4 py-4 text-center">{role.name}</th>)}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--kyro-border)]">
+          {
+            [
+              {
+                resource: "Users",
+                actions: ["create", "read", "update", "delete"],
+              },
+              {
+                resource: "Roles",
+                actions: ["create", "read", "update", "delete"],
+              },
+              {
+                resource: "Content",
+                actions: ["create", "read", "update", "delete", "publish"],
+              },
+              {
+                resource: "Media",
+                actions: ["create", "read", "update", "delete"],
+              },
+              { resource: "Settings", actions: ["read", "update"] },
+              { resource: "Audit Logs", actions: ["read"] },
+            ].map((row) => (
+              <tr class="hover:bg-[var(--kyro-surface-accent)] transition-colors">
+                <td class="px-6 py-4 font-medium text-[var(--kyro-text-primary)]">{row.resource}</td>
+                {defaultRoles.map((role) => {
+                  const hasAll = permissions[role.name]?.includes("*");
+                  const hasResource = permissions[role.name]?.some(
+                    (p) => p.startsWith(row.resource.toLowerCase() + ":") || p === "*",
+                  );
+                  return (
+                    <td class="px-4 py-4 text-center">
+                      {hasAll || hasResource ? (
+                        <svg class="w-5 h-5 text-green-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      ) : (
+                        <svg class="w-5 h-5 text-[var(--kyro-border)] mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

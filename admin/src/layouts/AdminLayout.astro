@@ -1,0 +1,483 @@
+---
+import "../styles/main.css";
+import { collections, globals } from "../lib/config";
+import { CommandPaletteWrapper } from "../components/ui/CommandPaletteWrapper";
+import Sidebar from "../components/Sidebar.astro";
+import { adminPath, apiPath } from "../lib/paths";
+import { AuthBridge } from "../components/AuthBridge";
+import { GlobalModal } from "../components/ui/GlobalModal";
+import { Toaster } from "../components/ui/Toaster";
+import { getSiteSettings, getGlobal } from "../lib/globals";
+import { ClientRouter } from "astro:transitions";
+import LoadingIndicator from "astro-loading-indicator/component";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const siteSettings = await getSiteSettings({ request: Astro.request });
+const seoSettings = await getGlobal("seo-settings", { request: Astro.request });
+
+const siteName = siteSettings?.siteName || "Kyro CMS";
+const siteFavicon = siteSettings?.siteFavicon;
+const siteDescription = siteSettings?.siteDescription || "";
+
+// SEO Logic
+const seoMode = seoSettings?.seoMode || "simple";
+const includeSiteName = seoSettings?.siteNameInTitle ?? true;
+const titleSeparator = seoSettings?.separator || " - ";
+const defaultTitle = seoSettings?.defaultTitle || title;
+const defaultDescription = seoSettings?.defaultDescription || siteDescription;
+const canonicalUrl = seoMode === "advanced" ? seoSettings?.meta?.canonicalUrl : "";
+const robots = seoMode === "advanced" && seoSettings?.meta?.robots ? seoSettings.meta.robots : "noindex, nofollow";
+
+let displayTitle = title === "Dashboard" && defaultTitle !== "Dashboard" ? defaultTitle : title;
+if (includeSiteName) {
+  displayTitle = `${displayTitle}${titleSeparator}${siteName}`;
+}
+const defaultLang = siteSettings?.defaultLanguage || "en";
+---
+
+<!doctype html>
+<html lang={defaultLang}>
+  <head>
+    <ClientRouter />
+    <LoadingIndicator color="var(--kyro-primary)" height="3px" />
+    <script is:inline define:vars={{ lang: defaultLang }}>
+      window.KYRO_LANG = lang;
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{displayTitle}</title>
+    {defaultDescription && <meta name="description" content={defaultDescription} />}
+    {robots && <meta name="robots" content={robots} />}
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    <link rel="icon" type={siteFavicon?.mimeType || "image/svg+xml"} href={siteFavicon?.url || "/favicon.svg"} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline define:vars={{ adminPath, apiPath }}>
+      // Simple in-memory auth state (alternative to Zustand for SSR)
+      window.__kyroAuth = window.__kyroAuth || {
+        user: null,
+        permissions: null,
+        verified: false,
+      };
+
+      let initialAuthDone = false;
+
+      // Verify auth - redirect to login if not authenticated
+      const runAuthCheck = async () => {
+        try {
+          let permissions = window.__kyroAuth?.permissions;
+          let user = window.__kyroAuth?.user;
+
+          // Fetch user and permissions using cookies if not verified
+          if (!window.__kyroAuth?.verified) {
+            const [meRes, accessRes] = await Promise.all([
+              fetch(apiPath + "/auth/me", { credentials: "include" }),
+              fetch(apiPath + "/auth/access", { credentials: "include" }),
+            ]);
+
+            if (!meRes.ok) {
+              window.location.href = adminPath + "/login";
+              return;
+            }
+
+            const meData = await meRes.json();
+            if (!meData.user) {
+              console.log("[AdminLayout] No user in data, redirecting to login");
+              window.location.href = adminPath + "/login";
+              return;
+            }
+
+            permissions = accessRes.ok ? await accessRes.json() : null;
+            user = meData.user;
+
+            // Store user in memory
+            window.__kyroAuth.user = user;
+            window.__kyroAuth.permissions = permissions;
+            window.__kyroAuth.verified = true;
+
+            // Dispatch event for components to update
+            window.dispatchEvent(
+              new CustomEvent("kyro:auth-ready", {
+                detail: { user, permissions },
+              }),
+            );
+          }
+
+          // Navigation Guard - Check if user has read access to current page
+          if (permissions) {
+            const path = window.location.pathname;
+            const relativePath = path.replace(adminPath, "");
+
+            // Extract slug and type
+            let slug = "";
+            let type = "";
+
+            if (relativePath.startsWith("/users")) {
+              slug = "users";
+              type = "collection";
+            } else if (relativePath.startsWith("/audit")) {
+              slug = "audit_logs";
+              type = "collection";
+            } else if (relativePath.startsWith("/media")) {
+              slug = "media";
+              type = "collection";
+            } else if (relativePath.startsWith("/settings/")) {
+              slug = relativePath.split("/")[2];
+              type = "global";
+            } else if (
+              relativePath.includes("/") &&
+              !relativePath.startsWith("/login") &&
+              !relativePath.startsWith("/403")
+            ) {
+              // Dynamic collections: /[adminPath]/[collectionSlug]/...
+              slug = relativePath.split("/")[1];
+              type = "collection";
+            }
+
+            if (slug && type) {
+              let hasAccess = true;
+              if (type === "collection" && permissions.collections) {
+                const p = permissions.collections[slug];
+                if (p && p.read === false) hasAccess = false;
+              } else if (type === "global" && permissions.globals) {
+                const p = permissions.globals[slug];
+                if (p && p.read === false) hasAccess = false;
+              }
+
+              if (!hasAccess) {
+                console.log("[AdminLayout] Access denied for", slug, "redirecting to 403");
+                window.location.href = adminPath + "/403";
+              }
+            }
+          }
+        } catch (err) {
+          console.error("[AdminLayout] Auth check error:", err);
+          window.location.href = adminPath + "/login";
+        }
+      };
+
+      runAuthCheck().then(() => {
+        initialAuthDone = true;
+      });
+      document.addEventListener("astro:page-load", () => {
+        if (initialAuthDone) runAuthCheck();
+      });
+
+      // Theme init (only theme persisted)
+      const initTheme = () => {
+        const getTheme = () => {
+          const stored = localStorage.getItem("theme");
+          if (stored) return stored;
+          return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        };
+        const theme = getTheme();
+        if (theme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      };
+
+      initTheme();
+      document.addEventListener("astro:page-load", initTheme);
+    </script>
+  </head>
+  <body class="bg-[var(--kyro-bg)] antialiased text-[var(--kyro-text-primary)] overflow-x-hidden overflow-y-auto">
+    <div id="kyro-user-data" data-user=""></div>
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div
+      id="mobile-sidebar-backdrop"
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity opacity-0 duration-300"
+    >
+    </div>
+
+    <div class="flex h-[100dvh] md:h-screen p-0 md:p-6 gap-0 md:gap-6 overflow-hidden w-full relative">
+      <Sidebar title={title} />
+
+      <!-- Main Content Column -->
+      <main class="flex-1 flex flex-col gap-0 md:gap-6 overflow-hidden relative w-full h-full max-w-full">
+        <!-- Mobile Header -->
+        <header
+          class="md:hidden flex items-center justify-between p-4 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)] shrink-0 z-30 shadow-sm"
+        >
+          <div class="flex items-center gap-3">
+            <button
+              id="mobile-menu-btn"
+              class="p-2 -ml-2 rounded-lg text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-menu"
+                ><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line
+                  x1="4"
+                  x2="20"
+                  y1="18"
+                  y2="18"></line></svg
+              >
+            </button>
+            <span class="font-bold text-lg">{title}</span>
+          </div>
+        </header>
+
+        <div class="flex-1 flex flex-col min-h-0 overflow-y-auto p-4 md:p-0">
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <!-- Mobile Sidebar Logic -->
+    <script is:inline>
+      const initMobileSidebar = () => {
+        const menuBtn = document.getElementById("mobile-menu-btn");
+        const closeBtn = document.getElementById("mobile-close-btn");
+        const backdrop = document.getElementById("mobile-sidebar-backdrop");
+        const sidebar = document.getElementById("kyro-sidebar");
+
+        const toggleSidebar = () => {
+          if (!sidebar) return;
+          const isOpen = sidebar.classList.contains("translate-x-0");
+          const fab = document.getElementById("kyro-fab");
+          if (isOpen) {
+            sidebar.classList.remove("translate-x-0");
+            sidebar.classList.add("-translate-x-full");
+            backdrop?.classList.remove("opacity-100");
+            setTimeout(() => backdrop?.classList.add("hidden"), 300);
+            fab?.classList.remove("fab-hidden");
+          } else {
+            sidebar.classList.remove("-translate-x-full");
+            sidebar.classList.add("translate-x-0");
+            backdrop?.classList.remove("hidden");
+            setTimeout(() => backdrop?.classList.add("opacity-100"), 10);
+            fab?.classList.add("fab-hidden");
+          }
+        };
+
+        menuBtn?.addEventListener("click", toggleSidebar);
+        closeBtn?.addEventListener("click", toggleSidebar);
+        backdrop?.addEventListener("click", toggleSidebar);
+      };
+
+      document.addEventListener("astro:page-load", initMobileSidebar);
+    </script>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logout-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="logout-modal-backdrop"></div>
+      <div
+        class="relative w-full max-w-sm mx-4 bg-[var(--kyro-surface)] rounded-lg shadow-2xl border border-[var(--kyro-border)]"
+      >
+        <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--kyro-border)]">
+          <h2 class="text-lg font-semibold text-[var(--kyro-text-primary)]">Sign Out</h2>
+        </div>
+        <div class="px-6 py-4">
+          <p class="text-[var(--kyro-text-secondary)]">Are you sure you want to sign out?</p>
+        </div>
+        <div
+          class="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] rounded-b-lg"
+        >
+          <button
+            id="logout-modal-cancel"
+            class="px-4 py-2 rounded-lg font-medium text-sm border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)] transition-colors"
+            >Cancel</button
+          >
+          <button
+            id="logout-modal-confirm"
+            class="px-4 py-2 rounded-lg font-medium text-sm bg-red-500 text-white hover:bg-red-600 transition-colors"
+            >Sign Out</button
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth Bridge: Hydrates Zustand useAuthStore with user + permissions -->
+    <AuthBridge client:load />
+
+    <!-- Command Palette (React) -->
+    <CommandPaletteWrapper client:only="react" collections={collections} globals={globals} />
+
+    <!-- Global Modals (React) -->
+    <GlobalModal client:only="react" />
+
+    <!-- Toast Notifications (React) -->
+    <Toaster client:only="react" />
+
+    <!-- Floating Command Palette Trigger -->
+    <button
+      id="kyro-fab"
+      type="button"
+      onclick="window.openCommandPalette?.()"
+      class="fixed bottom-6 right-6 z-50 w-12 h-12 flex md:hidden items-center justify-center rounded-2xl bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] shadow-lg shadow-[var(--kyro-primary)]/30 hover:shadow-xl hover:shadow-[var(--kyro-primary)]/40 hover:scale-110 active:scale-95 transition-all duration-200"
+      title="Open command palette (Cmd+K)"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"></path>
+      </svg>
+    </button>
+
+    <!-- Theme UI Logic -->
+    <script is:inline define:vars={{ adminPath, apiPath }}>
+      // Run immediately to prevent FOUC
+      const currentTheme =
+        localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      if (currentTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+
+      const initThemeUI = () => {
+        const lightBtn = document.getElementById("theme-light-btn");
+        const darkBtn = document.getElementById("theme-dark-btn");
+
+        const updateUI = (theme) => {
+          const isDark = theme === "dark";
+
+          // Update Buttons
+          if (isDark) {
+            darkBtn?.classList.add(
+              "bg-[var(--kyro-sidebar-active)]",
+              "text-[var(--kyro-sidebar-text-active)]",
+              "shadow-lg",
+            );
+            darkBtn?.classList.remove("text-[var(--kyro-text-secondary)]");
+            lightBtn?.classList.remove(
+              "bg-[var(--kyro-sidebar-active)]",
+              "text-[var(--kyro-sidebar-text-active)]",
+              "shadow-lg",
+            );
+            lightBtn?.classList.add("text-[var(--kyro-text-secondary)]");
+          } else {
+            lightBtn?.classList.add(
+              "bg-[var(--kyro-sidebar-active)]",
+              "text-[var(--kyro-sidebar-text-active)]",
+              "shadow-lg",
+            );
+            lightBtn?.classList.remove("text-[var(--kyro-text-secondary)]");
+            darkBtn?.classList.remove(
+              "bg-[var(--kyro-sidebar-active)]",
+              "text-[var(--kyro-sidebar-text-active)]",
+              "shadow-lg",
+            );
+            darkBtn?.classList.add("text-[var(--kyro-text-secondary)]");
+          }
+
+          // Update Document
+          if (isDark) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        };
+
+        // Sync buttons on page load
+        updateUI(
+          localStorage.getItem("theme") ||
+            (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+        );
+
+        // Listeners
+        lightBtn?.addEventListener("click", () => {
+          localStorage.setItem("theme", "light");
+          updateUI("light");
+        });
+
+        darkBtn?.addEventListener("click", () => {
+          localStorage.setItem("theme", "dark");
+          updateUI("dark");
+        });
+
+        // Logout Modal
+        const logoutModal = document.getElementById("logout-modal");
+        const logoutBackdrop = document.getElementById("logout-modal-backdrop");
+        const logoutCancel = document.getElementById("logout-modal-cancel");
+        const logoutConfirm = document.getElementById("logout-modal-confirm");
+
+        document.getElementById("logout-btn")?.addEventListener("click", () => {
+          logoutModal?.classList.remove("hidden");
+        });
+
+        const closeLogoutModal = () => logoutModal?.classList.add("hidden");
+
+        logoutBackdrop?.addEventListener("click", closeLogoutModal);
+        logoutCancel?.addEventListener("click", closeLogoutModal);
+        logoutConfirm?.addEventListener("click", async () => {
+          try {
+            await fetch(apiPath + "/auth/logout", {
+              method: "POST",
+              credentials: "include",
+            });
+          } finally {
+            // Clear auth state
+            window.__kyroAuth = { user: null, verified: false };
+            window.location.href = adminPath + "/login";
+          }
+        });
+      };
+
+      document.addEventListener("astro:page-load", initThemeUI);
+
+      // System Preference Listener (attached once globally)
+      if (!window.__kyroThemeListenerAttached) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+          if (!localStorage.getItem("theme")) {
+            const isDark = e.matches;
+            if (isDark) {
+              document.documentElement.classList.add("dark");
+            } else {
+              document.documentElement.classList.remove("dark");
+            }
+          }
+        });
+        window.__kyroThemeListenerAttached = true;
+      }
+    </script>
+    <script>
+      import { navigate } from '../lib/navigate';
+
+      window.addEventListener("kyro:soft-reload", () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("_r", Date.now().toString());
+        navigate(url.toString(), { history: "replace" });
+      });
+
+      document.addEventListener("astro:page-load", () => {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("_r")) {
+          url.searchParams.delete("_r");
+          window.history.replaceState(
+            null,
+            "",
+            url.toString() === url.origin + url.pathname ? url.pathname : url.toString(),
+          );
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,47 @@
+{
+  "name": "create-kyro",
+  "version": "0.12.16",
+  "description": "Interactive scaffolding for Kyro CMS projects",
+  "type": "module",
+  "bin": {
+    "create-kyro": "bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "kolorist": "^1.8.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "kyro",
+    "kyro-cms",
+    "cms",
+    "scaffold",
+    "create",
+    "astro"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danielDozie/kyro-cms"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

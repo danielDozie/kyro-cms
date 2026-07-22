@@ -1,0 +1,266 @@
+{
+  "name": "@kyro-cms/core",
+  "version": "0.12.16",
+  "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
+  "engines": {
+    "node": ">=22"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "author": {
+    "name": "Kyro CMS",
+    "url": "https://kyro.dev"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "require": "./dist/client.cjs"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js",
+      "require": "./dist/cli/index.cjs"
+    },
+    "./auth": {
+      "types": "./dist/auth/index.d.ts",
+      "import": "./dist/auth/index.js",
+      "require": "./dist/auth/index.cjs"
+    },
+    "./middleware": {
+      "types": "./dist/middleware/index.d.ts",
+      "import": "./dist/middleware.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js",
+      "require": "./dist/storage/index.cjs"
+    },
+    "./webhooks": {
+      "types": "./dist/webhooks/index.d.ts",
+      "import": "./dist/webhooks/index.js",
+      "require": "./dist/webhooks/index.cjs"
+    },
+    "./versions": {
+      "types": "./dist/versions/index.d.ts",
+      "import": "./dist/versions/index.js",
+      "require": "./dist/versions/index.cjs"
+    },
+    "./plugins": {
+      "types": "./dist/plugins/index.d.ts",
+      "import": "./dist/plugins/index.js",
+      "require": "./dist/plugins/index.cjs"
+    },
+    "./access": {
+      "types": "./dist/access/index.d.ts",
+      "import": "./dist/access/index.js",
+      "require": "./dist/access/index.cjs"
+    },
+    "./trpc": {
+      "types": "./dist/trpc/index.d.ts",
+      "import": "./dist/trpc/index.js",
+      "require": "./dist/trpc/index.cjs"
+    },
+    "./graphql": {
+      "types": "./dist/graphql/index.d.ts",
+      "import": "./dist/graphql/index.js",
+      "require": "./dist/graphql/index.cjs"
+    },
+    "./rest": {
+      "types": "./dist/rest/index.d.ts",
+      "import": "./dist/rest/index.js",
+      "require": "./dist/rest/index.cjs"
+    },
+    "./ws": {
+      "types": "./dist/ws/index.d.ts",
+      "import": "./dist/ws/index.js",
+      "require": "./dist/ws/index.cjs"
+    },
+    "./drizzle": {
+      "types": "./dist/drizzle/index.d.ts",
+      "import": "./dist/drizzle/index.js",
+      "require": "./dist/drizzle/index.cjs"
+    },
+    "./mongodb": {
+      "types": "./dist/mongodb/index.d.ts",
+      "import": "./dist/mongodb/index.js",
+      "require": "./dist/mongodb/index.cjs"
+    },
+    "./templates": {
+      "types": "./dist/templates/index.d.ts",
+      "import": "./dist/templates/index.js",
+      "require": "./dist/templates/index.cjs"
+    },
+    "./fields": {
+      "types": "./dist/fields/index.d.ts",
+      "import": "./dist/fields/index.js",
+      "require": "./dist/fields/index.cjs"
+    },
+    "./integration": {
+      "types": "./dist/integration.d.ts",
+      "import": "./dist/integration.js",
+      "require": "./dist/integration.cjs"
+    },
+    "./api-handler": {
+      "types": "./dist/api-handler.d.ts",
+      "import": "./dist/api-handler.js",
+      "require": "./dist/api-handler.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "NODE_NO_WARNINGS=1 tsup --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:smoke": "vitest run test/smoke.test.ts",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "generate": "node --loader ts-node/esm scripts/generate-types.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/database/drizzle/seed.ts",
+    "docs:dev": "pnpm --filter @kyro-cms/docs dev",
+    "docs:build": "pnpm --filter @kyro-cms/docs build",
+    "publish:packages": "node scripts/publish.js",
+    "publish:dry": "node scripts/publish.js --dry-run"
+  },
+  "bin": {
+    "kyro": "./dist/cli/index.js"
+  },
+  "keywords": [
+    "cms",
+    "astro",
+    "headless",
+    "trpc",
+    "graphql",
+    "rest",
+    "websocket",
+    "drizzle",
+    "mongodb",
+    "multitenant",
+    "ecommerce",
+    "admin"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danielDozie/kyro-cms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/danielDozie/kyro-cms/issues"
+  },
+  "homepage": "https://github.com/danielDozie/kyro-cms#readme",
+  "dependencies": {
+    "@ai-sdk/groq": "^4.0.12",
+    "@ai-sdk/openai": "^0.0.14",
+    "@aws-sdk/client-s3": "^3.751.0",
+    "@aws-sdk/s3-request-presigner": "^3.751.0",
+    "@kyro-cms/ai": "workspace:*",
+    "@smithy/node-http-handler": "^4.7.0",
+    "@tiptap/core": "^3.23.6",
+    "@tiptap/extension-color": "^3.23.6",
+    "@tiptap/extension-highlight": "^3.23.6",
+    "@tiptap/extension-image": "^3.23.6",
+    "@tiptap/extension-link": "^3.23.6",
+    "@tiptap/extension-task-item": "^3.23.6",
+    "@tiptap/extension-task-list": "^3.23.6",
+    "@tiptap/extension-text-align": "^3.23.6",
+    "@tiptap/extension-text-style": "^3.23.6",
+    "@tiptap/extension-underline": "^3.23.6",
+    "@tiptap/html": "^3.23.6",
+    "@tiptap/starter-kit": "^3.23.6",
+    "@trpc/client": "^11.0.0",
+    "@trpc/react-query": "^11.0.0",
+    "@trpc/server": "^11.0.0",
+    "basic-ftp": "^5.3.0",
+    "bcryptjs": "^2.4.3",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "cpu-features": "^0.0.10",
+    "drizzle-orm": "^0.44.7",
+    "esbuild": "^0.25.0",
+    "glob": "^11.0.1",
+    "graphql": "^16.10.0",
+    "graphql-yoga": "^5.21.2",
+    "hono": "^4.7.0",
+    "idb-keyval": "^6.2.2",
+    "jsondiffpatch": "^0.7.3",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^8.0.4",
+    "ora": "^8.2.0",
+    "postgres": "^3.4.8",
+    "sharp": "^0.34.5",
+    "unstorage": "^1.17.5",
+    "ws": "^8.18.0",
+    "zod": "^3.24.0",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.13.0",
+    "@types/nodemailer": "^7.0.11",
+    "@types/react": "^19.2.17",
+    "@types/ssh2-sftp-client": "^9.0.6",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/parser": "^8.59.1",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9.20.0",
+    "prettier": "^3.5.0",
+    "react": "^19.2.7",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.59.1",
+    "vitest": "^3.0.0"
+  },
+  "optionalDependencies": {
+    "pg": ">=8.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "use-sync-external-store": "1.5.0"
+    }
+  },
+  "peerDependencies": {
+    "astro": "^7.1.1",
+    "ioredis": "^5.10.1",
+    "mongodb": "^6.12.0",
+    "ssh2": "^1.17.0",
+    "ssh2-sftp-client": "^12.1.1"
+  },
+  "peerDependenciesMeta": {
+    "mongodb": {
+      "optional": true
+    },
+    "ioredis": {
+      "optional": true
+    },
+    "ssh2": {
+      "optional": true
+    },
+    "ssh2-sftp-client": {
+      "optional": true
+    },
+    "astro": {
+      "optional": true
+    }
+  }
+}

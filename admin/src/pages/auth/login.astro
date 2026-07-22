@@ -1,0 +1,122 @@
+---
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { adminPath, apiPath } from "../../lib/paths";
+---
+
+<AuthLayout title="Sign In">
+  <div class="surface-tile p-8 w-full" style="max-width: 420px;">
+    <div class="text-center mb-8">
+      <h1
+        class="text-2xl font-bold tracking-tight text-[var(--kyro-text-primary)]"
+      >
+        Welcome back
+      </h1>
+      <p class="text-sm text-[var(--kyro-text-secondary)] mt-2">
+        Sign in to your account
+      </p>
+    </div>
+
+    <form id="login-form" class="space-y-5">
+      <div>
+        <label
+          for="email"
+          class="block text-sm font-medium text-[var(--kyro-text-primary)] mb-2 text-left"
+          >Email</label
+        >
+        <input
+          type="email"
+          id="email"
+          name="email"
+          required
+          class="w-full px-4 py-3 border border-[var(--kyro-border)] bg-[var(--kyro-input-bg)] rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] focus:border-[var(--kyro-sidebar-active)] text-[var(--kyro-text-primary)]"
+          placeholder="admin@example.com"
+        />
+      </div>
+
+      <div>
+        <label
+          for="password"
+          class="block text-sm font-medium text-[var(--kyro-text-primary)] mb-2"
+          >Password</label
+        >
+        <input
+          type="password"
+          id="password"
+          name="password"
+          required
+          class="w-full px-4 py-3 border border-[var(--kyro-border)] bg-[var(--kyro-input-bg)] rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] focus:border-[var(--kyro-sidebar-active)] text-[var(--kyro-text-primary)]"
+          placeholder="••••••••"
+        />
+      </div>
+
+      <div id="form-message" class="hidden p-3 rounded-xl text-sm font-bold">
+      </div>
+
+      <button
+        type="submit"
+        class="w-full py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl text-sm font-bold hover:opacity-90 transition-colors shadow-lg"
+      >
+        Sign In
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-[var(--kyro-text-secondary)] mt-6">
+      Don't have an account? <a
+        href={`${adminPath}/register`}
+        class="font-medium text-[var(--kyro-text-primary)] hover:underline"
+        >Register</a
+      >
+    </p>
+  </div>
+
+  <script define:vars={{ apiPath, adminPath }}>
+    document
+      .getElementById("login-form")
+      ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const message = document.getElementById("form-message");
+        const button = form.querySelector('button[type="submit"]');
+
+        const email = form.email.value;
+        const password = form.password.value;
+
+        button.disabled = true;
+        button.textContent = "Signing in...";
+
+        try {
+          const res = await fetch(apiPath + "/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            // Cookies set server-side via Set-Cookie headers
+            // Store user in memory only (not localStorage)
+            window.__kyroAuth = { user: data.user, verified: true };
+            message.textContent = "Success! Redirecting...";
+            message.className =
+              "block p-3 rounded-xl text-sm font-regular  bg-green-50 text-green-600";
+            setTimeout(() => {
+              window.location.href = adminPath;
+            }, 500);
+          } else {
+            message.textContent = data.error || "Login failed";
+            message.className =
+              "block p-3 rounded-xl text-sm font-regular bg-red-50 text-red-600";
+            button.disabled = false;
+            button.textContent = "Sign In";
+          }
+        } catch (err) {
+          message.textContent = "Connection error";
+          message.className =
+            "block p-3 rounded-xl text-sm font-regular bg-red-50 text-red-600";
+          button.disabled = false;
+          button.textContent = "Sign In";
+        }
+      });
+  </script>
+</AuthLayout>

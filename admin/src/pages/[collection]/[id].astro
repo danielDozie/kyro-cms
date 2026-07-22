@@ -1,0 +1,47 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import i18next from '../../lib/i18n';
+import { collections } from "../../lib/config";
+import { AutoForm } from "../../components/AutoForm";
+import { adminPath } from "../../lib/paths";
+
+const { collection, id } = Astro.params;
+
+// Validate collection exists
+// Workaround for Astro route overlap: if 'settings' hits the dynamic collection route
+const isSettings = collection === "settings";
+let config: any;
+let isNew: boolean = false;
+let title: string = "";
+
+if (!isSettings) {
+  if (!collection || !collections[collection]) {
+    return Astro.redirect(adminPath);
+  }
+  config = collections[collection];
+  isNew = !id || id === "new";
+  title = isNew
+    ? `Create ${config.singularLabel || config.label || collection}`
+    : `Edit ${config.singularLabel || config.label || collection}`;
+}
+
+import SettingsPageAstro from "../settings/[slug].astro";
+---
+
+{isSettings ? (
+  <SettingsPageAstro slug={id} />
+) : (
+  <AdminLayout title={title}>
+    <div class="flex-1 overflow-y-auto space-y-6">
+    <form id="doc-form">
+      <AutoForm
+        client:load
+        config={config}
+        collectionSlug={collection}
+        documentId={id || undefined}
+      />
+      <input type="hidden" id="form-data" name="form-data" value="{}" />
+    </form>
+  </div>
+</AdminLayout>
+)}

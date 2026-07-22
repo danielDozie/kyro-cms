@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  kyro:
+    build:
+      context: ..
+      dockerfile: deployments/docker/Dockerfile
+    ports:
+      - "4321:4321"
+    environment:
+      - NODE_ENV=production
+      - KYRO_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kyro
+      - KYRO_SECRET=${KYRO_SECRET:-your-secret-key-change-in-production}
+      - KYRO_TENANT=${KYRO_TENANT:-default}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - kyro-network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=kyro
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - kyro-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - kyro-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  kyro-network:
+    driver: bridge

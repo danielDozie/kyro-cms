@@ -1,0 +1,11 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import i18next from '../../lib/i18n';
+import { AuditLogsPage } from '../../components/AuditLogsPage';
+
+import { adminPath, apiPath } from '../../lib/paths';
+---
+
+<AdminLayout title={i18next.t("pages." + "Audit Logs".replace(/ /g, ""), { defaultValue: "Audit Logs" })}> 
+  <AuditLogsPage client:only="react" />
+</AdminLayout>

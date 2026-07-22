@@ -1,0 +1,16 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import i18next from '../../lib/i18n';
+import { UserForm } from "../../components/users/UserForm";
+
+import { adminPath, apiPath } from "../../lib/paths";
+---
+
+<AdminLayout title={i18next.t("pages." + "New User".replace(/ /g, ""), { defaultValue: "New User" })}> 
+  <UserForm
+    client:load
+    mode="create"
+    apiPath={apiPath}
+    adminPath={adminPath}
+  />
+</AdminLayout>

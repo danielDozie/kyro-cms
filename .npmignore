@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Source code
+src/
+packages/*/src/
+
+# Configuration
+tsconfig.json
+tsup.config.ts
+drizzle.config.ts
+
+# Development
+*.log
+.env
+.env.*
+!.env.example
+
+# Testing
+coverage/
+.vitest/
+*.test.ts
+*.spec.ts
+
+# Documentation (keep for now)
+# docs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts we don't need in npm
+dist/**/*.map
+dist/**/*.d.ts.map
+
+# Temp files
+*.tmp
+*.temp
+
+# Deployments
+deployments/

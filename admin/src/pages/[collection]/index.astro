@@ -1,0 +1,67 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import i18next from '../../lib/i18n';
+import { collections } from "../../lib/config";
+import { ListView } from "../../components/ListView";
+import { adminPath, apiPath } from "../../lib/paths";
+
+const { collection } = Astro.params;
+
+const isSettings = collection === "settings";
+let config: any;
+if (!isSettings) {
+  if (!collection || !collections[collection]) {
+    return Astro.redirect(adminPath);
+  }
+
+  // Redirect system collections to dedicated pages
+  if (collection === "users") return Astro.redirect(`${adminPath}/users`);
+  if (collection === "audit_logs") return Astro.redirect(`${adminPath}/audit`);
+
+  config = collections[collection];
+}
+
+import SettingsIndexAstro from "../settings/index.astro";
+
+let docs: any[] = [];
+let totalDocs = 0;
+
+if (!isSettings) {
+  const page = parseInt(Astro.url.searchParams.get("page") || "1");
+  const limit = parseInt(Astro.url.searchParams.get("limit") || "10");
+
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}${apiPath}/${collection}?page=${page}&limit=${limit}&depth=1&t=${Date.now()}`,
+      {
+        headers: Astro.request.headers,
+        credentials: "include",
+      },
+    );
+    if (response.ok) {
+      const data = await response.json();
+      docs = data.docs || [];
+      totalDocs = data.totalDocs || 0;
+    }
+  } catch (error) {
+    console.error("Failed to fetch documents:", error);
+  }
+}
+
+---
+
+{isSettings ? (
+  <SettingsIndexAstro />
+) : (
+  <AdminLayout title={config.label || collection || "Collection"}>
+    <div class="flex-1 overflow-y-auto">
+      <ListView
+        client:load
+        collection={config}
+        collectionSlug={collection}
+        initialDocs={docs}
+        initialTotal={totalDocs}
+      />
+    </div>
+  </AdminLayout>
+)}

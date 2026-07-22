@@ -1,0 +1,12 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { ApiKeysManager } from "../components/ApiKeysManager";
+
+import { adminPath, apiPath } from '../lib/paths';
+
+---
+
+<AdminLayout title={i18next.t("pages." + "API Keys".replace(/ /g, ""), { defaultValue: "API Keys" })}> 
+  <ApiKeysManager client:only="react" />
+</AdminLayout>

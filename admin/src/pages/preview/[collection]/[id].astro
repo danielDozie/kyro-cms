@@ -1,0 +1,243 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { renderRichText, richTextStyles } from "@kyro-cms/core/client";
+import { collections } from "../../../lib/config";
+
+import { adminPath, apiPath } from "../../../lib/paths";
+
+const { collection, id } = Astro.params;
+
+if (!collection || !collections[collection]) {
+  return Astro.redirect(adminPath);
+}
+
+const config = collections[collection];
+
+let doc = null;
+let error = null;
+
+if (id) {
+  try {
+    const response = await fetch(
+      `${Astro.url.origin}${apiPath}/${collection}/${id}`,
+      {
+        headers: Astro.request.headers,
+        credentials: "include",
+      },
+    );
+    if (response.ok) {
+      const result = await response.json();
+      doc = result.data || null;
+    } else {
+      error = `Failed to load document: ${response.status}`;
+    }
+  } catch (e) {
+    error = "Failed to fetch document";
+  }
+}
+
+const pageTitle = doc
+  ? `Preview: ${(typeof doc.title === "object" ? "" : doc.title) || (typeof doc.name === "object" ? "" : doc.name) || doc.slug || id}`
+  : "Preview";
+---
+
+<AdminLayout title={pageTitle}>
+  <Fragment set:html={`<style>${richTextStyles}</style>`} />
+  <div class="flex-1 overflow-y-auto space-y-6">
+    <div class="surface-tile p-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a
+          href={`${adminPath}/${collection}/${id}`}
+          class="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </a>
+        <div>
+          <h1
+            class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]"
+          >
+            Preview Mode
+          </h1>
+          <p class="text-sm text-[var(--kyro-text-secondary)] mt-0.5">
+            Showing draft content
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span
+          class="px-3 py-1.5 bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] text-xs font-bold rounded-lg border border-[var(--kyro-border)]"
+        >
+          {doc?.status || "draft"}
+        </span>
+        <a
+          href={`/${collection}/${id}`}
+          class="px-5 py-2.5 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-sm hover:opacity-90 transition-colors"
+        >
+          Edit
+        </a>
+      </div>
+    </div>
+
+    {
+      error && (
+        <div class="surface-tile p-6 border border-red-500/30 bg-red-500/10">
+          <p class="text-red-400">{error}</p>
+        </div>
+      )
+    }
+
+    {
+      doc && (
+        <div class="space-y-6">
+          {config.fields.map((field: any) => {
+            const value = doc[field.name];
+            if (value === undefined || value === null) return null;
+
+            return (
+              <div class="surface-tile p-6">
+                <h3 class="text-xs font-bold text-[var(--kyro-text-muted)]  tracking-[0.15em] mb-3">
+                  {field.label || field.name}
+                </h3>
+                <div class="text-sm text-[var(--kyro-text-primary)]">
+                  {field.type === "text" && (
+                    <p class="whitespace-pre-wrap">{value}</p>
+                  )}
+                  {field.type === "textarea" && (
+                    <p class="whitespace-pre-wrap">{value}</p>
+                  )}
+                  {field.type === "richtext" && (
+                    <div set:html={renderRichText(value)} />
+                  )}
+                  {field.type === "markdown" && (
+                    <div class="prose prose-sm max-w-none">
+                      <pre class="whitespace-pre-wrap bg-transparent p-0">
+                        {value}
+                      </pre>
+                    </div>
+                  )}
+                  {field.type === "number" && <p>{value}</p>}
+                  {field.type === "boolean" && (
+                    <span class={value ? "text-green-400" : "text-red-400"}>
+                      {value ? "Yes" : "No"}
+                    </span>
+                  )}
+                  {field.type === "select" && (
+                    <span class="px-2 py-1 bg-[var(--kyro-surface-accent)] rounded text-xs">
+                      {value}
+                    </span>
+                  )}
+                  {field.type === "date" && (
+                    <p>{new Date(value).toLocaleString()}</p>
+                  )}
+                  {field.type === "upload" && value.url && (
+                    <div>
+                      {value.url.match(
+                        /\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i,
+                      ) ? (
+                        <img
+                          src={value.url}
+                          alt={value.filename || "Image"}
+                          class="max-w-md rounded-lg border border-[var(--kyro-border)]"
+                        />
+                      ) : (
+                        <a
+                          href={value.url}
+                          class="text-blue-400 hover:underline"
+                        >
+                          {value.filename || "Download"}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {field.type === "gallery" && Array.isArray(value) && (
+                    <div class="grid grid-cols-4 gap-3">
+                      {value.map((item: any, idx: number) =>
+                        item?.url ? (
+                          item.url.match(
+                            /\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i,
+                          ) ? (
+                            <img
+                              src={item.url}
+                              alt={item.filename || `Image ${idx + 1}`}
+                              class="w-full h-24 object-cover rounded-lg border border-[var(--kyro-border)]"
+                            />
+                          ) : (
+                            <div class="h-24 flex items-center justify-center bg-[var(--kyro-surface-accent)] rounded-lg border border-[var(--kyro-border)] text-xs">
+                              {item.filename || "File"}
+                            </div>
+                          )
+                        ) : null,
+                      )}
+                    </div>
+                  )}
+                  {field.type === "array" && Array.isArray(value) && (
+                    <div class="space-y-2">
+                      {value.map((item: any) => (
+                        <div class="p-3 bg-[var(--kyro-surface-accent)] rounded border border-[var(--kyro-border)] text-xs">
+                          {Object.entries(item)
+                            .filter(([, v]) => v !== undefined)
+                            .map(([k, v]) => (
+                              <div class="flex gap-2">
+                                <span class="text-[var(--kyro-text-muted)]">
+                                  {k}:
+                                </span>
+                                <span>
+                                  {typeof v === "object"
+                                    ? JSON.stringify(v)
+                                    : String(v)}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {field.type === "relationship" && (
+                    <p class="text-[var(--kyro-text-secondary)]">
+                      {value.title ||
+                        value.name ||
+                        value.slug ||
+                        JSON.stringify(value)}
+                    </p>
+                  )}
+                  {field.type === "json" && (
+                    <pre class="text-xs bg-[var(--kyro-surface-accent)] p-3 rounded overflow-x-auto">
+                      {JSON.stringify(value, null, 2)}
+                    </pre>
+                  )}
+                  {field.type === "code" && (
+                    <pre class="text-xs bg-[var(--kyro-surface-accent)] p-3 rounded overflow-x-auto">
+                      {value}
+                    </pre>
+                  )}
+                  {(!field.type || ["text", "string"].includes(field.type)) && (
+                    <p>{typeof value === "object" ? JSON.stringify(value) : value}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )
+    }
+
+    {
+      !doc && !error && (
+        <div class="surface-tile p-6">
+          <p class="text-[var(--kyro-text-muted)]">Document not found</p>
+        </div>
+      )
+    }
+  </div>
+</AdminLayout>

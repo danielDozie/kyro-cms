@@ -1,0 +1,14 @@
+---
+import AdminLayout from '../layouts/AdminLayout.astro';
+import i18next from '../lib/i18n';
+import { MediaGallery } from '../components/MediaGallery';
+
+import { adminPath, apiPath } from '../lib/paths';
+
+---
+
+<AdminLayout title={i18next.t("pages." + "Media Library".replace(/ /g, ""), { defaultValue: "Media Library" })}> 
+  <div class="flex-1 flex flex-col h-full min-h-0 overflow-hidden -m-4 md:m-0">
+    <MediaGallery client:load />
+  </div>
+</AdminLayout>
