@@ -386,3 +386,12 @@ export {
   getEncryptionKey,
   getSessionConfig,
 } from "./lib/secret.js";
+
+// Native Astro 5+ Features & Utilities
+export { kyroLoader, type KyroLoaderOptions } from "./loader.js";
+export { kyroAction, type KyroActionOptions } from "./actions.js";
+export { kyroAuthMiddleware, type KyroAuthMiddlewareOptions } from "./middleware.js";
+export { generateKyroAstroTypes } from "./typegen.js";
+export { kyroEnvSchema, type KyroEnvSchemaOptions } from "./env.js";
+export { kyroDevToolbarIntegration, type KyroDevToolbarOptions } from "./integrations/dev-toolbar.js";
+

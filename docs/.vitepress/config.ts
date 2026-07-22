@@ -84,6 +84,7 @@ export default withMermaid(
             text: "Guides",
             collapsed: false,
             items: [
+              { text: "Astro Integration", link: "/guides/astro-integration" },
               { text: "Configuration", link: "/guides/configuration" },
               { text: "Database Adapters", link: "/guides/database-adapters" },
               { text: "Authentication", link: "/guides/authentication" },
