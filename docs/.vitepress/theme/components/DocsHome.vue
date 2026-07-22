@@ -269,6 +269,19 @@ const highlightedCode = computed(() => highlightSnippet(codeSamples[activeTab.va
             tRPC &amp; WebSocket APIs — plus a full admin dashboard, automatically.
           </p>
 
+          <!-- Quick CLI Snippet -->
+          <div class="hero-cli-container">
+            <button class="hero-cli-box" @click="copyCommand" aria-label="Copy CLI command">
+              <span class="cli-prompt">~ $</span>
+              <code class="cli-command">npm create kyro@latest</code>
+              <span class="cli-copy-badge">
+                <svg v-if="!copied" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="copied-check"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>{{ copied ? 'Copied!' : 'Copy' }}</span>
+              </span>
+            </button>
+          </div>
+
           <!-- CTAs -->
           <div class="hero-actions">
             <a href="/getting-started" class="btn-primary" id="hero-cta-primary">
@@ -279,24 +292,6 @@ const highlightedCode = computed(() => highlightSnippet(codeSamples[activeTab.va
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               <span>How it works</span>
             </a>
-          </div>
-
-          <!-- Stats -->
-          <div class="hero-stats">
-            <div class="stat-item">
-              <span class="stat-num">4</span>
-              <span class="stat-label">API Protocols</span>
-            </div>
-            <span class="stat-sep" aria-hidden="true"></span>
-            <div class="stat-item">
-              <span class="stat-num">3</span>
-              <span class="stat-label">Database adapters</span>
-            </div>
-            <span class="stat-sep" aria-hidden="true"></span>
-            <div class="stat-item">
-              <span class="stat-num">Open</span>
-              <span class="stat-label">Source</span>
-            </div>
           </div>
         </div>
 
@@ -1030,6 +1025,70 @@ const highlightedCode = computed(() => highlightSnippet(codeSamples[activeTab.va
   border-color: var(--ink-3);
   color: var(--ink);
   transform: translateY(-2px);
+}
+
+/* Quick CLI Snippet Box */
+.hero-cli-container {
+  display: flex;
+  margin-top: 4px;
+}
+
+.hero-cli-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--surface-1, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-xs, 8px);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.84rem;
+  color: var(--ink-1, #e0e0e0);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+  user-select: none;
+  backdrop-filter: blur(8px);
+}
+
+.hero-cli-box:hover {
+  background: var(--surface-2, rgba(255, 255, 255, 0.08));
+  border-color: var(--accent, #6366f1);
+  transform: translateY(-1px);
+}
+
+.cli-prompt {
+  color: var(--accent, #818cf8);
+  font-weight: 700;
+}
+
+.cli-command {
+  font-family: inherit;
+  color: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.cli-copy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-2, #a1a1aa);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.hero-cli-box:hover .cli-copy-badge {
+  color: var(--ink-1, #ffffff);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.copied-check {
+  color: #10b981;
 }
 
 .btn-ghost {
@@ -1955,6 +2014,32 @@ const highlightedCode = computed(() => highlightSnippet(codeSamples[activeTab.va
 :root:not(.dark) .btn-outline:hover {
   border-color: rgba(0, 0, 0, 0.25);
   color: rgba(0, 0, 0, 0.85);
+}
+
+/* Light mode CLI Box */
+:root:not(.dark) .hero-cli-box {
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+}
+
+:root:not(.dark) .hero-cli-box:hover {
+  background: #f1f5f9;
+  border-color: #6366f1;
+}
+
+:root:not(.dark) .cli-prompt {
+  color: #4f46e5;
+}
+
+:root:not(.dark) .cli-copy-badge {
+  color: #64748b;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+:root:not(.dark) .hero-cli-box:hover .cli-copy-badge {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 /* 7. Stats bar separator */

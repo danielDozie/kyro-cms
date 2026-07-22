@@ -32,14 +32,14 @@ const updateHeight = () => {
 const dismissBanner = () => {
   isVisible.value = false
   if (typeof window !== 'undefined') {
-    localStorage.setItem('kyro_docs_banner_dismissed', 'true')
+    sessionStorage.setItem('kyro_docs_banner_dismissed', 'true')
     updateHeight()
   }
 }
 
 onMounted(() => {
   if (typeof window !== 'undefined') {
-    const isDismissed = localStorage.getItem('kyro_docs_banner_dismissed') === 'true'
+    const isDismissed = sessionStorage.getItem('kyro_docs_banner_dismissed') === 'true'
     if (isDismissed) {
       isVisible.value = false
       updateHeight()
