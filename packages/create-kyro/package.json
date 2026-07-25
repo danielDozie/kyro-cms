@@ -1,6 +1,6 @@
 {
   "name": "create-kyro",
-  "version": "0.12.17",
+  "version": "0.12.18",
   "description": "Interactive scaffolding for Kyro CMS projects",
   "type": "module",
   "bin": {
