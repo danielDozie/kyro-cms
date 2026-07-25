@@ -12,7 +12,7 @@ export default withMermaid(
 
     head: [
       ["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
-      ["meta", { name: "theme-color", content: "#6366f1" }],
+      ["meta", { name: "theme-color", content: "#09090b" }],
       [
         "meta",
         {
@@ -110,18 +110,13 @@ export default withMermaid(
             collapsed: true,
             items: [
               { text: "create-kyro CLI", link: "/packages/create-kyro" },
-              { text: "kyro-connect SDK", link: "/packages/kyro-connect" },
-              { text: "Rich Text React", link: "/packages/kyro-rich-text-react" },
-              { text: "Kyro AI SDK", link: "/packages/kyro-ai" },
+              { text: "@kyro-cms/astro", link: "/packages/kyro-astro" },
+              { text: "@kyro-cms/connect", link: "/packages/kyro-connect" },
+              { text: "@kyro-cms/kyro-rich-text-react", link: "/packages/kyro-rich-text-react" },
+              { text: "@kyro-cms/ai", link: "/packages/kyro-ai" },
             ],
           },
-          {
-            text: "Production & Scale",
-            collapsed: true,
-            items: [
-              { text: "SaaS Provisioning", link: "/saas-plan" },
-            ],
-          },
+
           {
             text: "Reference",
             collapsed: false,

@@ -13,9 +13,11 @@ import type {
   VersionRecord,
   CreateVersionArgs,
   FindVersionsArgs,
+  FindOneArgs,
 } from '../../registry/types.js';
 import type { TenantContext } from '../../auth/rls/tenant.js';
 import { applyRLS, DEFAULT_RLS_CONFIG, canAccessDocument } from '../../auth/rls/tenant.js';
+import { sanitizeDoc } from '../../utils/sanitize.js';
 
 export class MongoDBAdapter extends AbstractBaseAdapter {
   public dialect = 'mongodb' as const;
@@ -24,7 +26,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
   private database: string;
   private connectionString?: string;
   // NOTE: draftsCollectionName removed — autosave now uses versions table with autosave flag
-  
+
   constructor(options: {
     client?: any;
     database?: string;
@@ -92,7 +94,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
 
     // Build filter
     const filter = this.buildFilter(effectiveWhere, config.tenantScoped ? tenantId : undefined);
-    
+
     // Default filter for non-draft requests: only show published
     const statusField = config.fields.find((f: any) => f.name === 'status');
     const hasPublished = statusField?.type === 'select' && Array.isArray(statusField.options) && statusField.options.some((o: any) => o.value === 'published');
@@ -108,7 +110,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
 
     // Execute query
     const skip = (page - 1) * limit;
-    
+
     const [docs, totalDocs] = await Promise.all([
       col
         .find(filter)
@@ -136,7 +138,9 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
           { sort: { createdAt: -1 } },
         );
         if (version) {
-          const versionData = version.data || {};
+          const versionData = typeof version.data === 'string'
+            ? JSON.parse(version.data)
+            : (version.data && typeof version.data === 'object' ? version.data : {});
           return { ...doc, ...versionData, status: doc.status };
         }
         return doc;
@@ -165,7 +169,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     if (tenantId && config.tenantScoped) {
       filter.tenantId = tenantId;
     }
-    
+
     const statusField = config.fields.find((f: any) => f.name === 'status');
     const hasPublished = statusField?.type === 'select' && Array.isArray(statusField.options) && statusField.options.some((o: any) => o.value === 'published');
     if (!draft && hasPublished) {
@@ -185,7 +189,9 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
         { sort: { createdAt: -1 } },
       );
       if (version) {
-        const versionData = version.data || {};
+        const versionData = typeof version.data === 'string'
+          ? JSON.parse(version.data)
+          : (version.data && typeof version.data === 'object' ? version.data : {});
         processedDoc = { ...processedDoc, ...versionData, status: processedDoc.status };
       }
     }
@@ -267,7 +273,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     return col.countDocuments(filter);
   }
 
-  async findOne(args: { collection: string; where: Record<string, any>; tenantId?: string; draft?: boolean }): Promise<any> {
+  async findOne(args: FindOneArgs): Promise<any> {
     const { collection: slug, where = {}, tenantId, draft } = args;
     const config = this.getCollectionConfig(slug);
     const col = this.getMongoCollection(slug);
@@ -292,7 +298,9 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
         { sort: { createdAt: -1 } },
       );
       if (version) {
-        const versionData = version.data || {};
+        const versionData = typeof version.data === 'string'
+          ? JSON.parse(version.data)
+          : (version.data && typeof version.data === 'object' ? version.data : {});
         processedDoc = { ...processedDoc, ...versionData, status: processedDoc.status };
       }
     }
@@ -302,7 +310,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
 
   async findVersions(args: FindVersionsArgs): Promise<FindResult<VersionRecord>> {
     const { collection: slug, documentId, sort, limit = 10, page = 1, tenantId } = args;
-    
+
     const config = this.getCollectionConfig(slug);
     // Versions stored in a separate collection; exclude ephemeral autosave versions
     const versionCollection = this.getMongoCollection(`${slug}_versions`);
@@ -332,7 +340,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     const versionCollection = this.getMongoCollection(`${slug}_versions`);
     const filter: any = { _id: versionId };
     if (tenantId && config.tenantScoped) filter.tenant_id = tenantId;
-    
+
     const doc = await versionCollection.findOne(filter);
     return doc ? this.processResult(doc, {} as CollectionConfig) as VersionRecord : null;
   }
@@ -375,7 +383,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     }
 
     await versionCollection.insertOne(versionDoc);
-    
+
     // Pruning logic — skip for autosave versions
     if (!autosave) {
       const config = this.getCollectionConfig(slug);
@@ -400,7 +408,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     const { collection: slug, documentId, keepLatest, tenantId } = args;
     const config = this.getCollectionConfig(slug);
     const versionCollection = this.getMongoCollection(`${slug}_versions`);
-    
+
     if (keepLatest) {
       const filter: any = { document_id: documentId, autosave: { $ne: true } };
       if (tenantId && config.tenantScoped) filter.tenant_id = tenantId;
@@ -437,7 +445,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
 
       // Create default indexes
       await col.createIndex({ _id: 1 });
-      
+
       if (config.tenantScoped) {
         await col.createIndex({ tenantId: 1 });
       }
@@ -498,7 +506,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         // Operator-based conditions
         const mongoOperators: Record<string, any> = {};
-        
+
         if (value.equals !== undefined) {
           filter[key === 'id' ? '_id' : key] = value.equals;
           continue;
@@ -547,9 +555,9 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     }
 
     return filter;
-  }  private buildProjection(select?: string[]): Record<string, 1> | undefined {
+  } private buildProjection(select?: string[]): Record<string, 1> | undefined {
     if (!select || select.length === 0) return undefined;
-    
+
     const projection: Record<string, 1> = { _id: 1 };
     for (const field of select) {
       projection[field] = 1;
@@ -561,6 +569,13 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     if (!data) return null;
 
     const result = { ...data };
+
+    // Strip numeric string index keys if a string ID was previously spread into document properties
+    for (const key of Object.keys(result)) {
+      if (/^\d+$/.test(key)) {
+        delete result[key];
+      }
+    }
 
     // Convert _id to id
     if (data._id) {
@@ -579,7 +594,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       result.updatedAt = new Date(result.updatedAt).toISOString();
     }
 
-    return result;
+    return sanitizeDoc(result);
   }
 
   private generateId(): string {

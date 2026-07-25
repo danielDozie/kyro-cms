@@ -66,6 +66,11 @@ export const menuCollection: CollectionConfig = {
                 condition: { field: "linkType", equals: "external" },
               },
             },
+            {
+              name: "label",
+              type: "text",
+              label: "Label (Optional)",
+            },
           ],
         },
       ],

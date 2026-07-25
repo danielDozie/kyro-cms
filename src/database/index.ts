@@ -3,3 +3,5 @@ export type { DatabaseType, DatabaseConnectionOptions, DrizzleAdapterOptions, Mo
 export { DrizzleAdapter, createDrizzleAdapter, fieldToDrizzleType, collectionToDrizzleSchema } from './drizzle/index.js';
 export { MongoDBAdapter, createMongoDBAdapter } from './mongodb/index.js';
 export { LocalAdapter, createLocalAdapter } from './local/index.js';
+export { NeonAdapter, createNeonAdapter } from './neon.js';
+export { TursoAdapter, createTursoAdapter, type TursoAdapterOptions } from './turso.js';

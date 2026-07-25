@@ -71,7 +71,7 @@ export class Registry {
 
     if (finalConfig.seo) {
       const seoField = generateSEOFields() as any;
-      const tabsFieldIndex = finalConfig.fields.findIndex(f => f.type === 'tabs' && f.name === 'tabs');
+      const tabsFieldIndex = finalConfig.fields.findIndex(f => f.type === 'tabs');
       
       if (tabsFieldIndex !== -1) {
         const existingTabsField = finalConfig.fields[tabsFieldIndex] as any;

@@ -3,9 +3,12 @@ title: Kyro AI
 description: Enhance your CMS with AI-powered SEO generation and assistant capabilities.
 ---
 
-# @kyro-cms/ai
+# `@kyro-cms/ai`
 
 The `@kyro-cms/ai` package provides deep AI integration into Kyro CMS, powered by the Vercel AI SDK. It allows you to easily inject automated SEO metadata generation and a floating conversational AI assistant into your admin panel.
+
+> [!IMPORTANT]
+> **Early Development Stage**: The `@kyro-cms/ai` package is currently in active early development. APIs, plugin interfaces, and provider capabilities are subject to refinement in upcoming releases.
 
 ## Installation
 

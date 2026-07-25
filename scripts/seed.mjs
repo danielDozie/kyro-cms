@@ -29,8 +29,8 @@ const future = (days) => { const d = new Date(); d.setDate(d.getDate() + days); 
 // ─── Clear ────────────────────────────────────────────────────────────────────
 
 console.log('🗑   Clearing old data...');
-['carts','reviews','orders','coupons','products','customers','brands','product_categories'].forEach(t => {
-  db.prepare(`DELETE FROM ${t}`).run();
+['reviews','orders','coupons','products','customers','brands','product_categories'].forEach(t => {
+  try { db.prepare(`DELETE FROM ${t}`).run(); } catch {}
 });
 console.log('    ✓ Cleared.\n');
 
@@ -104,8 +104,8 @@ const PRODUCTS = [
 
 console.log(`📦  Inserting ${PRODUCTS.length} products...`);
 const insertProduct = db.prepare(`
-  INSERT INTO products (id, title, slug, price, sku, inventory, category, brand, status, _status, createdAt, updatedAt, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', 'published', ?, ?, datetime('now'), datetime('now'))
+  INSERT INTO products (id, title, slug, price, sku, inventory, category, brand, status, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)
 `);
 const productIds = PRODUCTS.map(p => {
   const id = uuid();
@@ -132,19 +132,20 @@ const DOMAINS = ['gmail.com','yahoo.com','outlook.com','icloud.com','hotmail.com
 const NUM_CUSTOMERS = 50;
 console.log(`👤  Inserting ${NUM_CUSTOMERS} customers...`);
 const insertCustomer = db.prepare(`
-  INSERT INTO customers (id, email, firstName, lastName, phone, slug, _status, createdAt, updatedAt, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, datetime('now'), datetime('now'))
+  INSERT INTO customers (id, email, fullName, firstName, lastName, phone, slug, status, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)
 `);
 const customerIds = [];
 for (let i = 0; i < NUM_CUSTOMERS; i++) {
   const id = uuid();
   const fn = pick(FIRST_NAMES), ln = pick(LAST_NAMES);
+  const fullName = `${fn} ${ln}`;
   const email = `${fn.toLowerCase()}.${ln.toLowerCase()}${rand(1,99)}@${pick(DOMAINS)}`;
   const phone = `+1${rand(200,999)}${rand(1000000,9999999)}`;
   const slug = email.replace(/[@.]/g, '-');
   const created = ago(rand(1, 365));
   customerIds.push(id);
-  insertCustomer.run(id, email, fn, ln, phone, slug, created, created);
+  insertCustomer.run(id, email, fullName, fn, ln, phone, slug, created, created);
 }
 console.log(`    ✓ ${NUM_CUSTOMERS} customers.\n`);
 
@@ -156,8 +157,8 @@ const PAYMENT_STATUSES = ['paid','paid','paid','paid','pending','failed','refund
 const NUM_ORDERS = 150;
 console.log(`🛒  Inserting ${NUM_ORDERS} orders...`);
 const insertOrder = db.prepare(`
-  INSERT INTO orders (id, orderNumber, customer, status, paymentStatus, items, subtotal, tax, shipping, discount, total, slug, _status, createdAt, updatedAt, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?, datetime('now'), datetime('now'))
+  INSERT INTO orders (id, orderNumber, customer, orderStatus, paymentStatus, items, subtotal, tax, shipping, discount, total, slug, status, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?)
 `);
 const orderIds = [];
 for (let i = 0; i < NUM_ORDERS; i++) {
@@ -174,7 +175,7 @@ for (let i = 0; i < NUM_ORDERS; i++) {
     const qty = rand(1, 3);
     const lineTotal = parseFloat((prod.price * qty).toFixed(2));
     subtotal += lineTotal;
-    items.push({ product: prod.title, quantity: qty, unitPrice: prod.price, total: lineTotal });
+    items.push({ product: prod.id, title: prod.title, quantity: qty, unitPrice: prod.price, total: lineTotal });
   }
   subtotal = parseFloat(subtotal.toFixed(2));
   const tax      = parseFloat((subtotal * 0.08).toFixed(2));
@@ -217,7 +218,6 @@ for (let i = 0; i < NUM_REVIEWS; i++) {
   const id = uuid();
   const prod = pick(productIds);
   const custId = pick(customerIds);
-  // Weight ratings: mostly 4-5
   const ratingPool = [3, 3, 4, 4, 4, 5, 5, 5, 5, 5];
   const rating = pick(ratingPool);
   const comment = pick(COMMENTS);
@@ -242,8 +242,8 @@ const COUPONS = [
 
 console.log(`🎟   Inserting ${COUPONS.length} coupons...`);
 const insertCoupon = db.prepare(`
-  INSERT INTO coupons (id, code, type, value, minPurchase, maxDiscount, usageLimit, usedCount, startsAt, expiresAt, active, _status, createdAt, updatedAt, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'published', ?, ?, datetime('now'), datetime('now'))
+  INSERT INTO coupons (id, code, type, value, minPurchase, maxDiscount, usageLimit, usedCount, startsAt, expiresAt, active, status, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'published', ?, ?)
 `);
 for (const c of COUPONS) {
   const id = uuid();
@@ -256,29 +256,6 @@ for (const c of COUPONS) {
 }
 console.log(`    ✓ ${COUPONS.length} coupons.\n`);
 
-// ─── 8. Carts ─────────────────────────────────────────────────────────────────
-
-const CART_STATUSES = ['active', 'active', 'active', 'abandoned', 'converted'];
-const NUM_CARTS = 30;
-console.log(`🛍   Inserting ${NUM_CARTS} carts...`);
-const insertCart = db.prepare(`
-  INSERT INTO carts (id, customer, status, items, lastActive, createdAt, updatedAt)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
-`);
-for (let i = 0; i < NUM_CARTS; i++) {
-  const id = uuid();
-  const custId = pick(customerIds);
-  const status = pick(CART_STATUSES);
-  const numItems = rand(1, 5);
-  const items = Array.from({ length: numItems }, () => {
-    const prod = pick(productIds);
-    return { product: prod.id, title: prod.title, quantity: rand(1, 3), price: prod.price };
-  });
-  const created = ago(rand(0, 60));
-  insertCart.run(id, custId, status, JSON.stringify(items), created, created, created);
-}
-console.log(`    ✓ ${NUM_CARTS} carts.\n`);
-
 // ─── Summary ──────────────────────────────────────────────────────────────────
 
 const counts = {
@@ -289,7 +266,6 @@ const counts = {
   orders:     db.prepare('SELECT COUNT(*) as c FROM orders').get().c,
   reviews:    db.prepare('SELECT COUNT(*) as c FROM reviews').get().c,
   coupons:    db.prepare('SELECT COUNT(*) as c FROM coupons').get().c,
-  carts:      db.prepare('SELECT COUNT(*) as c FROM carts').get().c,
 };
 const revenue = db.prepare("SELECT SUM(total) as t FROM orders WHERE paymentStatus='paid'").get().t || 0;
 

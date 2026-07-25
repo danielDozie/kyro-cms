@@ -431,32 +431,34 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
 
   const currency = analyticsData?.currencyCode || "USD";
 
+  const productCount =
+    (data?.collectionCounts?.["products"] || 0) +
+    (data?.collectionCounts?.["food-menu"] || 0) +
+    (data?.collectionCounts?.["menu"] || 0);
+
   const ecommerceCards = [
     {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
       gradient: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-      value: analyticsData?.totalRevenue
+      value: analyticsData?.totalRevenue !== undefined
         ? new Intl.NumberFormat("en-US", { style: "currency", currency }).format(analyticsData.totalRevenue)
         : "$0",
       label: "Total Revenue",
-      subtext: "From paid orders",
-      trend: { value: "+12.4%", up: true },
+      subtext: "From system orders",
     },
     {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
       gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
-      value: data?.collectionCounts?.["products"] || 0,
-      label: "Products",
-      subtext: "Active inventory items",
-      trend: { value: "+3 new", up: true },
+      value: productCount,
+      label: "Products / Menu Items",
+      subtext: "Active inventory & menu items",
     },
     {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
       gradient: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)",
-      value: data?.collectionCounts?.["orders"] || 0,
+      value: analyticsData?.totalOrders !== undefined ? analyticsData.totalOrders : (data?.collectionCounts?.["orders"] || 0),
       label: "Orders",
       subtext: "Total orders placed",
-      trend: { value: "+8 today", up: true },
     },
     {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
@@ -464,7 +466,6 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
       value: data?.collectionCounts?.["customers"] || 0,
       label: "Customers",
       subtext: "Registered shoppers",
-      trend: { value: "+5 this week", up: true },
     },
     {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>,
@@ -475,7 +476,26 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
     },
   ];
 
-  const cmsCards = [
+  // Dynamically extract top active custom collections if present
+  const activeCustomCollections = data?.collectionCounts
+    ? Object.entries(data.collectionCounts)
+        .filter(([slug, count]) => count > 0 && !["users", "audit_logs", "media"].includes(slug))
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+    : [];
+
+  const dynamicCollectionCards = activeCustomCollections.map(([slug, count]) => {
+    const formattedLabel = slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return {
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
+      gradient: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
+      value: count,
+      label: formattedLabel,
+      subtext: "Active entries",
+    };
+  });
+
+  const baseCmsCards = [
     {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
       gradient: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
@@ -490,6 +510,9 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
       label: "Media Files",
       subtext: "Images, videos & docs",
     },
+  ];
+
+  const trailingCmsCards = [
     {
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
       gradient: "linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)",
@@ -497,21 +520,13 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
       label: "Team Members",
       subtext: "Active user accounts",
     },
-    {
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
-      gradient: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)",
-      value: data?.totalWebhooks || 0,
-      label: "Webhooks",
-      subtext: "Active integrations",
-    },
-    {
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
-      gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
-      value: data?.totalApiKeys || 0,
-      label: "API Keys",
-      subtext: "Developer access tokens",
-    },
   ];
+
+  const cmsCards = [
+    ...baseCmsCards,
+    ...dynamicCollectionCards,
+    ...trailingCmsCards,
+  ].slice(0, 5);
 
   const cards = isEcommerce ? ecommerceCards : cmsCards;
 

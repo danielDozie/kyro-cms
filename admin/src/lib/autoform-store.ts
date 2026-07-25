@@ -211,6 +211,7 @@ export const useAutoFormStore = create<AutoFormStore>()(
 
       // Field update actions
         setField: (field: string, value: unknown) => {
+         if (!field || field === "undefined") return;
          const state = get();
          const newDirty = new Set(state.dirtyFields);
          // Mark dirty if value differs from last saved baseline (normalized to strip full media details)
@@ -223,18 +224,22 @@ export const useAutoFormStore = create<AutoFormStore>()(
          } else {
            newDirty.delete(field);
          }
+         const nextFormData = { ...state.formData };
+         delete nextFormData.undefined;
+         delete nextFormData["undefined"];
+         nextFormData[field] = value;
          set({
-           formData: {
-             ...state.formData,
-             [field]: value,
-           },
+           formData: nextFormData,
            dirtyFields: newDirty,
            hasUnsavedChanges: newDirty.size > 0,
          });
        },
 
        setFormData: (data: Record<string, unknown>) => {
-         set({ formData: data });
+         const cleanData = { ...data };
+         delete cleanData.undefined;
+         delete cleanData["undefined"];
+         set({ formData: cleanData });
        },
 
        setNestedField: (path: string, value: unknown) => {
@@ -253,6 +258,8 @@ export const useAutoFormStore = create<AutoFormStore>()(
           }
 
           current[keys[keys.length - 1]] = value;
+          delete newFormData.undefined;
+          delete newFormData["undefined"];
 
           return { formData: newFormData };
         });
@@ -363,17 +370,24 @@ export const useAutoFormStore = create<AutoFormStore>()(
         data: Record<string, unknown>,
         lastSaved?: Record<string, unknown>,
       ) => {
+        const cleanData = { ...data };
+        delete cleanData.undefined;
+        delete cleanData["undefined"];
+        const cleanLastSaved = lastSaved ? { ...lastSaved } : cleanData;
+        delete cleanLastSaved.undefined;
+        delete cleanLastSaved["undefined"];
+
         const state = get();
         if (
-          state.formData === data &&
-          state.lastSavedData === (lastSaved || data) &&
+          state.formData === cleanData &&
+          state.lastSavedData === cleanLastSaved &&
           !state.hasUnsavedChanges
         ) {
           return;
         }
         set({
-          formData: data,
-          lastSavedData: lastSaved || data,
+          formData: cleanData,
+          lastSavedData: cleanLastSaved,
           hasUnsavedChanges: false,
           dirtyFields: new Set<string>(),
         });

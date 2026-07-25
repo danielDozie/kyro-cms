@@ -56,27 +56,74 @@ function updateFieldByPath(
   const currentPart = parts[0];
   const remainingPath = parts.slice(1).join(".");
 
+  // 1. First search for exact name match in current array
   for (const field of fields) {
     if (field.name === currentPart) {
       if (remainingPath) {
-        // Continue traversing nested fields
         if (field.fields && Array.isArray(field.fields)) {
           return updateFieldByPath(field.fields, remainingPath, updates);
         }
-        // For array fields, look in the nested fields
+
+        if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
+          for (const tab of field.tabs) {
+            if (tab.fields && Array.isArray(tab.fields)) {
+              if (updateFieldByPath(tab.fields, remainingPath, updates)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+
+        if (field.type === "blocks" && field.blocks && Array.isArray(field.blocks)) {
+          const blockSlug = remainingPath.split(".")[0];
+          const restOfPath = remainingPath.split(".").slice(1).join(".");
+          if (!restOfPath) return false;
+
+          for (const block of field.blocks) {
+            if (block.slug === blockSlug && block.fields && Array.isArray(block.fields)) {
+              return updateFieldByPath(block.fields, restOfPath, updates);
+            }
+          }
+          return false;
+        }
+
         if (field.type === "array" && field.fields && Array.isArray(field.fields)) {
           return updateFieldByPath(field.fields, remainingPath, updates);
         }
         return false;
       } else {
-        // Found the target field, apply updates
+        // Target field found! Apply updates in-place.
         Object.assign(field, updates);
         return true;
       }
     }
   }
-  
-  // Field was not found. If there is no remaining path, we can append it as a new field!
+
+  // 2. Next check flat structural wrappers (unnamed tabs, rows, collapsibles)
+  for (const field of fields) {
+    const isFlatStructuralField =
+      !field.name ||
+      field.type === "tabs" ||
+      field.type === "row" ||
+      field.type === "collapsible";
+
+    if (isFlatStructuralField) {
+      if (field.fields && Array.isArray(field.fields)) {
+        if (updateFieldByPath(field.fields, path, updates)) return true;
+      }
+      if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
+        for (const tab of field.tabs) {
+          if (tab.fields && Array.isArray(tab.fields)) {
+            if (updateFieldByPath(tab.fields, path, updates)) return true;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Field was not found anywhere in this container.
+  // If there is no remaining path, this is the terminal target container — append the new field here!
   if (!remainingPath) {
     fields.push({
       name: currentPart,
@@ -84,7 +131,7 @@ function updateFieldByPath(
     });
     return true;
   }
-  
+
   return false;
 }
 

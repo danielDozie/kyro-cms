@@ -1,6 +1,7 @@
-import type { BaseAdapter } from "../database/base.js";
-import type { Registry } from "../registry/registry.js";
+import type { BaseAdapter } from "../registry/types.js";
+import type { Registry } from "../registry/index.js";
 import type { Field } from "../fields/types.js";
+import { sanitizeDoc } from "./sanitize.js";
 
 function extractRelValue(value: any): { id: string; relationTo?: string }[] {
   if (!value) return [];
@@ -194,7 +195,8 @@ export async function populateRelationships(
   }
 
   // Inject the fetched (and potentially populated) docs back into the parent docs
-  for (const doc of docs) {
-    injectReferences(doc, fields, fetchedDocs);
+  for (let i = 0; i < docs.length; i++) {
+    injectReferences(docs[i], fields, fetchedDocs);
+    docs[i] = sanitizeDoc(docs[i]);
   }
 }

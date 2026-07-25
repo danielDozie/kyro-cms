@@ -139,7 +139,7 @@ npx kyro-codegen \
 | `--api-key` | Yes | — | API key with access to the schema endpoint |
 | `--output` | No | `kyro.generated.d.ts` | Output path |
 
-Hits `{url}/kyro/schema`, generates a complete `AppRouter` interface plus per-collection document types, input types, and discriminated unions for blocks and enums.
+Hits `{url}/kyro/schema`, generates a complete `KyroAppRouter` interface plus per-collection document types, input types, and discriminated unions for blocks and enums.
 
 ## `kyro graphql:print-schema`
 

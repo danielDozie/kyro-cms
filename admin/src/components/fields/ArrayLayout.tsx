@@ -2,6 +2,7 @@ import React from "react";
 import type { Field } from "@kyro-cms/core/client";
 import RelationshipField from "./RelationshipField";
 import { ChevronDown, ChevronUp, GripVertical } from "../ui/icons";
+import { apiGet } from "../../lib/api";
 import {
   DndContext,
   closestCenter,
@@ -19,6 +20,32 @@ import { CSS } from "@dnd-kit/utilities";
 import { useTranslation } from "react-i18next";
 
 const SIMPLE_TYPES = new Set(["text", "number", "checkbox", "select", "radio", "color", "email", "password"]);
+
+function extractLabelFromObj(obj: unknown): string | null {
+  if (!obj || typeof obj !== "object") return null;
+  const o = obj as Record<string, unknown>;
+  const tabs = o.tabs as Record<string, unknown> | undefined;
+  const label =
+    (o.title as string) ||
+    (tabs?.title as string) ||
+    (o.name as string) ||
+    (o.label as string) ||
+    (o.email as string) ||
+    (o.filename as string) ||
+    (o.slug as string);
+  if (label && typeof label === "string") return label;
+  if (o.value && typeof o.value === "object") return extractLabelFromObj(o.value);
+  if (o.doc && typeof o.doc === "object") return extractLabelFromObj(o.doc);
+  return null;
+}
+
+function getFallbackLabel(field: Field, index: number): string {
+  const rawLabel = field.label || field.name || "Item";
+  if (/item$/i.test(rawLabel.trim())) {
+    return `${rawLabel} ${index + 1}`;
+  }
+  return `${rawLabel} Item ${index + 1}`;
+}
 
 interface ArrayLayoutProps {
   field: Field;
@@ -148,7 +175,7 @@ function SortableArrayItem({
         
         <div className="flex-1 min-w-0">
           <span className="text-xs font-medium text-[var(--kyro-text-primary)] truncate block">
-            {getItemLabel(item) || `${field.label || field.name} Item`}
+            {getItemLabel(item) || getFallbackLabel(field, index)}
           </span>
         </div>
 
@@ -197,11 +224,13 @@ export function ArrayLayout({
   disabled,
 }: ArrayLayoutProps) {
   const items = (Array.isArray(value) ? value : []) as Record<string, unknown>[];
-  const fields = (field as Field & { fields?: { name?: string; type?: string; relationTo?: string; label?: string }[] }).fields || [];
+  const fields = (field as Field & { fields?: { name?: string; type?: string; relationTo?: string | string[]; label?: string }[] }).fields || [];
   const firstField = fields[0];
   const labelField = firstField?.name || "user";
   const isRelationship = firstField?.type === "relationship";
   const [openIndex, setOpenIndex] = React.useState<number | null>(0);
+  const [relLabels, setRelLabels] = React.useState<Record<string, string>>({});
+  const fetchedRelIds = React.useRef<Set<string>>(new Set());
 
   // Sync stable IDs and heal bad data
   React.useEffect(() => {
@@ -229,27 +258,117 @@ export function ArrayLayout({
     }
   }, [value, onChange]);
 
+  React.useEffect(() => {
+    const fieldsTyped = (field as Field & { fields?: Field[] }).fields || [];
+    items.forEach((item) => {
+      if (!item || typeof item !== "object") return;
+      fieldsTyped.forEach((f) => {
+        if (f.type === "relationship" && f.name) {
+          const val = item[f.name];
+          if (!val) return;
+
+          let id = "";
+          let rel = Array.isArray(f.relationTo) ? f.relationTo[0] : f.relationTo;
+
+          if (typeof val === "string") {
+            id = val;
+          } else if (typeof val === "object" && val !== null) {
+            const vObj = val as Record<string, unknown>;
+            if (vObj.relationTo && typeof vObj.relationTo === "string") {
+              rel = vObj.relationTo;
+            }
+            if (vObj.id && typeof vObj.id === "string") {
+              id = vObj.id;
+            } else if (vObj.value && typeof vObj.value === "string") {
+              id = vObj.value;
+            }
+          }
+
+          if (id && rel && !fetchedRelIds.current.has(id)) {
+            fetchedRelIds.current.add(id);
+            apiGet<Record<string, unknown>>(`/api/${rel}/${id}`)
+              .then((res) => {
+                const doc = (res as any)?.data || res;
+                const label = extractLabelFromObj(doc);
+                if (label) {
+                  setRelLabels((prev) => ({ ...prev, [id]: label }));
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      });
+    });
+  }, [items, field]);
+
   function getItemLabel(item: Record<string, unknown>): string {
-    for (const key of ["label", "title", "name"]) {
+    for (const key of ["label", "title", "name", "externalUrl", "url"]) {
       const val = item[key];
-      if (val && typeof val === "string") return val;
+      if (val && typeof val === "string" && val.trim() !== "") return val;
     }
-    const fieldsTyped = fields as Field[];
+
+    const fieldsTyped = (field as Field & { fields?: Field[] }).fields || [];
+    const DISCRIMINATOR_NAMES = new Set(["linkType", "type", "blockType", "kind", "mode"]);
+
     for (const f of fieldsTyped) {
+      if (!f.name) continue;
+      const val = item[f.name];
+      if (!val) continue;
+
       if (f.type === "text" || f.type === "textarea") {
-        const val = item[f.name!];
-        if (val && typeof val === "string") return val;
+        if (typeof val === "string" && val.trim() !== "") return val;
       }
+
+      if (f.type === "select" && !DISCRIMINATOR_NAMES.has(f.name)) {
+        if (typeof val === "string" && val.trim() !== "") return val;
+      }
+
+      if (f.type === "relationship") {
+        const directLabel = extractLabelFromObj(val);
+        if (directLabel) return directLabel;
+
+        let id = "";
+        if (typeof val === "string") {
+          id = val;
+        } else if (typeof val === "object" && val !== null) {
+          const vObj = val as Record<string, unknown>;
+          if (vObj.id && typeof vObj.id === "string") id = vObj.id;
+          else if (vObj.value && typeof vObj.value === "string") id = vObj.value;
+        }
+        if (id && relLabels[id]) {
+          return relLabels[id];
+        }
+      }
+
       if (f.type === "group" && (f as Field & { fields?: Field[] }).fields) {
-        for (const inner of (f as Field & { fields?: Field[] }).fields || []) {
-          if (inner.type === "text" || inner.type === "textarea") {
-            const group = item[f.name!] as Record<string, unknown> | undefined;
-            const val = group?.[inner.name!];
-            if (val && typeof val === "string") return val;
+        const groupObj = val as Record<string, unknown> | undefined;
+        if (groupObj && typeof groupObj === "object") {
+          for (const inner of (f as Field & { fields?: Field[] }).fields || []) {
+            if (!inner.name) continue;
+            const innerVal = groupObj[inner.name];
+            if (inner.type === "text" || inner.type === "textarea") {
+              if (typeof innerVal === "string" && innerVal.trim() !== "") return innerVal;
+            }
+            if (inner.type === "select" && !DISCRIMINATOR_NAMES.has(inner.name)) {
+              if (typeof innerVal === "string" && innerVal.trim() !== "") return innerVal;
+            }
+            if (inner.type === "relationship") {
+              const directLabel = extractLabelFromObj(innerVal);
+              if (directLabel) return directLabel;
+              let id = "";
+              if (typeof innerVal === "string") id = innerVal;
+              else if (typeof innerVal === "object" && innerVal !== null) {
+                const vObj = innerVal as Record<string, unknown>;
+                if (vObj.id && typeof vObj.id === "string") id = vObj.id;
+                else if (vObj.value && typeof vObj.value === "string") id = vObj.value;
+              }
+              if (id && relLabels[id]) return relLabels[id];
+            }
           }
         }
       }
     }
+
     return "";
   }
 

@@ -150,7 +150,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
           ];
           for (const col of (configResult.collections || [])) {
             if (col.seo) {
-              const tabsField = col.fields?.find((f: any) => f.type === 'tabs' && f.name === 'tabs');
+              const tabsField = col.fields?.find((f: any) => f.type === 'tabs');
               if (tabsField?.tabs) {
                 // Only add if not already injected (avoid duplicates on hot-reload)
                 if (!tabsField.tabs.find((t: any) => t.label === 'SEO Settings')) {
@@ -258,6 +258,7 @@ export default debug;
               alias: {
                 "kyro:config": resolvedConfig,
               },
+              dedupe: ["react", "react-dom"],
             },
             optimizeDeps: {
               include: [

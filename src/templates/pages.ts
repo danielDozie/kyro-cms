@@ -22,7 +22,6 @@ export const pageCollection: CollectionConfig = {
       admin: { position: "sidebar", autoGenerate: "title" },
     },
     {
-      name: "tabs",
       type: "tabs",
       tabs: [
         {

@@ -12,7 +12,8 @@ import type {
 } from "../../auth/security/audit-log.js";
 
 export interface MongoDBAuthAdapterOptions {
-  db: any | (() => any);
+  db?: any | (() => any);
+  adapter?: any;
   collectionPrefix?: string;
   sessionTTL?: number;
   refreshTokenTTL?: number;
@@ -20,6 +21,7 @@ export interface MongoDBAuthAdapterOptions {
 
 export class MongoDBAuthAdapter implements AuthAdapter {
   private db: any;
+  private adapter: any;
   private prefix: string;
   private sessionTTL: number;
   private refreshTokenTTL: number;
@@ -27,19 +29,24 @@ export class MongoDBAuthAdapter implements AuthAdapter {
 
   constructor(options: MongoDBAuthAdapterOptions) {
     this.db = options.db;
+    this.adapter = options.adapter;
     this.prefix = options.collectionPrefix || "";
     this.sessionTTL = options.sessionTTL || 86400;
     this.refreshTokenTTL = options.refreshTokenTTL || 604800;
   }
 
   private getDatabase(): any {
-    if (typeof this.db === 'function') {
-      const resolved = this.db();
-      if (!resolved) throw new Error("MongoDB database not initialized");
-      return resolved;
+    let resolved = typeof this.db === 'function' ? this.db() : this.db;
+    if (!resolved && this.adapter) {
+      if (this.adapter.db) {
+        resolved = this.adapter.db;
+      } else if (this.adapter.client) {
+        this.adapter.db = this.adapter.client.db(this.adapter.database || "kyro_cms");
+        resolved = this.adapter.db;
+      }
     }
-    if (!this.db) throw new Error("MongoDB database not initialized");
-    return this.db;
+    if (!resolved) throw new Error("MongoDB database not initialized");
+    return resolved;
   }
 
   private col(name: string): any {

@@ -282,6 +282,8 @@ export {
   seedDefaultRoles,
   type Dialect,
 } from "./database/drizzle/index.js";
+export { NeonAdapter, createNeonAdapter, type NeonAdapterOptions } from "./database/neon.js";
+export { TursoAdapter, createTursoAdapter, type TursoAdapterOptions } from "./database/turso.js";
 
 // Media Service
 export { MediaService } from "./storage/MediaService.js";
@@ -394,4 +396,6 @@ export { kyroAuthMiddleware, type KyroAuthMiddlewareOptions } from "./middleware
 export { generateKyroAstroTypes } from "./typegen.js";
 export { kyroEnvSchema, type KyroEnvSchemaOptions } from "./env.js";
 export { kyroDevToolbarIntegration, type KyroDevToolbarOptions } from "./integrations/dev-toolbar.js";
+export { isEdgeRuntime } from "./utils/runtime.js";
+
 

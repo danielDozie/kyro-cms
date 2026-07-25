@@ -159,6 +159,24 @@ admin: {
   styling: {
     css: ":root { --kyro-primary: #6366f1; }",
   },
+  collectionOverrides: {
+    pages: {
+      fields: {
+        // Dynamic content / block field path syntax: "<blocksField>.<blockSlug>.<fieldInBlock>"
+        "content.recentFeed.selectedItems": {
+          relationTo: ["posts", "food-menu", "food-menu-category"],
+        },
+      },
+    },
+    menu: {
+      fields: {
+        // Group -> Array -> Relationship field path syntax
+        "menu.menuItem.internalTarget": {
+          relationTo: ["pages", "posts", "food-menu-category"],
+        },
+      },
+    },
+  },
 }
 ```
 

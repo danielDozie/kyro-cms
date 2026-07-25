@@ -3,7 +3,7 @@ title: Rich Text React Renderer
 description: Learn how to render Kyro CMS rich text JSON content into React components using kyro-rich-text-react.
 ---
 
-# kyro-rich-text-react
+# `@kyro-cms/kyro-rich-text-react`
 
 A lightweight, headless React renderer for [Kyro CMS](https://kyro.dev) rich text content.
 

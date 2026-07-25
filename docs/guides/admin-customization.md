@@ -367,8 +367,8 @@ export default defineConfig({
     collectionOverrides: {
       menu: {
         fields: {
+          // Add your custom collections here
           "menu.menuItem.internalTarget": {
-            // Add your custom collections here
             relationTo: ["pages", "posts", "trips", "destinations", "services"]
           }
         }
@@ -377,6 +377,55 @@ export default defineConfig({
   }
 });
 ```
+
+### Overriding Dynamic Content & Blocks Fields (Page Builder)
+
+In collections like `pages` that use a dynamic **Blocks Field** (e.g. `content`), you can extend or override relationship targets and properties for fields inside specific blocks using dot-notation:
+
+`"<blocksFieldName>.<blockSlug>.<fieldInBlock>"`
+
+#### Example: Extending Recent Feed Block Relationships in Pages
+
+If your `pages` collection has a dynamic `content` blocks field containing a `recentFeed` block, you can extend the `selectedItems` relationship field to link to custom collections (such as food menus, categories, or options):
+
+```typescript
+// kyro.config.ts
+import { defineConfig } from "@kyro-cms/core";
+
+export default defineConfig({
+  admin: {
+    collectionOverrides: {
+      pages: {
+        fields: {
+          // Path: blocks field "content" -> block "recentFeed" -> field "selectedItems"
+          "content.recentFeed.selectedItems": {
+            relationTo: [
+              "posts",
+              "food-menu",
+              "food-menu-category",
+              "menu-option-category",
+              "menu-options"
+            ]
+          }
+        }
+      },
+      menu: {
+        fields: {
+          // Path: group field "menu" -> array field "menuItem" -> field "internalTarget"
+          "menu.menuItem.internalTarget": {
+            relationTo: ["pages", "posts", "food-menu-category"]
+          }
+        }
+      }
+    }
+  }
+});
+```
+
+#### How Block Path Navigation Works:
+1. `content`: The root `blocks` field name on the collection.
+2. `recentFeed`: The specific block slug defined inside the blocks field.
+3. `selectedItems`: The target field name inside that block.
 
 ### Supported Field Overrides
 

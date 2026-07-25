@@ -75,6 +75,4 @@ The following providers are built in:
 When a storage provider is configured:
 - New uploads are streamed directly to the provider
 - Existing files remain at their original location
-- Public URLs are generated based on the provider's CDN or bucket URL
 
-> [!NOTE] v0.9.3 fixed Imgix HMAC signing to use crypto.createHmac("sha256") and S3 storage to use static ESM imports.

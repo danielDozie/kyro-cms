@@ -1,0 +1,30 @@
+---
+/**
+ * Pure Astro Media Component for Kyro CMS.
+ * Wraps Kyro Media object into responsive image element.
+ */
+interface Props {
+  src: string | { url: string; alt?: string; width?: number; height?: number };
+  alt?: string;
+  width?: number;
+  height?: number;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+}
+
+const { src, alt: altProp, width: widthProp, height: heightProp, class: className = '', loading = 'lazy' } = Astro.props;
+
+const imageUrl = typeof src === 'string' ? src : src.url;
+const altText = altProp || (typeof src === 'object' ? src.alt : '') || '';
+const imgWidth = widthProp || (typeof src === 'object' ? src.width : undefined);
+const imgHeight = heightProp || (typeof src === 'object' ? src.height : undefined);
+---
+
+<img
+  src={imageUrl}
+  alt={altText}
+  width={imgWidth}
+  height={imgHeight}
+  loading={loading}
+  class={`kyro-image ${className}`}
+/>

@@ -1,5 +1,6 @@
 import { autoInstall } from "../../utils/auto-install.js";
 import { AbstractBaseAdapter } from '../base.js';
+import { sanitizeDoc } from "../../utils/sanitize.js";
 import { sql, eq, and, or, desc, ne, inArray, like, gt, gte, lt, lte } from 'drizzle-orm';
 import {
   pgTable,
@@ -29,6 +30,7 @@ import type {
   FindResult,
   VersionRecord,
   CreateVersionArgs,
+  FindOneArgs,
 } from '../../registry/types.js';
 import type { Field, RelationshipField } from '../../fields/types.js';
 import type { TenantContext } from '../../auth/rls/tenant.js';
@@ -888,7 +890,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
   }
 
-  async findOne(args: { collection: string; where: Record<string, any>; tenantId?: string; draft?: boolean }): Promise<any> {
+  async findOne(args: FindOneArgs): Promise<any> {
     const { collection: slug, where = {}, tenantId, draft } = args;
     
     // Check if it's a Global
@@ -1168,6 +1170,13 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
 
     const result = { ...data };
 
+    // Strip numeric string index keys if a string ID was previously spread into document properties
+    for (const key of Object.keys(result)) {
+      if (/^\d+$/.test(key)) {
+        delete result[key];
+      }
+    }
+
     // Convert id field
     if (data.id) {
       result.id = String(data.id);
@@ -1274,7 +1283,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       result.updatedAt = new Date(result.updatedAt).toISOString();
     }
 
-    return result;
+    return sanitizeDoc(result);
   }
 
   private async ensureVersionsTable(): Promise<void> {

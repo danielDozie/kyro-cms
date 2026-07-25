@@ -447,9 +447,17 @@ const persistBrowserDraft = useCallback(
     const titleStr = titleValue ? String(titleValue) : "";
 
     if (titleStr && (!formData.metaTitle || formData.metaTitle === formData._lastMetaTitle)) {
-      setField("metaTitle", titleStr);
+      if (formData.metaTitle !== titleStr) {
+        useAutoFormStore.setState((state) => ({
+          formData: {
+            ...state.formData,
+            metaTitle: titleStr,
+            _lastMetaTitle: titleStr,
+          },
+        }));
+      }
     }
-  }, [formData, config?.fields, setField]);
+  }, [formData.title, config?.fields]);
 
   interface FieldConfig {
     name?: string;
@@ -471,13 +479,18 @@ const persistBrowserDraft = useCallback(
 
     const sourceValue = resolveFieldValue(fields, formData, sourceField);
 
-    if (isSlugLocked && typeof sourceValue === "string") {
+    if (isSlugLocked && typeof sourceValue === "string" && sourceValue) {
       const newSlug = slugifyText(sourceValue);
-      if (newSlug !== formData.slug) {
-        setField("slug", newSlug);
+      if (newSlug && newSlug !== formData.slug) {
+        useAutoFormStore.setState((state) => ({
+          formData: {
+            ...state.formData,
+            slug: newSlug,
+          },
+        }));
       }
     }
-  }, [formData, isSlugLocked, config?.fields, setField]);
+  }, [formData.title, isSlugLocked, config?.fields]);
 
   // Auto-save effect — only starts timers on keystroke-originated changes.
   // Local save fires after 1.5s of inactivity, server save after 8s.

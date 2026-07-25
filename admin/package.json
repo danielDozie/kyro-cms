@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/admin",
-  "version": "0.12.16",
+  "version": "0.12.17",
   "engines": {
     "node": ">=22"
   },
@@ -82,7 +82,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@graphiql/react": "^0.37.3",
-    "@kyro-cms/core": "workspace:*",
+    "@kyro-cms/astro": "0.12.17",
+    "@kyro-cms/core": "0.12.17",
     "@tailwindcss/vite": "^4.0.0",
     "@tiptap/extension-color": "^3.23.6",
     "@tiptap/extension-highlight": "^3.23.6",
@@ -133,7 +134,7 @@
     "vitest": "^4.1.4"
   },
   "peerDependencies": {
-    "@kyro-cms/core": "workspace:*",
+    "@kyro-cms/core": "0.12.17",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -22,9 +22,9 @@ Fetches your CMS schema and generates `kyro.generated.d.ts` with full type defin
 
 ```ts
 import { createClient } from "kyro-connect";
-import type { AppRouter } from "./kyro.generated";
+import type { KyroAppRouter } from "./kyro.generated";
 
-const api = createClient<AppRouter>({
+const api = createClient<KyroAppRouter>({
   url: "http://localhost:4321/api/trpc",
   apiKey: "kyro_xxx",
 });
@@ -45,7 +45,7 @@ All three calling patterns are supported and interchangeable:
 - `api["posts"].create.mutate(input)` — explicit mutation (for writes)
 
 ```ts
-const api = createClient<AppRouter>({
+const api = createClient<KyroAppRouter>({
   url: "http://localhost:4321/api/trpc",
   apiKey: "kyro_xxx",
   fetch: globalThis.fetch,
@@ -61,11 +61,31 @@ const api = createClient<AppRouter>({
 #### Using environment variables
 
 ```ts
-const api = createClient<AppRouter>({
+const api = createClient<KyroAppRouter>({
   url: process.env.KYRO_API_URL!,
   apiKey: process.env.KYRO_API_KEY!,
 });
 ```
+
+#### Automatic URL Resolution & Routing
+
+`createClient` automatically normalizes `url` (whether root `http://localhost:4321`, `/api`, or `/api/trpc`):
+- **Typed Router Procedures** (`api["posts"].find()`): Routes to `${rootUrl}/api/trpc/posts.find`
+- **REST Collections** (`api.collection("posts")`): Routes to `${rootUrl}/api/posts`
+- **Globals** (`api.global("settings")`): Routes to `${rootUrl}/api/globals/settings`
+- **GraphQL** (`api.gql(...)`): Routes to `${rootUrl}/api/graphql`
+
+---
+
+### Typed Router API vs. REST Collection API
+
+| Feature | Typed Router API (`api["posts"]`) | REST Collection API (`api.collection("posts")`) |
+|---|---|---|
+| **Endpoint** | `/api/trpc/{collection}.{method}` | `/api/{collection}` |
+| **Type Safety** | Complete autocompletion via `KyroAppRouter` | Auto-populated via `KyroAppRouter` OR explicit `<T>` |
+| **Slug Source** | Static compile-time keys | Autocompleted string slugs or dynamic runtime strings |
+| **Codegen Required** | Yes (`kyro-codegen`) | Optional |
+| **Best For** | Strongly-typed app frontends & component data | RESTful endpoints, dynamic routing & generic utility functions |
 
 #### Query procedures (GET)
 
@@ -152,7 +172,7 @@ Running codegen produces `kyro.generated.d.ts` containing:
 - **Doc types** — TypeScript interfaces for each collection and global, derived from field definitions
 - **Input types** — typed inputs for every procedure (`PostsFindInput`, `PostsCreateInput`, etc.)
 - **Output types** — typed outputs for every procedure (`PostsFindOutput`, etc.)
-- **AppRouter** — mapped type linking all collection/global procedures to their input/output types
+- **KyroAppRouter** — mapped type linking all collection/global procedures to their input/output types
 
 ### Without codegen
 

@@ -63,14 +63,69 @@ export interface GlobalClient<T> {
   update(data: Partial<T>, params?: { draft?: boolean; depth?: number }): Promise<T>;
 }
 
+export type InferDocFromRouter<TRouter, K> = K extends keyof TRouter
+  ? TRouter[K] extends { findByID: { output: infer Doc } }
+    ? Doc
+    : TRouter[K] extends { find: { output: { docs: Array<infer Doc> } } }
+      ? Doc
+      : any
+  : any;
+
+export type InferFindInputFromRouter<TRouter, K> = K extends keyof TRouter
+  ? TRouter[K] extends { find: { input: infer FindInput } }
+    ? FindInput
+    : CollectionFindParams
+  : CollectionFindParams;
+
+export type InferGlobalFromRouter<TRouter, K> = K extends keyof TRouter
+  ? TRouter[K] extends { get: { output: infer Doc } }
+    ? Doc
+    : any
+  : any;
+
+export type CollectionGetter<TRouter> = {
+  <K extends keyof TRouter & string>(
+    slug: K
+  ): CollectionClient<
+    InferDocFromRouter<TRouter, K>,
+    InferFindInputFromRouter<TRouter, K>
+  >;
+  <T = any, F = CollectionFindParams>(
+    slug: string & {}
+  ): CollectionClient<T, F>;
+};
+
+export type GlobalGetter<TRouter> = {
+  <K extends keyof TRouter & string>(
+    slug: K
+  ): GlobalClient<InferGlobalFromRouter<TRouter, K>>;
+  <T = any>(
+    slug: string & {}
+  ): GlobalClient<T>;
+};
+
 export type KyroClient<TRouter> = RouterClient<TRouter> & {
-  collection: <T, F = CollectionFindParams>(slug: string) => CollectionClient<T, F>;
-  global: <T>(slug: string) => GlobalClient<T>;
+  collection: CollectionGetter<TRouter>;
+  global: GlobalGetter<TRouter>;
   gql: GqlClient;
   upload: UploadClient;
 };
 
 const MUTATIONS = new Set(["create", "update", "delete", "mutate"]);
+
+function sanitizeDoc<T = any>(input: T): T {
+  if (input === null || input === undefined) return input;
+  if (Array.isArray(input)) return input.map((item) => sanitizeDoc(item)) as unknown as T;
+  if (typeof input === "object" && !(input instanceof Date) && !(input instanceof RegExp)) {
+    const cleaned: Record<string, any> = {};
+    for (const key of Object.keys(input)) {
+      if (/^\d+$/.test(key)) continue;
+      cleaned[key] = sanitizeDoc((input as any)[key]);
+    }
+    return cleaned as T;
+  }
+  return input;
+}
 
 async function handleResponse<T = unknown>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -84,10 +139,11 @@ async function handleResponse<T = unknown>(res: Response): Promise<T> {
     throw new KyroConnectError(message, res.status, body);
   }
   const body: unknown = await res.json();
-  if (body && typeof body === "object" && "result" in body) {
-    return (body as { result: { data: T } }).result.data;
+  const cleaned = sanitizeDoc(body);
+  if (cleaned && typeof cleaned === "object" && "result" in cleaned) {
+    return (cleaned as { result: { data: T } }).result.data;
   }
-  return body as T;
+  return cleaned as T;
 }
 
 function buildSearchParams(params?: Record<string, unknown>): string {
@@ -102,10 +158,13 @@ function buildSearchParams(params?: Record<string, unknown>): string {
   return qs ? `?${qs}` : "";
 }
 
-export function createClient<TRouter extends Record<string, unknown> = Record<string, unknown>>(
+export function createClient<TRouter = Record<string, unknown>>(
   opts: ClientOptions,
 ): KyroClient<TRouter> {
-  const baseUrl = opts.url.replace(/\/$/, "");
+  const cleanUrl = opts.url.replace(/\/$/, "");
+  const rootUrl = cleanUrl.replace(/\/(api\/trpc|api|trpc)$/, "");
+  const trpcUrl = `${rootUrl}/api/trpc`;
+  const restUrl = `${rootUrl}/api`;
   const doFetch = opts.fetch ?? globalThis.fetch;
 
   function headers(extra?: Record<string, string>): Record<string, string> {
@@ -121,7 +180,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
     const isMutation = MUTATIONS.has(name);
 
     if (isMutation) {
-      return doFetch(`${baseUrl}/${pathStr}`, {
+      return doFetch(`${trpcUrl}/${pathStr}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...headers() },
         body: JSON.stringify(input),
@@ -129,7 +188,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
     }
 
     const qs = encodeURIComponent(JSON.stringify(input));
-    return doFetch(`${baseUrl}/${pathStr}?input=${qs}`, {
+    return doFetch(`${trpcUrl}/${pathStr}?input=${qs}`, {
       method: "GET",
       headers: headers(),
     }).then((res) => handleResponse<O>(res));
@@ -151,14 +210,14 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
 
   const collection = <T, F = CollectionFindParams>(slug: string): CollectionClient<T, F> => ({
     async find(params) {
-      const res = await doFetch(`${baseUrl}/api/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
+      const res = await doFetch(`${restUrl}/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
         method: "GET",
         headers: headers(),
       });
       return handleResponse<CollectionFindResult<T>>(res);
     },
     async findByID(id, params) {
-      const res = await doFetch(`${baseUrl}/api/${slug}/${id}${buildSearchParams(params as Record<string, unknown>)}`, {
+      const res = await doFetch(`${restUrl}/${slug}/${id}${buildSearchParams(params as Record<string, unknown>)}`, {
         method: "GET",
         headers: headers(),
       });
@@ -166,7 +225,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
       return body?.data ?? (body as unknown as T | null);
     },
     async create(data, params) {
-      const res = await doFetch(`${baseUrl}/api/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
+      const res = await doFetch(`${restUrl}/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...headers() },
         body: JSON.stringify(data),
@@ -175,7 +234,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
       return body?.data ?? (body as T);
     },
     async update(id, data, params) {
-      const res = await doFetch(`${baseUrl}/api/${slug}/${id}${buildSearchParams(params as Record<string, unknown>)}`, {
+      const res = await doFetch(`${restUrl}/${slug}/${id}${buildSearchParams(params as Record<string, unknown>)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...headers() },
         body: JSON.stringify(data),
@@ -184,7 +243,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
       return body?.data ?? (body as T);
     },
     async delete(id) {
-      const res = await doFetch(`${baseUrl}/api/${slug}/${id}`, {
+      const res = await doFetch(`${restUrl}/${slug}/${id}`, {
         method: "DELETE",
         headers: headers(),
       });
@@ -194,7 +253,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
 
   const global = <T>(slug: string): GlobalClient<T> => ({
     async get(params) {
-      const res = await doFetch(`${baseUrl}/api/globals/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
+      const res = await doFetch(`${restUrl}/globals/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
         method: "GET",
         headers: headers(),
       });
@@ -202,7 +261,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
       return body?.data ?? (body as unknown as T | null);
     },
     async update(data, params) {
-      const res = await doFetch(`${baseUrl}/api/globals/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
+      const res = await doFetch(`${restUrl}/globals/${slug}${buildSearchParams(params as Record<string, unknown>)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...headers() },
         body: JSON.stringify(data),
@@ -217,7 +276,7 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
     variables?: TVars,
   ): Promise<TData> => {
     const queryStr = typeof query === "string" ? query : query.toString();
-    const res = await doFetch(`${baseUrl}/api/graphql`, {
+    const res = await doFetch(`${restUrl}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers() },
       body: JSON.stringify({ query: queryStr, variables }),
@@ -236,7 +295,8 @@ export function createClient<TRouter extends Record<string, unknown> = Record<st
   ): Promise<TResult> => {
     const formData = new FormData();
     formData.append("file", file, filename);
-    const res = await doFetch(`${baseUrl}${url}`, {
+    const targetUrl = url.startsWith("http") ? url : `${rootUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+    const res = await doFetch(targetUrl, {
       method: "POST",
       headers: headers(),
       body: formData,

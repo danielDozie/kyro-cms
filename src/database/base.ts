@@ -11,7 +11,24 @@ import type {
   VersionRecord,
   CreateVersionArgs,
   FindVersionsArgs,
+  FindOneArgs,
 } from '../registry/types.js';
+
+export type {
+  BaseAdapter,
+  CollectionConfig,
+  GlobalConfig,
+  FindArgs,
+  FindByIDArgs,
+  CreateArgs,
+  UpdateArgs,
+  DeleteArgs,
+  FindResult,
+  VersionRecord,
+  CreateVersionArgs,
+  FindVersionsArgs,
+  FindOneArgs,
+};
 import type { Field, RelationshipField, UploadField } from '../fields/types.js';
 import type { TenantContext } from '../auth/rls/tenant.js';
 
@@ -53,7 +70,7 @@ export abstract class AbstractBaseAdapter implements BaseAdapter {
   abstract delete<T>(args: DeleteArgs): Promise<T>;
   abstract count(args: { collection: string; where?: Record<string, any>; tenantId?: string }): Promise<number>;
 
-  abstract findOne(args: { collection: string; where: Record<string, any>; tenantId?: string; draft?: boolean }): Promise<any>;
+  abstract findOne(args: FindOneArgs): Promise<any>;
 
   abstract findVersions(args: FindVersionsArgs): Promise<FindResult<VersionRecord>>;
   abstract findVersionByID(args: { collection: string; versionId: string; tenantId?: string }): Promise<VersionRecord | null>;

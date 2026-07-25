@@ -188,13 +188,13 @@ export function generateDTS(schema: any): string {
     lines.push("");
 
     routerEntries.push(`    "_globals_${slug}": {`);
-    routerEntries.push(`      get: { input: Record<string, never>; output: ${name} };`);
+    routerEntries.push(`      get: { input?: { depth?: number; draft?: boolean; select?: string[] }; output: ${name} };`);
     routerEntries.push(`      update: { input: { data: Partial<${name}> }; output: ${name} };`);
     routerEntries.push(`    };`);
   }
 
-  // AppRouter
-  lines.push("export interface AppRouter {");
+  // KyroAppRouter
+  lines.push("export interface KyroAppRouter extends Record<string, unknown> {");
   lines.push(routerEntries.join("\n"));
   lines.push("}");
   lines.push("");

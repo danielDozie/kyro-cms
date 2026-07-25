@@ -110,8 +110,11 @@ Kyro preserves Astro compatibility with two entrypoints:
 ### Companion Packages
 
 Kyro is designed as a modular ecosystem:
-- `kyro-connect` — Universal, type-safe API client and codegen for any framework.
-- `kyro-rich-text-react` — A headless React component for rendering Kyro's Richtext JSON content.
+- `@kyro-cms/astro` — Astro 5+ & 7+ integration, Content Layer loaders, Astro Dev Toolbar widget, and Zero-JS UI components.
+- `@kyro-cms/admin` — Auto-generated React admin dashboard with media manager, auth, RBAC, and draft workflows.
+- `@kyro-cms/connect` — Universal, type-safe API client and codegen for any framework.
+- `@kyro-cms/ai` — Vercel AI SDK integration for automated content generation and AI admin assistance.
+- `@kyro-cms/rich-text-react` — Headless React renderer for Kyro RichText content schemas.
 ---
 
 ## Example usage

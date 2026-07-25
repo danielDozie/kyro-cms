@@ -53,7 +53,11 @@ export function TabsLayout({
       </div>
       <div className="space-y-6">
         {currentTab?.fields.map((f: Field) =>
-          renderField(f, tabData, onTabDataChange),
+          renderField(
+            f,
+            field.name ? tabData : formData,
+            field.name ? onTabDataChange : undefined as any,
+          ),
         )}
       </div>
 

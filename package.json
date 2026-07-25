@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.12.16",
+  "version": "0.12.17",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
@@ -137,6 +137,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/database/drizzle/seed.ts",
+    "migrate:tabs": "node scripts/flatten-tabs.mjs",
     "docs:dev": "pnpm --filter @kyro-cms/docs dev",
     "docs:build": "pnpm --filter @kyro-cms/docs build",
     "publish:packages": "node scripts/publish.js",
@@ -173,7 +174,7 @@
     "@ai-sdk/openai": "^0.0.14",
     "@aws-sdk/client-s3": "^3.751.0",
     "@aws-sdk/s3-request-presigner": "^3.751.0",
-    "@kyro-cms/ai": "workspace:*",
+    "@kyro-cms/ai": "0.12.17",
     "@smithy/node-http-handler": "^4.7.0",
     "@tiptap/core": "^3.23.6",
     "@tiptap/extension-color": "^3.23.6",

@@ -1,0 +1,80 @@
+{
+  "name": "@kyro-cms/astro",
+  "version": "0.12.17",
+  "description": "Astro 5+ integration, Content Layer loaders, Actions, Middleware, Dev Toolbar widget, and Zero-JS components for Kyro CMS",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./loader": {
+      "types": "./dist/loader.d.ts",
+      "import": "./dist/loader.js",
+      "require": "./dist/loader.cjs"
+    },
+    "./actions": {
+      "types": "./dist/actions.d.ts",
+      "import": "./dist/actions.js",
+      "require": "./dist/actions.cjs"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.js",
+      "require": "./dist/middleware.cjs"
+    },
+    "./dev-toolbar": {
+      "types": "./dist/dev-toolbar.d.ts",
+      "import": "./dist/dev-toolbar.js",
+      "require": "./dist/dev-toolbar.cjs"
+    },
+    "./dev-toolbar-app": {
+      "types": "./dist/dev-toolbar-app.d.ts",
+      "import": "./dist/dev-toolbar-app.js",
+      "require": "./dist/dev-toolbar-app.cjs"
+    },
+    "./components/KyroImage.astro": "./components/KyroImage.astro",
+    "./components/KyroRichText.astro": "./components/KyroRichText.astro",
+    "./components/KyroServerIsland.astro": "./components/KyroServerIsland.astro"
+  },
+  "files": [
+    "dist",
+    "components"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "prepublishOnly": "pnpm build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danielDozie/kyro-cms"
+  },
+  "keywords": [
+    "kyro",
+    "cms",
+    "astro",
+    "astro-integration",
+    "content-layer",
+    "zero-js"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@kyro-cms/core": "0.12.17",
+    "astro": "^5.0.0"
+  },
+  "devDependencies": {
+    "@kyro-cms/core": "0.12.17",
+    "astro": "^5.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

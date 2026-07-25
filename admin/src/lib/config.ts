@@ -98,7 +98,7 @@ function updateFieldByPath(
         if (field.fields && Array.isArray(field.fields)) {
           return updateFieldByPath(field.fields, remainingPath, updates);
         }
-        
+
         // For tabs fields, traverse into all tabs
         if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
           for (const tab of field.tabs) {
@@ -116,7 +116,7 @@ function updateFieldByPath(
           const blockSlug = remainingPath.split(".")[0];
           const restOfPath = remainingPath.split(".").slice(1).join(".");
           if (!restOfPath) return false;
-          
+
           for (const block of field.blocks) {
             if (block.slug === blockSlug && block.fields && Array.isArray(block.fields)) {
               return updateFieldByPath(block.fields, restOfPath, updates);
@@ -124,7 +124,7 @@ function updateFieldByPath(
           }
           return false;
         }
-        
+
         // For array fields, look in the nested fields
         if (field.type === "array" && field.fields && Array.isArray(field.fields)) {
           return updateFieldByPath(field.fields, remainingPath, updates);
@@ -136,9 +136,10 @@ function updateFieldByPath(
         return true;
       }
     }
-    
-    // If it's a structural field (like tabs, row, or collapsible) that we should pass through implicitly,
-    // we must traverse it even if it has a name, because these fields do not create nested data objects.
+  }
+
+  // Pass through structural flat wrappers (unnamed tabs, rows, collapsibles)
+  for (const field of fields) {
     const isFlatStructuralField =
       !field.name ||
       field.type === "tabs" ||
@@ -158,6 +159,17 @@ function updateFieldByPath(
       }
     }
   }
+
+  // Target field does not exist in this container.
+  // If there is no remaining path, this is the terminal target container — append the new field here!
+  if (!remainingPath) {
+    fields.push({
+      name: currentPart,
+      ...updates,
+    });
+    return true;
+  }
+
   return false;
 }
 

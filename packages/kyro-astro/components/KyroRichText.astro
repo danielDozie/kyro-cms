@@ -1,0 +1,37 @@
+---
+/**
+ * Pure Astro Zero-JS Rich Text AST Renderer for Kyro CMS.
+ * Renders Kyro Rich Text AST into static HTML with 0kB client JS bundle.
+ */
+interface Props {
+  content: any;
+  class?: string;
+}
+
+const { content, class: className = '' } = Astro.props;
+
+function renderAstToHtml(node: any): string {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (Array.isArray(node)) return node.map(renderAstToHtml).join('');
+
+  const children = node.children ? renderAstToHtml(node.children) : node.text || '';
+
+  switch (node.type) {
+    case 'h1': return `<h1 class="text-3xl font-bold my-4">${children}</h1>`;
+    case 'h2': return `<h2 class="text-2xl font-semibold my-3">${children}</h2>`;
+    case 'h3': return `<h3 class="text-xl font-medium my-2">${children}</h3>`;
+    case 'paragraph': return `<p class="my-2 leading-relaxed">${children}</p>`;
+    case 'blockquote': return `<blockquote class="border-l-4 border-indigo-500 pl-4 italic my-4">${children}</blockquote>`;
+    case 'ul': return `<ul class="list-disc list-inside my-2">${children}</ul>`;
+    case 'ol': return `<ol class="list-decimal list-inside my-2">${children}</ol>`;
+    case 'li': return `<li class="my-1">${children}</li>`;
+    case 'code-block': return `<pre class="bg-stone-900 text-stone-100 p-4 rounded-xl overflow-x-auto my-4"><code>${children}</code></pre>`;
+    default: return children;
+  }
+}
+
+const htmlOutput = renderAstToHtml(content);
+---
+
+<div class={`kyro-rich-text ${className}`} set:html={htmlOutput} />

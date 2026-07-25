@@ -1,78 +1,118 @@
 ---
 title: Deployment
-description: Learn how to deploy your Kyro CMS instance to production using Docker, Vercel, or Railway.
+description: Learn how to deploy your Kyro CMS instance to production using Vercel, Cloudflare Workers, Railway, or Docker.
 ---
 
-# Deployment
+# Deployment Guide
 
-Because Kyro CMS is Astro-native, deploying it is virtually identical to deploying any standard Astro SSR application. The primary difference is ensuring your database and authentication secrets are properly configured in the production environment.
+Because Kyro CMS is Astro-native and Edge-ready out-of-the-box, deploying it is virtually identical to deploying any standard Astro SSR application.
 
-## Environment Variables
+---
+
+## 1. Environment Variables
 
 Before deploying, ensure your target environment has the following variables configured:
 
 ```bash
 # REQUIRED: A random 32+ character string used to sign JWT session tokens
-APP_SECRET=your-secure-random-string-here
+KYRO_SECRET=your-secure-random-string-here
 
-# REQUIRED (If using PostgreSQL): Your connection string
-DATABASE_URL=postgresql://user:password@host:5432/kyro_cms
-
-# OPTIONAL: If using Redis for authentication sessions
-REDIS_URL=redis://host:6379
+# REQUIRED: Your database connection string (PostgreSQL, Neon, MongoDB, or SQLite)
+KYRO_DATABASE_URL=postgresql://user:password@host:5432/kyro_cms
 
 # OPTIONAL: Used to bootstrap your first admin user on a fresh database
 KYRO_ADMIN_EMAIL=admin@yourdomain.com
 KYRO_ADMIN_PASSWORD=SecurePassword123!
 ```
 
-## Option 1: Vercel (Serverless)
+---
 
-Vercel is an excellent hosting provider for Astro and Kyro CMS. 
+## 2. Option 1: Vercel (Serverless & Edge Ready)
 
-1. Push your code to GitHub.
+Vercel provides seamless deployment for Astro and Kyro CMS.
+
+### Deployment Steps:
+1. Push your codebase to GitHub.
 2. Import the repository into Vercel.
 3. Ensure the framework preset is set to **Astro**.
-4. Add your `DATABASE_URL` and `APP_SECRET` in the Vercel Environment Variables settings.
-5. Click Deploy.
+4. Add your `KYRO_DATABASE_URL` and `KYRO_SECRET` under Vercel Environment Variables.
+5. Click **Deploy**.
 
-### Edge vs Node
+### Node.js Serverless vs Vercel Edge:
 
-By default, Astro deployed to Vercel uses Node.js serverless functions. If you wish to use Vercel Edge functions, you must ensure you are not using any Node.js native dependencies in your `kyro.config.ts`. (For example, you cannot use the `createLocalAdapter` SQLite database on Vercel Edge).
+* **Node.js Serverless (Default)**: Fully compatible out-of-the-box with all Kyro database adapters (SQLite, PostgreSQL, MongoDB) and native image tools (`sharp`).
+* **Vercel Edge & Cloudflare Workers**: Use Edge-native HTTP adapters such as `createNeonAdapter()` or Cloudflare Turso (`@libsql/client`). Image uploads automatically use Web-standard fallback processing.
 
-## Option 2: Railway
+#### Edge Setup Example (`kyro.config.ts`):
+```typescript
+import { defineConfig } from '@kyro-cms/core';
+import { createTursoAdapter, createNeonAdapter } from '@kyro-cms/core';
 
-Railway makes it incredibly easy to spin up both a PostgreSQL database and your Astro frontend simultaneously.
+export default defineConfig({
+  // Edge-ready libSQL / Turso adapter
+  db: createTursoAdapter({
+    url: process.env.TURSO_DATABASE_URL!,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  }),
+});
+```
 
-1. Install the Railway CLI: `npm i -g @railway/cli`
-2. Run `railway login`
-3. Run `railway init`
-4. Provision a database: `railway add` -> Select PostgreSQL.
-5. Deploy your code: `railway up`
+### Kyro Admin Dashboard on Edge:
 
-Railway will automatically inject the `DATABASE_URL` into your Astro project's environment.
+* **Static CDN Delivery**: The `@kyro-cms/admin` React UI dashboard is served statically across global edge CDNs (Vercel CDN, Cloudflare Pages).
+* **Edge API Requests**: Admin dashboard interactions (CRUD, draft previews, field changes) communicate via standard `fetch()` API calls to your Edge API handlers.
 
-## Option 3: Docker (VPS / AWS / DigitalOcean)
+---
 
-If you prefer to host on your own infrastructure, Docker is the most reliable method. You can deploy your Kyro CMS project by creating a `docker-compose.yml` file in your repository:
+## 3. Option 2: Cloudflare Workers / Pages
+
+Kyro CMS runs natively on Cloudflare Workers and Pages Edge runtimes without native Node.js binary dependencies.
+
+1. Install the Cloudflare Astro adapter: `pnpm add @astrojs/cloudflare`
+2. Configure `astro.config.mjs`:
+   ```javascript
+   import { defineConfig } from 'astro/config';
+   import cloudflare from '@astrojs/cloudflare';
+   import kyro from '@kyro-cms/astro';
+
+   export default defineConfig({
+     output: 'server',
+     adapter: cloudflare(),
+     integrations: [kyro()],
+   });
+   ```
+3. Deploy with Wrangler: `pnpm dlx wrangler pages deploy`
+
+---
+
+## 4. Option 3: Railway
+
+Railway makes it simple to provision a PostgreSQL database and host your Kyro CMS frontend simultaneously.
+
+1. Install Railway CLI: `npm i -g @railway/cli`
+2. Authenticate: `railway login`
+3. Provision PostgreSQL: `railway add` $\rightarrow$ Select **PostgreSQL**.
+4. Deploy: `railway up`
+
+---
+
+## 5. Option 4: Docker (VPS / AWS / DigitalOcean)
+
+For hosting on custom infrastructure, Docker provides a production-ready container setup using `docker-compose.yml`:
 
 ```yaml
-# docker-compose.yml
 version: '3.8'
 
 services:
   web:
-    build: 
-      context: ../../
-      dockerfile: Dockerfile
+    build: .
     ports:
       - "4321:4321"
     environment:
-      - DATABASE_URL=postgresql://kyro:kyro@db:5432/kyro
-      - APP_SECRET=change_me_in_production
+      - KYRO_DATABASE_URL=postgresql://kyro:kyro@db:5432/kyro
+      - KYRO_SECRET=change_me_in_production
     depends_on:
       - db
-      - redis
 
   db:
     image: postgres:15-alpine
@@ -83,35 +123,18 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7-alpine
-
 volumes:
   pgdata:
 ```
 
-To deploy:
+To run: `docker-compose up -d`
 
-1. Copy your repository (including `docker-compose.yml`) to your server.
-2. Run `docker-compose up -d`.
+---
 
-## Database Migrations
+## 6. Database Migrations
 
-When deploying to a remote database (like PostgreSQL), you must ensure your database schema matches your `kyro.config.ts`.
-
-During your build step (or via a CI/CD pipeline), you should run the Kyro migration command:
+During build or CI/CD pipelines, run the Kyro CLI migration command to keep database schemas in sync:
 
 ```bash
-# Generates and applies migrations to the remote database
-npx kyro db push
-```
-
-You can add this to your `package.json` build script:
-
-```json
-{
-  "scripts": {
-    "build": "kyro db push && astro build"
-  }
-}
+npx kyro migrate
 ```

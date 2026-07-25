@@ -12,6 +12,7 @@ import type {
 import { Registry } from "../../registry/index.js";
 import { type WhereClause } from "../../access/types.js";
 import { populateRelationships } from "../../utils/populate.js";
+import { sanitizeDoc } from "../../utils/sanitize.js";
 import { findFieldByName } from "../../utils/field-helpers.js";
 import {
   checkCollectionAccess as checkCollAccessShared,
@@ -52,17 +53,22 @@ function formatZodErrors(errors: any[]): string {
 function normalizeEmptyStrings(data: any, fields: any[]): void {
   if (!data || typeof data !== 'object') return;
   for (const field of fields) {
+    if (field.type === 'tabs' && Array.isArray(field.tabs)) {
+      const target = field.name ? data[field.name] : data;
+      if (target && typeof target === 'object') {
+        for (const tab of field.tabs) {
+          if (Array.isArray(tab.fields)) normalizeEmptyStrings(target, tab.fields);
+        }
+      }
+      continue;
+    }
     if (!field.name || !(field.name in data)) continue;
     const val = data[field.name];
     if (val === "") {
       const isTextual = field.type === 'text' || field.type === 'textarea' || field.type === 'code' || field.type === 'markdown';
       if (!isTextual) data[field.name] = null;
     }
-    if (field.type === 'tabs' && field.name && Array.isArray(field.tabs) && data[field.name] && typeof data[field.name] === 'object') {
-      for (const tab of field.tabs) {
-        if (Array.isArray(tab.fields)) normalizeEmptyStrings(data[field.name], tab.fields);
-      }
-    } else if ((field.type === 'group' || field.type === 'collapsible') && field.name && Array.isArray(field.fields) && data[field.name] && typeof data[field.name] === 'object') {
+    if ((field.type === 'group' || field.type === 'collapsible') && field.name && Array.isArray(field.fields) && data[field.name] && typeof data[field.name] === 'object') {
       normalizeEmptyStrings(data[field.name], field.fields);
     } else if (field.type === 'array' && field.name && Array.isArray(field.fields) && Array.isArray(data[field.name])) {
       for (const item of data[field.name]) {
@@ -85,6 +91,14 @@ function normalizeEmptyStrings(data: any, fields: any[]): void {
 function convertRichtextFields(fields: any[], data: any): void {
   if (!data || typeof data !== 'object') return;
   for (const field of fields) {
+    if (field.type === 'tabs' && Array.isArray(field.tabs)) {
+      const target = field.name ? data[field.name] : data;
+      if (target && typeof target === 'object') {
+        for (const tab of field.tabs) {
+          if (Array.isArray(tab.fields)) convertRichtextFields(tab.fields, target);
+        }
+      }
+    }
     if (field.type === 'richtext' && field.name) {
       const val = data[field.name];
       if (typeof val === 'string') {
@@ -93,11 +107,7 @@ function convertRichtextFields(fields: any[], data: any): void {
         data[field.name] = val.content;
       }
     }
-    if (field.type === 'tabs' && field.name && Array.isArray(field.tabs) && data[field.name] && typeof data[field.name] === 'object') {
-      for (const tab of field.tabs) {
-        if (Array.isArray(tab.fields)) convertRichtextFields(tab.fields, data[field.name]);
-      }
-    } else if ((field.type === 'group' || field.type === 'collapsible') && field.name && Array.isArray(field.fields) && data[field.name] && typeof data[field.name] === 'object') {
+    if ((field.type === 'group' || field.type === 'collapsible') && field.name && Array.isArray(field.fields) && data[field.name] && typeof data[field.name] === 'object') {
       convertRichtextFields(field.fields, data[field.name]);
     } else if (field.type === 'array' && field.name && Array.isArray(field.fields) && Array.isArray(data[field.name])) {
       for (const item of data[field.name]) {
@@ -1695,40 +1705,40 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
       const orders = result.docs || [];
       
       const storeSettings = await db.findOne({ collection: "_globals_store-settings", where: {}, tenantId: ctxTenantID });
-      const currencyCode = storeSettings?.currency?.code || "USD";
+      const currencyCode = storeSettings?.currency?.code || storeSettings?.currency || "USD";
       
       const revenueByDate: Record<string, number> = {};
       const ordersByDate: Record<string, number> = {};
+      const ordersByStatus: Record<string, number> = {};
 
       orders.forEach((order: any) => {
-         const date = new Date((order.createdAt as string) || Date.now()).toISOString().split('T')[0];
+         const rawDate = order.createdAt || order.updatedAt;
+         const date = rawDate ? new Date(rawDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
          if (!revenueByDate[date]) revenueByDate[date] = 0;
          if (!ordersByDate[date]) ordersByDate[date] = 0;
 
-         revenueByDate[date] += (order.total as number) || 0;
+         const totalNum = typeof order.total === "number" ? order.total : parseFloat(String(order.total || 0));
+         revenueByDate[date] += isNaN(totalNum) ? 0 : totalNum;
          ordersByDate[date] += 1;
+
+         const status = (order.orderStatus as string) || (order.status as string) || "pending";
+         ordersByStatus[status] = (ordersByStatus[status] || 0) + 1;
       });
 
       const chartData = Object.keys(revenueByDate).sort().map(date => ({
          date,
-         revenue: revenueByDate[date],
+         revenue: Math.round(revenueByDate[date] * 100) / 100,
          orders: ordersByDate[date]
       }));
 
-
-
-      const ordersByStatus: Record<string, number> = {};
-      orders.forEach((order: any) => {
-        const status = (order.orderStatus as string) || "pending";
-        ordersByStatus[status] = (ordersByStatus[status] || 0) + 1;
-      });
+      const totalRevenue = Math.round(chartData.reduce((sum, item) => sum + item.revenue, 0) * 100) / 100;
 
       return c.json({
          chartData,
-         totalRevenue: chartData.reduce((sum, item) => sum + item.revenue, 0),
-         totalOrders: chartData.reduce((sum, item) => sum + item.orders, 0),
+         totalRevenue,
+         totalOrders: orders.length,
          ordersByStatus,
-         currencyCode
+         currencyCode: typeof currencyCode === "string" ? currencyCode : "USD"
       });
     } catch (e: any) {
       return c.json({ error: e.message }, 500);
@@ -2523,7 +2533,7 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
 
         await populateRelationships(result.docs as any[], collection.fields, db as BaseAdapter, registry, 1, depth);
 
-        return c.json(result);
+        return c.json(sanitizeDoc(result));
       } catch (error: any) {
         console.error("[API] list error:", error);
         return c.json({ error: error.message }, 500);
@@ -2784,7 +2794,7 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
 
         await populateRelationships([doc as any], collection.fields, db as BaseAdapter, registry, 1, depth);
 
-        return c.json({ data: doc });
+        return c.json({ data: sanitizeDoc(doc) });
       } catch (error: any) {
         return c.json({ error: error.message }, 500);
       }
@@ -2899,7 +2909,7 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
               tenantId: ctxTenantID,
               operation: "create",
             });
-            if (hookResult) Object.assign(validated, hookResult);
+            if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
           }
         }
 
@@ -2934,7 +2944,7 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
               tenantId: ctxTenantID,
               operation: "create",
             });
-            if (hookResult) Object.assign(validated, hookResult);
+            if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
           }
         }
 
@@ -3074,7 +3084,7 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
               tenantId: ctxTenantID,
               operation: "update",
             });
-            if (hookResult) Object.assign(validated, hookResult);
+            if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
           }
         }
 
@@ -3092,7 +3102,7 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
               tenantId: ctxTenantID,
               operation: "update",
             });
-            if (hookResult) Object.assign(validated, hookResult);
+            if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
           }
         }
 

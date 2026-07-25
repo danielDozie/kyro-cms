@@ -25,7 +25,6 @@ export const postsCollection: CollectionConfig = {
       },
     },
     {
-      name: "tabs",
       type: "tabs",
       tabs: [
         {

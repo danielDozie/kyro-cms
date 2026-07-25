@@ -59,13 +59,16 @@ export function createDynamicRouter(ctx: KyroContext) {
     const slug = global.slug;
 
     router[`_globals_${slug}`] = {
-      get: async () => {
+      get: async (input?: { depth?: number; draft?: boolean; select?: string[] }) => {
         await checkGlobalAccessTRPC(global, "read", ctx);
 
         const doc = await ctx.db.findOne({
           collection: `_globals_${slug}`,
           where: {},
           tenantId: ctx.tenantId,
+          depth: input?.depth,
+          draft: input?.draft,
+          select: input?.select,
         });
         return doc;
       },

@@ -169,6 +169,15 @@ export interface FindArgs {
   draft?: boolean;
 }
 
+export interface FindOneArgs {
+  collection: string;
+  where: Record<string, any>;
+  tenantId?: string;
+  draft?: boolean;
+  depth?: number;
+  select?: string[];
+}
+
 export interface FindByIDArgs {
   collection: string;
   id: string;
@@ -297,12 +306,7 @@ export interface BaseAdapter {
     tenantId?: string;
   }): Promise<number>;
 
-  findOne(args: {
-    collection: string;
-    where: Record<string, any>;
-    tenantId?: string;
-    draft?: boolean;
-  }): Promise<any>;
+  findOne(args: FindOneArgs): Promise<any>;
   // Formal version history (manual saves and publishes)
   findVersions(args: FindVersionsArgs): Promise<FindResult<VersionRecord>>;
   findVersionByID(args: { collection: string; versionId: string; tenantId?: string }): Promise<VersionRecord | null>;

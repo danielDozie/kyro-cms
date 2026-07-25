@@ -864,11 +864,13 @@ export function AutoForm({
       case "tabs":
         return (
           <TabsLayout
-            key={field.name || `tabs-${Math.random()}`}
+            key={field.name || `tabs-layout`}
             field={field}
             formData={formData}
             onTabDataChange={(tabData) => {
-              setField(field.name!, tabData);
+              if (field.name) {
+                setField(field.name, tabData);
+              }
             }}
             renderField={(f, parentData, onChange) => renderField(f, parentData, onChange)}
           />

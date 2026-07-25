@@ -1,0 +1,22 @@
+---
+/**
+ * Astro 5+ Server Island Component Helper for Kyro CMS.
+ * Supports `server:defer` for streaming dynamic CMS widgets on SSG pages.
+ */
+interface Props {
+  collection: string;
+  id?: string;
+  class?: string;
+}
+
+const { collection, id, class: className = "" } = Astro.props;
+---
+
+<div class={`kyro-server-island ${className}`} data-collection={collection} data-id={id}>
+  <slot name="fallback">
+    <div class="animate-pulse bg-stone-200 dark:bg-stone-800 rounded-lg p-4 h-24 my-2">
+      <div class="h-4 bg-stone-300 dark:bg-stone-700 rounded w-1/3 mb-2"></div>
+      <div class="h-3 bg-stone-300 dark:bg-stone-700 rounded w-2/3"></div>
+    </div>
+  </slot>
+</div>

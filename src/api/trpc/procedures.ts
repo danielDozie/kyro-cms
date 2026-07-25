@@ -10,6 +10,7 @@ import type { KyroContext } from "./context.js";
 import type { Field } from "../../fields/types.js";
 import { WEBHOOK_EVENTS, type WebhookEvent } from "../../webhooks/types.js";
 import { populateRelationships } from "../../utils/populate.js";
+import { sanitizeDoc } from "../../utils/sanitize.js";
 
 const COLLECTION_EVENT_MAP: Record<
   string,
@@ -65,17 +66,22 @@ async function triggerWebhook(
 function normalizeEmptyStrings(data: any, fields: Field[]): void {
   if (!data || typeof data !== 'object') return;
   for (const field of fields) {
+    if (field.type === 'tabs' && Array.isArray((field as any).tabs)) {
+      const target = field.name ? data[field.name] : data;
+      if (target && typeof target === 'object') {
+        for (const tab of (field as any).tabs) {
+          if (Array.isArray(tab.fields)) normalizeEmptyStrings(target, tab.fields as Field[]);
+        }
+      }
+      continue;
+    }
     if (!field.name || !(field.name in data)) continue;
     const val = data[field.name];
     if (val === "") {
       const isTextual = field.type === 'text' || field.type === 'textarea' || field.type === 'code' || field.type === 'markdown' || field.type === 'email' || field.type === 'password' || field.type === 'color';
       if (!isTextual) data[field.name] = null;
     }
-    if (field.type === 'tabs' && field.name && Array.isArray((field as any).tabs) && data[field.name] && typeof data[field.name] === 'object') {
-      for (const tab of (field as any).tabs) {
-        if (Array.isArray(tab.fields)) normalizeEmptyStrings(data[field.name], tab.fields as Field[]);
-      }
-    } else if ((field.type === 'group' || field.type === 'collapsible') && field.name && Array.isArray((field as any).fields) && data[field.name] && typeof data[field.name] === 'object') {
+    if ((field.type === 'group' || field.type === 'collapsible') && field.name && Array.isArray((field as any).fields) && data[field.name] && typeof data[field.name] === 'object') {
       normalizeEmptyStrings(data[field.name], (field as any).fields as Field[]);
     } else if (field.type === 'array' && field.name && Array.isArray((field as any).fields) && Array.isArray(data[field.name])) {
       for (const item of data[field.name]) {
@@ -187,7 +193,7 @@ export function createFindProcedure(ctx: KyroContext) {
 
     await populateRelationships(result.docs as any[], config.fields, ctx.db, ctx.registry, 1, depth || 0);
 
-    return result;
+    return sanitizeDoc(result);
   };
 }
 
@@ -234,7 +240,7 @@ export function createFindByIDProcedure(ctx: KyroContext) {
 
     await populateRelationships([doc as any], config.fields, ctx.db, ctx.registry, 1, depth || 0);
 
-    return doc;
+    return sanitizeDoc(doc);
   };
 }
 
@@ -270,7 +276,7 @@ export function createCreateProcedure(ctx: KyroContext) {
           tenantId: ctx.tenantId,
           operation: "create",
         });
-        if (hookResult) Object.assign(validated, hookResult);
+        if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
       }
     }
 
@@ -285,7 +291,7 @@ export function createCreateProcedure(ctx: KyroContext) {
           tenantId: ctx.tenantId,
           operation: "create",
         });
-        if (hookResult) Object.assign(validated, hookResult);
+        if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
       }
     }
 
@@ -378,7 +384,7 @@ export function createUpdateProcedure(ctx: KyroContext) {
           operation: "update",
           id,
         });
-        if (hookResult) Object.assign(validated, hookResult);
+        if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
       }
     }
 
@@ -395,7 +401,7 @@ export function createUpdateProcedure(ctx: KyroContext) {
           operation: "update",
           id,
         });
-        if (hookResult) Object.assign(validated, hookResult);
+        if (hookResult && typeof hookResult === "object" && !Array.isArray(hookResult)) Object.assign(validated, hookResult);
       }
     }
 

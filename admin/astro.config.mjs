@@ -15,12 +15,15 @@ if (fs.existsSync(UPLOADS_SRC) && !fs.existsSync(UPLOADS_DEST)) {
 }
 
 export default defineConfig({
+  devToolbar: {
+    enabled: true,
+  },
   integrations: [
     react(),
-    kyro({ 
-      adminPath: "/admin", 
+    kyro({
+      adminPath: "/admin",
       apiPath: "/api",
-      configPath: "../kyro.config.ts" 
+      configPath: "../kyro.config.ts"
     }),
     kyroAdmin({
       basePath: "/admin",

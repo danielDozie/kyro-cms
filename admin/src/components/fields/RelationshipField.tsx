@@ -326,14 +326,14 @@ export function RelationshipField({
               items={tagIds}
               strategy={horizontalListSortingStrategy}
             >
-              {items.map((item) => {
+              {items.map((item, idx) => {
                 const rawId = getValueId(item);
                 const doc = selectedDocs.find((d) => d.id === rawId);
-                const label = doc ? getLabel(doc) : rawId.slice(0, 12);
+                const label = doc ? getLabel(doc) : (rawId ? rawId.slice(0, 12) : "Item");
                 const rel = isPolymorphic && doc ? doc.relationTo : null;
                 return (
                   <SortableTag
-                    key={rawId}
+                    key={`${rawId}-${idx}`}
                     id={rawId}
                     label={label}
                     relation={rel}
@@ -353,14 +353,14 @@ export function RelationshipField({
 
     return (
       <div className="flex flex-wrap gap-1.5 mt-2">
-        {items.map((item) => {
+        {items.map((item, idx) => {
           const rawId = getValueId(item);
           const doc = selectedDocs.find((d) => d.id === rawId);
-          const label = doc ? getLabel(doc) : rawId.slice(0, 12);
+          const label = doc ? getLabel(doc) : (rawId ? rawId.slice(0, 12) : "Item");
           const rel = isPolymorphic && doc ? doc.relationTo : null;
           return (
             <span
-              key={rawId}
+              key={`${rawId}-${idx}`}
               className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[var(--kyro-sidebar-active)]/10 text-[var(--kyro-sidebar-active)]"
             >
               {rel && <span className="opacity-60 mr-0.5">{rel}:</span>}

@@ -17,10 +17,12 @@ import type {
   CreateVersionArgs,
   FindVersionsArgs,
   DocumentStatus,
+  FindOneArgs,
 } from "../../registry/types.js";
 import type { Field } from "../../fields/types.js";
 import type { TenantContext } from "../../auth/rls/tenant.js";
 import { applyRLS, DEFAULT_RLS_CONFIG, canAccessDocument } from "../../auth/rls/tenant.js";
+import { sanitizeDoc } from "../../utils/sanitize.js";
 
 function flattenFields(fields: Field[]): Field[] {
   const result: Field[] = [];
@@ -538,11 +540,13 @@ export class LocalAdapter extends AbstractBaseAdapter {
           .get(slug, doc.id) as any;
         if (version) {
           const versionData = version.data ? JSON.parse(version.data) : {};
-          return { ...doc, ...versionData, status: doc.status };
+          return sanitizeDoc({ ...doc, ...versionData, status: doc.status });
         }
         return doc;
       }));
     }
+
+    docs = docs.map((d: any) => sanitizeDoc(d));
 
     return {
       docs: docs as T[],
@@ -607,7 +611,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
       }
     }
 
-    return doc as T;
+    return sanitizeDoc(doc) as T;
   }
 
   async create<T>(args: CreateArgs): Promise<T> {
@@ -754,12 +758,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
     return result?.count || 0;
   }
 
-  async findOne(args: {
-    collection: string;
-    where: Record<string, any>;
-    tenantId?: string;
-    draft?: boolean;
-  }): Promise<any> {
+  async findOne(args: FindOneArgs): Promise<any> {
     const parsed = this.parseGlobalsSlug(args.collection);
     if (parsed.isGlobal) {
       const globalConfig = this.globals.get(parsed.globalSlug);
@@ -1040,9 +1039,9 @@ export class LocalAdapter extends AbstractBaseAdapter {
     for (const field of fields) {
       if (!field.name || field.name === "id") continue;
       
-      // Skip fields that are inside tabs (they'll be handled separately)
+      // Skip fields that are inside named tabs (they'll be handled separately)
       const isInTab = config.fields.some(f => 
-        f.type === "tabs" && "tabs" in f && 
+        f.type === "tabs" && f.name && "tabs" in f && 
         f.tabs.some(t => t.fields.some(tf => tf.name === field.name))
       );
       if (isInTab) continue;
@@ -1201,6 +1200,13 @@ export class LocalAdapter extends AbstractBaseAdapter {
 
     doc.status = row.status ?? 'published';
     doc.hasDraft = row.hasDraft ? Boolean(row.hasDraft) : false;
+
+    // Strip numeric string index keys if a string ID was previously spread into document properties
+    for (const key of Object.keys(doc)) {
+      if (/^\d+$/.test(key)) {
+        delete doc[key];
+      }
+    }
 
     return doc;
   }

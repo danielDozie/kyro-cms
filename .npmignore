@@ -43,5 +43,9 @@ dist/**/*.d.ts.map
 *.tmp
 *.temp
 
+# Internal Operations & Scripts
+scripts/
+.kyro-admin-config.json
+
 # Deployments
 deployments/
