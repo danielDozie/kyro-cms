@@ -16,11 +16,7 @@ By default, it is **completely headless and unstyled**, outputting clean semanti
 ## Installation
 
 ```bash
-npm install kyro-rich-text-react
-# or
-pnpm add kyro-rich-text-react
-# or
-yarn add kyro-rich-text-react
+pnpm add @kyro-cms/kyro-rich-text-react
 ```
 
 ---
@@ -31,7 +27,7 @@ Import the `KyroRichTextRenderer` component and pass the JSON array from your Ky
 
 ```tsx
 import React from 'react';
-import { KyroRichTextRenderer } from 'kyro-rich-text-react';
+import { KyroRichTextRenderer } from '@kyro-cms/kyro-rich-text-react';
 
 export default function BlogPost({ post }) {
   // post.content is the JSON array from Kyro

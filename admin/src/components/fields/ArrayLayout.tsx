@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useTranslation } from "react-i18next";
 
-const SIMPLE_TYPES = new Set(["text", "number", "checkbox", "select", "radio", "color", "email", "password"]);
+const SIMPLE_TYPES = new Set(["text", "number", "checkbox", "select", "radio", "color", "email", "password", "url", "id"]);
 
 function extractLabelFromObj(obj: unknown): string | null {
   if (!obj || typeof obj !== "object") return null;
@@ -120,7 +120,7 @@ function SortableArrayItem({
       <div
         ref={setNodeRef}
         style={style}
-        className="flex items-start gap-2 px-3 py-1.5 border-b border-[var(--kyro-border)] last:border-b-0"
+        className="flex items-start gap-3 p-3.5 mb-2 border border-[var(--kyro-border)] rounded-[var(--kyro-radius-md)] bg-[var(--kyro-surface-accent)]/15 hover:border-[var(--kyro-border-accent)] transition-all group/item shadow-xs"
       >
         <div
           {...attributes}
@@ -132,9 +132,9 @@ function SortableArrayItem({
         <span className="text-[10px] font-bold text-[var(--kyro-text-muted)] pt-2.5 min-w-[18px] text-center">
           {index + 1}
         </span>
-        <div className={`flex-1 min-w-0 ${fields.length >= 3 ? "flex flex-col gap-1.5" : "flex items-start gap-1.5"}`}>
+        <div className={`flex-1 min-w-0 ${fields.length >= 3 ? "flex flex-col gap-2" : "grid grid-cols-1 sm:grid-cols-2 gap-3"}`}>
           {fields.map((f: Field) => (
-            <div key={f.name} className="flex-1 min-w-0">
+            <div key={f.name} className="min-w-0">
               {renderField(f, item, onChangeItem)}
             </div>
           ))}
@@ -143,10 +143,10 @@ function SortableArrayItem({
           type="button"
           disabled={disabled}
           onClick={onRemove}
-          className="text-[var(--kyro-text-muted)] hover:text-[var(--kyro-error)] transition-colors disabled:opacity-30 p-0.5 mt-1.5 flex-shrink-0"
+          className="text-[var(--kyro-text-muted)] hover:text-[var(--kyro-error)] transition-colors disabled:opacity-30 p-1 mt-1.5 flex-shrink-0 rounded hover:bg-[var(--kyro-surface-accent)]"
           title={t("tooltips.remove", { defaultValue: "Remove" })}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
@@ -437,7 +437,7 @@ export function ArrayLayout({
         onDragEnd={handleDragEnd}
       >
         {compact ? (
-          <div className="kyro-form-array kyro-form-array--compact border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/30 rounded-md overflow-hidden">
+          <div className="kyro-form-array kyro-form-array--compact border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/10 rounded-lg p-3">
             <SortableContext
               items={itemIds}
               strategy={verticalListSortingStrategy}
@@ -466,7 +466,7 @@ export function ArrayLayout({
             </SortableContext>
             <button
               type="button"
-              className="w-full py-2 border-2 border-dashed border-[var(--kyro-border)] rounded-none text-xs font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] transition-all disabled:opacity-50"
+              className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-md text-xs font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
               disabled={disabled}
               onClick={() => onChange([...items, { id: Math.random().toString(36).substr(2, 9) }])}
             >

@@ -867,6 +867,7 @@ export function AutoForm({
             key={field.name || `tabs-layout`}
             field={field}
             formData={formData}
+            collectionSlug={collectionSlug}
             onTabDataChange={(tabData) => {
               if (field.name) {
                 setField(field.name, tabData);

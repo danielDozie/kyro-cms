@@ -286,7 +286,6 @@ export const CodeField: React.FC<CodeFieldProps> = ({
         style={{ color: "var(--kyro-text-muted)" }}
       >
         <span>{value.split("\n").length} lines</span>
-        <span style={{ color: accent }}>CodeMirror</span>
       </div>
     </div>
   );

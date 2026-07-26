@@ -95,8 +95,8 @@ await fetch('/api/posts', {
     hasNextPage
   }
 }`,
-  trpc: `// End-to-end type safety — no codegen needed
-const posts = await trpc.posts.list.query({
+  trpc: `// Instant in-repo type inference in Astro
+const posts = await trpc.posts.find.query({
   where: { status: { equals: 'published' } },
   sort: '-publishedAt',
   limit: 10,
@@ -105,22 +105,24 @@ const posts = await trpc.posts.list.query({
 
 // Mutations are fully typed too
 const post = await trpc.posts.create.mutate({
-  title: 'Hello World',
-  status: 'draft',
+  data: {
+    title: 'Hello World',
+    status: 'draft',
+  }
 })`,
   websocket: `// Subscribe to real-time collection changes
-const ws = new WebSocket('ws://localhost:4321/ws')
+const ws = new WebSocket('ws://localhost:4321/api/ws')
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({ type: 'subscribe', channel: 'posts' }))
+}
 
 ws.onmessage = (event) => {
-  const { type, collection, doc } = JSON.parse(event.data)
+  const { type, doc } = JSON.parse(event.data)
 
-  if (type === 'document.created' && collection === 'posts') {
+  if (type === 'document.created') {
     console.log('New post:', doc.title)
     updateFeed(doc) // Update your UI reactively
-  }
-
-  if (type === 'document.updated') {
-    syncDocument(doc.id, doc)
   }
 }`
 }
@@ -149,15 +151,16 @@ const bentoFeatures = [
     label: 'SCHEMA FIRST',
     title: 'TypeScript-native schema definition',
     desc: 'Define collections, fields, and relations with full type inference. No magic strings, no surprises.',
-    code: `defineCollection({
+    code: `{
   slug: 'posts',
-  fields: {
-    title: text({ required: true }),
-    body:  richText(),
-    cover: upload({ allowedTypes: ['image'] }),
-    tags:  relationship({ to: 'tags', many: true }),
-  }
-})`
+  label: 'Posts',
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'body', type: 'richtext' },
+    { name: 'cover', type: 'upload', relationTo: 'media' },
+    { name: 'tags', type: 'relationship', relationTo: 'tags', hasMany: true },
+  ]
+}`
   },
   {
     id: 'apis',
@@ -177,7 +180,7 @@ const bentoFeatures = [
     icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
     label: 'DATABASES',
     title: 'SQLite, Postgres, MongoDB',
-    desc: 'Swap adapters in one line. Local dev to global edge.',
+    desc: 'Unified schema across SQLite, Postgres & Mongo. Swap engines in config.',
     stat: '3',
     statLabel: 'DBs'
   },

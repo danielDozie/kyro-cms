@@ -9,13 +9,13 @@
 ## Installation
 
 ```bash
-npm install kyro-connect
+pnpm add @kyro-cms/connect
 ```
 
 ## Quick Start
 
 ```ts
-import { createClient } from "kyro-connect";
+import { createClient } from "@kyro-cms/connect";
 
 const client = createClient({
   url: "http://localhost:4321",

@@ -54,14 +54,14 @@ For detailed GraphQL usage, see the [GraphQL API](/guides/graphql) guide.
 
 ## tRPC API
 
-For end-to-end type safety, use the `kyro-connect` package:
+For end-to-end type safety, use the `@kyro-cms/connect` package:
 
 ```bash
-npm install kyro-connect
+pnpm add @kyro-cms/connect
 ```
 
 ```typescript
-import { createClient } from "kyro-connect";
+import { createClient } from "@kyro-cms/connect";
 
 const client = createClient({
   url: "http://localhost:4321/api/trpc",
@@ -96,11 +96,11 @@ const newPost = await client.posts.create.mutate({
 If you are using the `richText` field in your collections, Kyro stores the data as structured Tiptap JSON. To render this seamlessly on your frontend, we provide a companion package:
 
 ```bash
-npm install kyro-rich-text-react
+pnpm add @kyro-cms/kyro-rich-text-react
 ```
 
 ```tsx
-import { KyroRichTextRenderer } from "kyro-rich-text-react";
+import { KyroRichTextRenderer } from "@kyro-cms/kyro-rich-text-react";
 
 // Assuming `post.content` is the JSON from the API
 <KyroRichTextRenderer content={post.content} />

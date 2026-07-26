@@ -44,7 +44,8 @@ export class CustomStripePlugin extends KyroPlugin {
   // Modify the schema before the CMS initializes
   override modifyConfig(config) {
     config.collections.push({
-      name: "stripe_logs",
+      slug: "stripe_logs",
+      label: "Stripe Logs",
       fields: [/* ... */]
     });
     return config;
@@ -77,16 +78,23 @@ If the 21 built-in field types aren't enough, you can build your own. For exampl
 
 ```typescript
 // kyro.config.ts
-import { z } from "zod";
-
 export default {
-  name: "settings",
-  fields: z.object({
-    themeColor: z.string().kyroAdmin({
-      // Tell the admin dashboard to use your custom component
-      component: "CustomColorPicker" 
-    })
-  })
+  collections: [
+    {
+      slug: "settings",
+      label: "Settings",
+      fields: [
+        {
+          name: "themeColor",
+          type: "color",
+          admin: {
+            // Tell the admin dashboard to use your custom component
+            component: "CustomColorPicker"
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -125,6 +133,59 @@ export default defineConfig({
     ]
   }
 });
+```
+
+## Granular Collection Overrides (`admin.collectionOverrides`)
+
+One of Kyro's most powerful customization features is **`collectionOverrides`**. It allows you to modify admin options, customize field labels, alter sidebar positioning, and extend relationships on pre-built template collections (like `posts`, `pages`, or `products`) **without editing or duplicating template source code**.
+
+### 1. Overriding Collection Admin Settings
+
+Customize default list columns, icons, and sidebar group names for built-in collections:
+
+```typescript
+// kyro.config.ts
+import { defineConfig } from "@kyro-cms/core";
+import { templateCollections } from "@kyro-cms/core/templates";
+
+export default defineConfig({
+  collections: templateCollections["kitchen-sink"],
+  admin: {
+    collectionOverrides: {
+      posts: {
+        label: "Blog Articles",
+        defaultColumns: ["title", "slug", "status", "updatedAt"],
+        icon: "file-text",
+        group: "Editorial Content",
+      },
+    },
+  },
+});
+```
+
+### 2. Dot-Notation Path Overrides (`fields`)
+
+You can target nested fields inside groups, tabs, arrays, or semantic blocks using dot-notation path strings (e.g. `"content.heroBlock.title"` or `"category.relationTo"`).
+
+```typescript
+admin: {
+  collectionOverrides: {
+    posts: {
+      fields: {
+        // Change category field to allow selecting multiple categories
+        "category": {
+          relationTo: ["categories", "topics"],
+          hasMany: true,
+        },
+        // Target a field inside nested tabs/blocks
+        "content.heroBlock.title": {
+          label: "Headline Override",
+          admin: { description: "Custom hero title for marketing pages" },
+        },
+      },
+    },
+  },
+}
 ```
 
 ## Styling the Admin

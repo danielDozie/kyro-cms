@@ -5,6 +5,7 @@ import { SeoPreview } from "../ui/SeoPreview";
 interface TabsLayoutProps {
   field: Field;
   formData: Record<string, unknown>;
+  collectionSlug?: string;
   onTabDataChange: (value: unknown) => void;
   renderField: (
     field: Field,
@@ -16,6 +17,7 @@ interface TabsLayoutProps {
 export function TabsLayout({
   field,
   formData,
+  collectionSlug,
   onTabDataChange,
   renderField,
 }: TabsLayoutProps) {
@@ -39,7 +41,7 @@ export function TabsLayout({
             <button
               key={index}
               type="button"
-              className={`px-6 py-3 text-sm  tracking-widest font-medium transition-all border-b-2 -mb-[1px] whitespace-nowrap ${
+              className={`px-6 py-3 text-sm tracking-widest font-medium transition-all border-b-2 -mb-[1px] whitespace-nowrap ${
                 activeTab === index
                   ? "border-[var(--kyro-primary)] text-[var(--kyro-primary)]"
                   : "border-transparent text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] opacity-60 hover:opacity-100"
@@ -63,7 +65,7 @@ export function TabsLayout({
 
       {currentTab?.label === "SEO Settings" && (
         <div className="mt-12 pt-8 border-t border-[var(--kyro-border)]">
-          <h4 className="text-[10px] font-bold text-[var(--kyro-text-secondary)]  tracking-[0.2em] mb-6 opacity-50">
+          <h4 className="text-[10px] font-bold text-[var(--kyro-text-secondary)] tracking-[0.2em] mb-6 opacity-50">
             Live Google Preview
           </h4>
           <SeoPreview
@@ -80,6 +82,7 @@ export function TabsLayout({
               (typeof formData.slug === "object" ? "" : formData.slug) ||
               "your-slug"
             )}
+            collectionSlug={collectionSlug}
           />
         </div>
       )}

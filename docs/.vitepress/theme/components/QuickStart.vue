@@ -5,20 +5,19 @@ const copiedStep = ref(null)
 const command = 'npm create kyro@latest'
 const devCommand = 'npm run dev'
 
-const schemaCode = `import { defineConfig } from '@kyro/core'
-import { z } from 'zod'
+const schemaCode = `import { defineConfig, createLocalAdapter } from '@kyro-cms/core'
 
 export default defineConfig({
-  adapter: createLocalAdapter({ path: './data.db' }),
+  adapter: createLocalAdapter({ path: './data/kyro.db' }),
   collections: [{
-    name: 'posts',
-    fields: z.object({
-      title: z.string(),
-      content: z.string(),
-      status: z.enum(['draft', 'published']),
-    }),
-  }],
-  api: { rest: true, graphql: true, trpc: true },
+    slug: 'posts',
+    label: 'Posts',
+    fields: [
+      { name: 'title', type: 'text', required: true },
+      { name: 'content', type: 'richtext' },
+      { name: 'status', type: 'select', options: [{ label: 'Draft', value: 'draft' }, { label: 'Published', value: 'published' }] }
+    ]
+  }]
 })`
 
 function copyText(text, step) {

@@ -39,8 +39,13 @@ If you already have an Astro project, you can easily integrate Kyro CMS.
 
 ### 1. Install Dependencies
 
-> [!NOTE]
-> **Architecture Update:** Kyro CMS was recently split into two separate packages: `@kyro-cms/core` (which handles the backend, APIs, and database) and `@kyro-cms/admin` (the visual dashboard). You'll need both to get the full experience.
+::: info Modular Architecture
+Kyro CMS features a decoupled architecture split into two packages:
+- **`@kyro-cms/core`** — Headless CMS engine, ORM adapters, and auto-generated APIs (REST, GraphQL, tRPC, WebSocket).
+- **`@kyro-cms/admin`** — React-powered visual management dashboard.
+
+Install both packages for the complete CMS experience, or use `@kyro-cms/core` standalone for headless API-only backends.
+:::
 
 ```bash
 npm install @kyro-cms/core @kyro-cms/admin
@@ -101,7 +106,7 @@ Update your `astro.config.mjs` to include the Kyro integration and the Admin UI:
 ```js
 import { defineConfig } from "astro/config";
 import kyro from "@kyro-cms/core/integration";
-import { kyroAdmin } from "@kyro-cms/admin/integration";
+import { kyroAdmin } from "@kyro-cms/admin";
 
 export default defineConfig({
   integrations: [
@@ -131,7 +136,7 @@ If you need custom API behavior, create an endpoint at `src/pages/api/[...kyro].
 ```typescript
 // src/pages/api/[...kyro].ts
 import { createKyroServer } from '@kyro-cms/core/api-handler';
-import config from '../../../kyro.config';
+import config from '../../kyro.config';
 
 export const all = createKyroServer(config);
 ```

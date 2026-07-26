@@ -248,7 +248,8 @@ function debug(namespace) {
 debug.enable = function() {};
 debug.disable = function() {};
 debug.enabled = function() { return false; };
-export default debug;
+debug.default = debug;
+module.exports = debug;
 `;
                   }
                 },

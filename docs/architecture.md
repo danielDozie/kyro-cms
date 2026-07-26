@@ -85,3 +85,21 @@ Access control is unified across all three protocols (REST, GraphQL, tRPC) via t
 ## kyro-connect Typed SDK
 
 The kyro-connect SDK provides a fully typed client with generic `CollectionClient<T, F>`, `GqlClient`, and `UploadClient` classes.
+
+## Edge Cases & Common Pitfalls
+
+### 1. Accidentally Importing `@kyro-cms/core` into Client Islands
+- **The Issue:** Importing `@kyro-cms/core` inside a client-side component (e.g. `<Admin client:load />` or a React island) causes Vite to attempt bundling Node.js modules (`node:fs`, `node:crypto`, database drivers), resulting in build crashes.
+- **The Solution:** Always import browser types, themes, and client utilities from `@kyro-cms/core/client`.
+
+### 2. React Hooks Errors (Multiple React Instances)
+- **The Issue:** If `@kyro-cms/admin` and `@astrojs/react` resolve separate instances of `react` in node_modules, React throws `Invalid hook call` errors at runtime.
+- **The Solution:** `@kyro-cms/astro` automatically deduplicates `react` and `react-dom` in Vite's `resolve.dedupe` setting.
+
+### 3. CJS / ESM Virtual Module Interop
+- **The Issue:** When bundling SSR routes in Astro, virtual modules (like `\0debug-browser`) imported via CJS `require()` can wrap exports as `{ default: debug }` instead of a callable function.
+- **The Solution:** Kyro virtual shims export `module.exports = debug; debug.default = debug;` for dual CJS/ESM interop compatibility.
+
+### 4. Empty String Form Normalization
+- **The Issue:** HTML text inputs return empty strings `""` for untouched fields, which can break relational foreign keys or non-string database fields.
+- **The Solution:** Kyro automatically normalizes empty strings `""` to `null` for non-textual fields prior to database operations.
