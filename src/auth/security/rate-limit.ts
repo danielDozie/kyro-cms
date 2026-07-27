@@ -1,4 +1,4 @@
-import type { Redis } from "ioredis";
+type Redis = any;
 
 export interface RateLimitConfig {
   window: number;

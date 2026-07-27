@@ -4,7 +4,7 @@ import type {
   AuditLogFilter,
   AuditRetentionConfig,
 } from "./audit-log-types.js";
-import type { Redis } from "ioredis";
+type Redis = any;
 import { randomBytes } from "crypto";
 
 export {

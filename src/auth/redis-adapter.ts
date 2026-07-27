@@ -1,5 +1,5 @@
 import { autoInstall } from "../utils/auto-install.js";
-import type { Redis } from "ioredis";
+type Redis = any;
 import type { AuthAdapter, AuthUser, Session, UserRole } from "./types.js";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";

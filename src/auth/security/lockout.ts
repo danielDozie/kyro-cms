@@ -1,4 +1,4 @@
-import type { Redis } from "ioredis";
+type Redis = any;
 
 export interface LockoutConfig {
   maxAttempts: number;
@@ -172,7 +172,7 @@ export class AccountLockout {
   async getLockoutHistory(userId: string, limit: number = 10): Promise<Date[]> {
     const historyKey = this.historyKey(userId);
     const timestamps = await this.redis.lrange(historyKey, 0, limit - 1);
-    return timestamps.map((ts) => new Date(parseInt(ts, 10)));
+    return timestamps.map((ts: string) => new Date(parseInt(ts, 10)));
   }
 
   async getLockoutStats(userId: string): Promise<{
@@ -184,7 +184,7 @@ export class AccountLockout {
     const historyKey = this.historyKey(userId);
     const timestamps = await this.redis.lrange(historyKey, 0, -1);
 
-    const lockouts = timestamps.filter((_, i) => {
+    const lockouts = timestamps.filter((_: string, i: number) => {
       const attemptNum = i + 1;
       return attemptNum % this.config.maxAttempts === 0;
     }).length;
