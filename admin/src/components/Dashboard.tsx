@@ -125,7 +125,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
         ].map((stat, i) => (
           <div
             key={i}
-            className="surface-tile p-6 flex items-center justify-between group hover:border-[var(--kyro-primary)] transition-all duration-500 cursor-default"
+            className="surface-tile p-6 flex items-center justify-between rounded-lg group hover:border-[var(--kyro-primary)] transition-all duration-500 cursor-default"
           >
             <div>
               <p className="text-[10px] font-bold  tracking-[0.2em] opacity-40 mb-1">

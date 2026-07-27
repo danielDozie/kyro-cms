@@ -170,7 +170,7 @@ export function PageHeader({
   const lastBreadcrumb = breadcrumbs?.[breadcrumbs.length - 1];
 
   return (
-    <div className="surface-tile px-3 md:px-6 py-3 md:pt-4 mb-4 md:mb-8">
+    <div className="surface-tile px-3 md:px-6 py-3 md:pt-4 mb-4 md:mb-8 rounded-lg">
       {/* ─── MOBILE ─── */}
       <div className="md:hidden space-y-2">
         {(breadcrumbs || back) && (

@@ -18,13 +18,10 @@ let error = null;
 
 if (id) {
   try {
-    const response = await fetch(
-      `${Astro.url.origin}${apiPath}/${collection}/${id}`,
-      {
-        headers: Astro.request.headers,
-        credentials: "include",
-      },
-    );
+    const response = await fetch(`${Astro.url.origin}${apiPath}/${collection}/${id}`, {
+      headers: Astro.request.headers,
+      credentials: "include",
+    });
     if (response.ok) {
       const result = await response.json();
       doc = result.data || null;
@@ -44,34 +41,19 @@ const pageTitle = doc
 <AdminLayout title={pageTitle}>
   <Fragment set:html={`<style>${richTextStyles}</style>`} />
   <div class="flex-1 overflow-y-auto space-y-6">
-    <div class="surface-tile p-6 flex items-center justify-between">
+    <div class="surface-tile p-6 flex items-center justify-between rounded-lg">
       <div class="flex items-center gap-4">
         <a
           href={`${adminPath}/${collection}/${id}`}
           class="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2.5"
-              d="M15 19l-7-7 7-7"></path>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
           </svg>
         </a>
         <div>
-          <h1
-            class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]"
-          >
-            Preview Mode
-          </h1>
-          <p class="text-sm text-[var(--kyro-text-secondary)] mt-0.5">
-            Showing draft content
-          </p>
+          <h1 class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">Preview Mode</h1>
+          <p class="text-sm text-[var(--kyro-text-secondary)] mt-0.5">Showing draft content</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -110,51 +92,32 @@ const pageTitle = doc
                   {field.label || field.name}
                 </h3>
                 <div class="text-sm text-[var(--kyro-text-primary)]">
-                  {field.type === "text" && (
-                    <p class="whitespace-pre-wrap">{value}</p>
-                  )}
-                  {field.type === "textarea" && (
-                    <p class="whitespace-pre-wrap">{value}</p>
-                  )}
-                  {field.type === "richtext" && (
-                    <div set:html={renderRichText(value)} />
-                  )}
+                  {field.type === "text" && <p class="whitespace-pre-wrap">{value}</p>}
+                  {field.type === "textarea" && <p class="whitespace-pre-wrap">{value}</p>}
+                  {field.type === "richtext" && <div set:html={renderRichText(value)} />}
                   {field.type === "markdown" && (
                     <div class="prose prose-sm max-w-none">
-                      <pre class="whitespace-pre-wrap bg-transparent p-0">
-                        {value}
-                      </pre>
+                      <pre class="whitespace-pre-wrap bg-transparent p-0">{value}</pre>
                     </div>
                   )}
                   {field.type === "number" && <p>{value}</p>}
                   {field.type === "boolean" && (
-                    <span class={value ? "text-green-400" : "text-red-400"}>
-                      {value ? "Yes" : "No"}
-                    </span>
+                    <span class={value ? "text-green-400" : "text-red-400"}>{value ? "Yes" : "No"}</span>
                   )}
                   {field.type === "select" && (
-                    <span class="px-2 py-1 bg-[var(--kyro-surface-accent)] rounded text-xs">
-                      {value}
-                    </span>
+                    <span class="px-2 py-1 bg-[var(--kyro-surface-accent)] rounded text-xs">{value}</span>
                   )}
-                  {field.type === "date" && (
-                    <p>{new Date(value).toLocaleString()}</p>
-                  )}
+                  {field.type === "date" && <p>{new Date(value).toLocaleString()}</p>}
                   {field.type === "upload" && value.url && (
                     <div>
-                      {value.url.match(
-                        /\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i,
-                      ) ? (
+                      {value.url.match(/\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i) ? (
                         <img
                           src={value.url}
                           alt={value.filename || "Image"}
                           class="max-w-md rounded-lg border border-[var(--kyro-border)]"
                         />
                       ) : (
-                        <a
-                          href={value.url}
-                          class="text-blue-400 hover:underline"
-                        >
+                        <a href={value.url} class="text-blue-400 hover:underline">
                           {value.filename || "Download"}
                         </a>
                       )}
@@ -164,9 +127,7 @@ const pageTitle = doc
                     <div class="grid grid-cols-4 gap-3">
                       {value.map((item: any, idx: number) =>
                         item?.url ? (
-                          item.url.match(
-                            /\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i,
-                          ) ? (
+                          item.url.match(/\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i) ? (
                             <img
                               src={item.url}
                               alt={item.filename || `Image ${idx + 1}`}
@@ -189,14 +150,8 @@ const pageTitle = doc
                             .filter(([, v]) => v !== undefined)
                             .map(([k, v]) => (
                               <div class="flex gap-2">
-                                <span class="text-[var(--kyro-text-muted)]">
-                                  {k}:
-                                </span>
-                                <span>
-                                  {typeof v === "object"
-                                    ? JSON.stringify(v)
-                                    : String(v)}
-                                </span>
+                                <span class="text-[var(--kyro-text-muted)]">{k}:</span>
+                                <span>{typeof v === "object" ? JSON.stringify(v) : String(v)}</span>
                               </div>
                             ))}
                         </div>
@@ -205,10 +160,7 @@ const pageTitle = doc
                   )}
                   {field.type === "relationship" && (
                     <p class="text-[var(--kyro-text-secondary)]">
-                      {value.title ||
-                        value.name ||
-                        value.slug ||
-                        JSON.stringify(value)}
+                      {value.title || value.name || value.slug || JSON.stringify(value)}
                     </p>
                   )}
                   {field.type === "json" && (
@@ -217,9 +169,7 @@ const pageTitle = doc
                     </pre>
                   )}
                   {field.type === "code" && (
-                    <pre class="text-xs bg-[var(--kyro-surface-accent)] p-3 rounded overflow-x-auto">
-                      {value}
-                    </pre>
+                    <pre class="text-xs bg-[var(--kyro-surface-accent)] p-3 rounded overflow-x-auto">{value}</pre>
                   )}
                   {(!field.type || ["text", "string"].includes(field.type)) && (
                     <p>{typeof value === "object" ? JSON.stringify(value) : value}</p>

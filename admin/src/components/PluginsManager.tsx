@@ -118,7 +118,7 @@ export function PluginsManager() {
         </div>
       )}
 
-      <div className="flex flex-col gap-8 surface-tile p-8">
+      <div className="flex flex-col gap-8 surface-tile p-8 rounded-lg">
         {/* Info Banner */}
         <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-3">
           <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />

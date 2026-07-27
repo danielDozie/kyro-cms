@@ -34,7 +34,7 @@ function timeAgo(ts: number): string {
 }
 
 export function SessionsManager() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,9 +43,9 @@ export function SessionsManager() {
 
   useEffect(() => {
     apiGet<{ sessions: Session[] }>("/api/auth/sessions")
-      .then((r) => { 
-        setSessions(Array.isArray(r.sessions) ? r.sessions : []); 
-        setError(""); 
+      .then((r) => {
+        setSessions(Array.isArray(r.sessions) ? r.sessions : []);
+        setError("");
       })
       .catch(() => setError("Failed to load sessions"))
       .finally(() => setLoading(false));
@@ -57,11 +57,11 @@ export function SessionsManager() {
       await apiDelete(`/api/auth/sessions/${id}`);
       setSessions((p) => p.filter((s) => s.id !== id));
       toast.success("Session revoked");
-    } catch { 
-      setError("Failed to revoke session"); 
+    } catch {
+      setError("Failed to revoke session");
       toast.error("Failed to revoke session");
-    } finally { 
-      setRevokingId(null); 
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -71,11 +71,11 @@ export function SessionsManager() {
       await apiDelete("/api/auth/sessions");
       setSessions((p) => p.filter((s) => s.currentSession));
       toast.success("All other sessions revoked");
-    } catch { 
-      setError("Failed to revoke sessions"); 
+    } catch {
+      setError("Failed to revoke sessions");
       toast.error("Failed to revoke sessions");
-    } finally { 
-      setRevokingAll(false); 
+    } finally {
+      setRevokingAll(false);
     }
   };
 
@@ -98,7 +98,7 @@ export function SessionsManager() {
         ] : undefined}
       />
 
-      <div className="flex flex-col gap-8 surface-tile p-8">
+      <div className="flex flex-col gap-8 surface-tile p-8 rounded-lg">
         {/* Security & Summary Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 p-5 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex items-center gap-4">
@@ -159,8 +159,8 @@ export function SessionsManager() {
                   <div className="flex items-start justify-between gap-4 relative z-10">
                     <div className="flex items-center gap-3">
                       <div className={`kyro-btn-primary p-2.5 rounded-xl transition-colors shadow-sm ${s.currentSession ? "" : "bg-[var(--kyro-surface)] text-[var(--kyro-text-secondary)] border border-[var(--kyro-border)]"}`}>
-                        {s.deviceInfo?.platform?.toLowerCase().includes("android") || s.deviceInfo?.platform?.toLowerCase().includes("ios") 
-                          ? <Smartphone className="w-4 h-4" /> 
+                        {s.deviceInfo?.platform?.toLowerCase().includes("android") || s.deviceInfo?.platform?.toLowerCase().includes("ios")
+                          ? <Smartphone className="w-4 h-4" />
                           : <Laptop className="w-4 h-4" />}
                       </div>
                       <div>

@@ -465,7 +465,7 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
 
   if (error) {
     return (
-      <div className="surface-tile overflow-hidden mb-6">
+      <div className="surface-tile overflow-hidden rounded-lg mb-6">
         <div className="p-6 border-b" style={{ borderColor: "var(--kyro-border)" }}>
           <h2 className="text-xl font-bold tracking-tight" style={{ color: "var(--kyro-text-primary)" }}>Metrics</h2>
         </div>
@@ -536,10 +536,10 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
   // Dynamically extract top active custom collections permitted for user
   const activeCustomCollections = data?.collectionCounts
     ? Object.entries(data.collectionCounts)
-        .filter(([slug, count]) => count > 0 && !["users", "audit_logs", "media"].includes(slug))
-        .filter(([slug]) => isAdmin || permissions?.collections?.[slug]?.read === true)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
+      .filter(([slug, count]) => count > 0 && !["users", "audit_logs", "media"].includes(slug))
+      .filter(([slug]) => isAdmin || permissions?.collections?.[slug]?.read === true)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
     : [];
 
   const dynamicCollectionCards = activeCustomCollections.map(([slug, count]) => {

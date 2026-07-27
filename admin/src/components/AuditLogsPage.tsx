@@ -157,7 +157,7 @@ function MetadataRow({ label, value }: { label: string; value: unknown }) {
 }
 
 export function AuditLogsPage() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -212,7 +212,7 @@ export function AuditLogsPage() {
   return (
     <div className="flex-1 overflow-y-auto  space-y-6">
       {/* Header */}
-      <div className="surface-tile p-6 flex items-center justify-between gap-8">
+      <div className="surface-tile p-6 flex items-center justify-between rounded-lg gap-8 rounded-lg">
         <div>
           <h1 className="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
             Audit Logs
@@ -231,7 +231,7 @@ export function AuditLogsPage() {
       </div>
 
       {/* Filters */}
-      <div className="surface-tile p-4 flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3">
+      <div className="surface-tile p-4 rounded-lg flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-3 rounded-lg">
         <div className="relative flex-1 min-w-48">
           <Search className="w-4 h-4" />
           <input
@@ -311,9 +311,9 @@ export function AuditLogsPage() {
               color: "text-[var(--kyro-text-primary)]",
             },
           ].map(({ label, value, color }) => (
-            <div key={label} className="surface-tile p-4">
+            <div key={label} className="surface-tile p-4 rounded-lg">
               <div className={`text-2xl font-bold ${color}`}>{value}</div>
-              <div className="text-[10px] font-bold text-[var(--kyro-text-secondary)]  tracking-wider mt-1">
+              <div className="text-[10px] font-bold text-[var(--kyro-text-secondary)] tracking-wider mt-1">
                 {label}
               </div>
             </div>
@@ -322,7 +322,7 @@ export function AuditLogsPage() {
       )}
 
       {/* Table */}
-      <div className="surface-tile overflow-x-auto">
+      <div className="surface-tile overflow-x-auto rounded-lg">
         {loading ? (
           <div className="space-y-2 p-4">
             <Shimmer variant="table-row" count={5} />
@@ -471,7 +471,7 @@ export function AuditLogsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="surface-tile rounded-lg p-5 flex items-center justify-between">
           <p className="text-sm text-[var(--kyro-text-secondary)] font-medium">
             Page {page} of {totalPages}
             <span className="ml-2 text-[var(--kyro-text-muted)]">

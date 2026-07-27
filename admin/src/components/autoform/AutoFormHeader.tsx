@@ -42,7 +42,7 @@ export function AutoFormHeader({
   handleSchedulePublish,
   handleConflictOverride,
 }: AutoFormHeaderProps) {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const [now, setNow] = useState(Date.now());
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
@@ -402,7 +402,7 @@ export function AutoFormHeader({
       </header>
 
       {/* DESKTOP HEADER */}
-      <header className="hidden md:flex surface-tile px-8 py-6 items-center justify-between sticky top-0 border-b border-[var(--kyro-border)] mb-8 bg-[var(--kyro-surface)] z-50 backdrop-blur-md">
+      <header className="hidden md:flex surface-tile px-8 py-6 items-center justify-between sticky top-0 border-b border-[var(--kyro-border)] mb-8 bg-[var(--kyro-surface)] z-50 backdrop-blur-md rounded-lg">
         <div className="flex flex-col gap-2 min-w-0">
           <div className="flex items-center gap-3 flex-wrap min-w-0">
             <a

@@ -143,7 +143,7 @@ export function MediaGallery({
   multiple?: boolean;
   pickerMode?: boolean;
 }) {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const { permissions } = useAuthStore();
   const canUpload = permissions?.media?.create !== false;
   const canDelete = permissions?.media?.delete !== false;
@@ -678,7 +678,7 @@ export function MediaGallery({
                 ))}
               </div>
             ) : (
-              <div className="surface-tile overflow-hidden animate-in fade-in duration-500">
+              <div className="surface-tile overflow-hidden rounded-lg animate-in fade-in duration-500">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[10px] font-bold  tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40 border-b border-[var(--kyro-border)]">

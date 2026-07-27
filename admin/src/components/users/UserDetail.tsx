@@ -59,7 +59,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
         .then((res) => {
           if (res?.user?.role) setCurrentUserRole(res.user.role);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
 
     const handler = (e: any) => {
@@ -214,7 +214,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
 
   return (
     <div className="flex-1 overflow-y-auto  space-y-8">
-      <div className="surface-tile p-6 flex items-center justify-between">
+      <div className="surface-tile p-6 flex items-center justify-between rounded-lg">
         <div className="flex items-center gap-4">
           <div className="relative w-14 h-14 rounded-full bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] flex items-center justify-center font-bold text-xl overflow-hidden flex-shrink-0">
             {avatarUrl ? (
@@ -250,7 +250,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
         )}
       </div>
 
-      <div className="surface-tile p-6">
+      <div className="surface-tile p-6 rounded-lg">
         <h2 className="text-lg font-bold text-[var(--kyro-text-primary)] tracking-tighter mb-6">
           Details
         </h2>

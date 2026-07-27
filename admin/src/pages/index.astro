@@ -62,7 +62,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
     ) : (
     <>
     <!-- Header -->
-    <div class="surface-tile p-6 flex items-center justify-between gap-8">
+    <div class="surface-tile p-6 flex items-center justify-between rounded-lg gap-8 rounded-lg">
       <div class="relative flex-1 max-w-2xl">
         <div class="absolute inset-y-0 left-6 flex items-center pointer-events-none text-[var(--kyro-text-muted)]">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
 
         <!-- Security Quick Actions -->
     {hasAnySecurityAction && (
-      <div id="dashboard-security-section" class="surface-tile overflow-hidden rounded-lg mt-6">
+      <div id="dashboard-security-section" class="surface-tile overflow-hidden rounded-lg rounded-lg mt-6">
         <div class="p-6 border-b border-[var(--kyro-border)]">
           <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">Security & Monitoring</h2>
           <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">

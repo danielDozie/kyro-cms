@@ -89,7 +89,7 @@ export function UserForm({ mode, apiPath, adminPath, user }: UserFormProps) {
 
   return (
     <div className="flex-1 overflow-y-auto  space-y-8">
-      <div className="surface-tile p-6 flex items-center justify-between">
+      <div className="surface-tile p-6 flex items-center justify-between rounded-lg">
         <div>
           <h1 className="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
             {mode === "create" ? "Create User" : "Edit User"}

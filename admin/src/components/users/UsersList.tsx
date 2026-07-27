@@ -84,7 +84,7 @@ export function UsersList({
 
   return (
     <div className="flex-1 overflow-y-auto  space-y-8">
-      <div className="surface-tile p-6 flex items-center justify-between">
+      <div className="surface-tile p-6 flex items-center justify-between rounded-lg">
         <div>
           <h1 className="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
             Users
@@ -117,7 +117,7 @@ export function UsersList({
         </a>
       </div>
 
-      <div className="surface-tile overflow-hidden">
+      <div className="surface-tile overflow-hidden rounded-lg">
         {users.length === 0 ? (
           <div className="px-8 py-16 text-center">
             <div className="flex flex-col items-center gap-4">

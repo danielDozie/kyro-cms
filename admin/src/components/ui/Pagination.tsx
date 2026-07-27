@@ -13,7 +13,7 @@ export function Pagination({ page, totalPages, totalDocs, limit, onPageChange, o
   if (totalPages <= 1) return null;
 
   return (
-    <div className="surface-tile flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-[var(--kyro-border)]">
+    <div className="surface-tile flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-[var(--kyro-border)] rounded-lg">
       {totalDocs !== undefined && limit ? (
         <span className="text-xs text-[var(--kyro-text-secondary)] font-medium">
           Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalDocs)} of {totalDocs}

@@ -382,7 +382,7 @@ export function ListView({
 
 
       {/* Toolbar */}
-      <div className="surface-tile p-4 flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+      <div className="surface-tile p-4 flex flex-col lg:flex-row gap-4 items-start lg:items-center rounded-lg">
         {/* Search */}
         <div className="relative flex-1 w-full lg:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--kyro-text-muted)]" />
@@ -471,7 +471,7 @@ export function ListView({
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="surface-tile p-4 border-l-4 border-[var(--kyro-sidebar-active)]">
+        <div className="surface-tile p-4 border-l-4 border-[var(--kyro-sidebar-active)] rounded-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-[var(--kyro-text-primary)]">
               {t("listView.advancedFilters", { defaultValue: "Advanced Filters" })}
@@ -573,7 +573,7 @@ export function ListView({
       )}
 
       {/* Data Table */}
-      <div className="surface-tile overflow-hidden">
+      <div className="surface-tile overflow-hidden rounded-lg">
         {loading ? (
           <div className="space-y-2 p-4">
             <Shimmer variant="table-row" count={8} />

@@ -34,7 +34,7 @@ const description =
 <AdminLayout title={`Settings - ${title}`}>
   <div class="flex-1 overflow-y-auto">
     { !hasVersioning && (
-      <div class="surface-tile p-8 pb-0 mb-6">
+      <div class="surface-tile p-8 pb-0 mb-6 rounded-lg">
         <div class="flex items-center justify-between mb-8">
           <div>
             <h1
@@ -81,7 +81,7 @@ const description =
     )}
 
     <!-- Form Section -->
-    <div class={hasVersioning ? "" : "surface-tile p-10 pt-4 mb-6 rounded-4xl"}>
+    <div class={hasVersioning ? "" : "surface-tile p-10 pt-4 mb-6 rounded-lg"}>
       { !hasVersioning && (
         <div class="mb-8">
           <h2

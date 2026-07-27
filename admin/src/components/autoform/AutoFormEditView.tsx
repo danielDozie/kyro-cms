@@ -16,13 +16,13 @@ export function AutoFormEditView({
   collectionSlug,
   renderField,
 }: AutoFormEditViewProps) {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const { showPreview, sidebarCollapsed, formData, previewUrl } = useAutoFormStore();
 
   if (layout === "single") {
     return (
       <div className="w-full space-y-6 md:space-y-8">
-        <div className="surface-tile p-4 md:p-8 space-y-6 md:space-y-8">
+        <div className="surface-tile p-4 md:p-8 space-y-6 md:space-y-8 rounded-lg">
           {config.fields.map((f: Field) => renderField(f))}
         </div>
       </div>
@@ -47,7 +47,7 @@ export function AutoFormEditView({
         {config.tabs ? (
           renderField({ type: "tabs", tabs: config.tabs } as Field)
         ) : (
-          <div className="surface-tile p-4 md:p-8 space-y-6 md:space-y-8">
+          <div className="surface-tile p-4 md:p-8 space-y-6 md:space-y-8 rounded-lg">
             {config.fields
               .filter(
                 (f: Field) => !f.admin?.position || f.admin.position === "main",
@@ -77,7 +77,7 @@ export function AutoFormEditView({
       ) : sidebarCollapsed ? null : (
         <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
           {config.fields.some((f: Field) => f.admin?.position === "sidebar") && (
-            <div className="surface-tile p-4 md:p-6 space-y-4 md:space-y-6">
+            <div className="surface-tile p-4 md:p-6 space-y-4 md:space-y-6 rounded-lg">
               <h3 className="text-[10px] font-bold tracking-[0.2em] opacity-40">
                 Settings
               </h3>

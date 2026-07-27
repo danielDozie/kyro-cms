@@ -159,52 +159,69 @@ function isActive(item: NavItem): boolean {
   id="kyro-sidebar"
   class="surface-tile w-[280px] md:w-[320px] flex flex-col flex-shrink-0 overflow-hidden fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r md:border-r-0 border-[var(--kyro-border)] rounded-r-2xl md:rounded-3xl rounded-l-none md:rounded-l-3xl shadow-2xl md:shadow-none"
 >
-  <div class="px-6 md:px-8 py-6 md:py-8 flex items-center justify-between gap-3">
-    {
-      siteLogo || darkLogo ? (
-        <div class="flex items-center gap-3">
-          <div class="flex items-center">
-            {siteLogo && (
-              <img
-                src={siteLogo.url}
-                alt={logoAlt}
-                style={{
-                  width: logoWidth ? `${logoWidth}px` : "auto",
-                  height: logoHeight ? `${logoHeight}px` : "32px",
-                  objectFit: "contain",
-                }}
-                class={`rounded-lg ${darkLogo ? "block dark:hidden" : ""}`}
-              />
-            )}
-            {darkLogo && (
-              <img
-                src={darkLogo.url}
-                alt={logoAlt}
-                style={{
-                  width: logoWidth ? `${logoWidth}px` : "auto",
-                  height: logoHeight ? `${logoHeight}px` : "32px",
-                  objectFit: "contain",
-                }}
-                class={`rounded-lg ${siteLogo ? "hidden dark:block" : ""}`}
-              />
+  <div class="px-6 md:px-6 py-6 flex items-center justify-between gap-2 border-b border-[var(--kyro-border)]/50 shrink-0">
+    <div class="flex items-center gap-3 overflow-hidden min-w-0">
+      {
+        siteLogo || darkLogo ? (
+          <div class="flex items-center gap-3">
+            <div class="flex items-center flex-shrink-0">
+              {siteLogo && (
+                <img
+                  src={siteLogo.url}
+                  alt={logoAlt}
+                  style={{
+                    width: logoWidth ? `${logoWidth}px` : "auto",
+                    height: logoHeight ? `${logoHeight}px` : "32px",
+                    objectFit: "contain",
+                  }}
+                  class={`rounded-lg ${darkLogo ? "block dark:hidden" : ""}`}
+                />
+              )}
+              {darkLogo && (
+                <img
+                  src={darkLogo.url}
+                  alt={logoAlt}
+                  style={{
+                    width: logoWidth ? `${logoWidth}px` : "auto",
+                    height: logoHeight ? `${logoHeight}px` : "32px",
+                    objectFit: "contain",
+                  }}
+                  class={`rounded-lg ${siteLogo ? "hidden dark:block" : ""}`}
+                />
+              )}
+            </div>
+            {showSiteName && (
+              <span class="sidebar-text text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] truncate">
+                {siteName}
+              </span>
             )}
           </div>
-          {showSiteName && (
-            <span class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">
+        ) : (
+          <div class="flex items-center gap-3 overflow-hidden">
+            <img src="/logo-white.svg" alt="Kyro CMS" class="w-7 h-7 hidden dark:block flex-shrink-0" />
+            <img src="/logo.svg" alt="Kyro CMS" class="w-7 h-7 block dark:hidden flex-shrink-0" />
+            <span class="sidebar-text text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)] truncate">
               {siteName}
             </span>
-          )}
-        </div>
-      ) : (
-        <div class="flex items-center gap-3">
-          <img src="/logo-white.svg" alt="Kyro CMS" class="w-7 h-7 hidden dark:block" />
-          <img src="/logo.svg" alt="Kyro CMS" class="w-7 h-7 block dark:hidden" />
-          <span class="text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)]">
-            {siteName}
-          </span>
-        </div>
-      )
-    }
+          </div>
+        )
+      }
+    </div>
+
+    {/* Desktop Panel Toggle Button */}
+    <button
+      id="sidebar-panel-toggle"
+      type="button"
+      title="Minimize Sidebar"
+      aria-label="Toggle Sidebar"
+      class="hidden md:flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
+    >
+      <svg id="sidebar-toggle-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+      </svg>
+    </button>
+
+    {/* Mobile Close Button */}
     <button id="mobile-close-btn" class="md:hidden p-2 -mr-2 rounded-lg text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
@@ -229,9 +246,13 @@ function isActive(item: NavItem): boolean {
                 const type = item.href.includes("/settings")
                   ? "global"
                   : "collection";
+                const fallback = item.label.split('.').pop() || item.label;
+                const capitalized = fallback.charAt(0).toUpperCase() + fallback.slice(1);
+                const itemText = i18next.t(item.label, { defaultValue: capitalized }) || capitalized;
                 return (
                   <a
                     href={item.href}
+                    title={itemText}
                     data-nav-item
                     data-slug={slug}
                     data-type={type}
@@ -250,14 +271,10 @@ function isActive(item: NavItem): boolean {
                     {(() => {
                       const iconName = iconAliases[item.icon] || item.icon;
                       const Icon = (Icons as any)[iconName] || Icons.Dot;
-                      return <Icon className="w-4 h-4" strokeWidth={2.5} />;
+                      return <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
                     })()}
-                    <span>
-                      {(() => {
-                        const fallback = item.label.split('.').pop() || item.label;
-                        const capitalized = fallback.charAt(0).toUpperCase() + fallback.slice(1);
-                        return i18next.t(item.label, { defaultValue: capitalized }) || capitalized;
-                      })()}
+                    <span class="sidebar-text truncate">
+                      {itemText}
                     </span>
                   </a>
                 );
@@ -396,7 +413,41 @@ function isActive(item: NavItem): boolean {
     const runPruning = () => {
       initSidebar();
       pruneSidebar();
+      initPanelToggle();
     };
+
+    function initPanelToggle() {
+      const sidebar = document.getElementById("kyro-sidebar");
+      const toggleBtn = document.getElementById("sidebar-panel-toggle");
+      if (!sidebar || !toggleBtn) return;
+
+      const updateMinimizedUI = (isMin: boolean) => {
+        if (isMin) {
+          sidebar.setAttribute("data-minimized", "true");
+          sidebar.classList.remove("md:w-[280px]", "md:w-[320px]");
+          sidebar.classList.add("md:w-[80px]");
+          toggleBtn.setAttribute("title", "Expand Sidebar");
+        } else {
+          sidebar.removeAttribute("data-minimized");
+          sidebar.classList.remove("md:w-[80px]");
+          sidebar.classList.add("md:w-[280px]");
+          toggleBtn.setAttribute("title", "Minimize Sidebar");
+        }
+      };
+
+      const savedMin = localStorage.getItem("kyro-sidebar-minimized") === "true";
+      updateMinimizedUI(savedMin);
+
+      const newToggleBtn = toggleBtn.cloneNode(true);
+      if (toggleBtn.parentNode) {
+        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+        newToggleBtn.addEventListener("click", () => {
+          const isNowMin = sidebar.getAttribute("data-minimized") !== "true";
+          localStorage.setItem("kyro-sidebar-minimized", isNowMin ? "true" : "false");
+          updateMinimizedUI(isNowMin);
+        });
+      }
+    }
 
     // Run on load and view transitions
     runPruning();
@@ -419,6 +470,32 @@ function isActive(item: NavItem): boolean {
     }, 100);
     setTimeout(() => clearInterval(authCheckInterval), 5000);
   </script>
+
+  <style>
+    #kyro-sidebar[data-minimized="true"] {
+      width: 80px !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-text {
+      display: none !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle p,
+    #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle svg {
+      display: none !important;
+    }
+    #kyro-sidebar[data-minimized="true"] [data-nav-item] {
+      justify-content: center !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      width: 44px !important;
+      height: 44px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      border-radius: 12px !important;
+    }
+    #kyro-sidebar[data-minimized="true"] #sidebar-toggle-icon {
+      transform: rotate(180deg);
+    }
+  </style>
 
   <div class="px-6 py-4 mt-auto">
     <div
