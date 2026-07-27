@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/astro",
-  "version": "0.12.21",
+  "version": "0.12.22",
   "description": "Astro 5+ integration, Content Layer loaders, Actions, Middleware, Dev Toolbar widget, and Zero-JS components for Kyro CMS",
   "type": "module",
   "main": "./dist/index.js",
@@ -64,11 +64,11 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@kyro-cms/core": "0.12.18",
+    "@kyro-cms/core": "0.12.22",
     "astro": "^5.0.0"
   },
   "devDependencies": {
-    "@kyro-cms/core": "0.12.18",
+    "@kyro-cms/core": "0.12.22",
     "astro": "^5.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
