@@ -167,6 +167,20 @@ Administrators can configure the default role automatically assigned to newly re
 - Only **Super Admin** users (`super_admin`) can change a user's role in the admin dashboard (`/admin/users`) or via `PATCH /api/users/:id`.
 - Role assignment fields are disabled for non-Super Admin users to prevent privilege escalation.
 
+### 4. Disabling Email Verification / OTP Requirement (`EMAIL_VERIFICATION_REQUIRED`)
+By default, Kyro CMS requires newly registered users to verify their email address before logging in (`EMAIL_VERIFICATION_REQUIRED=true`).
+
+You can disable the email verification / OTP requirement globally in your environment:
+
+```env
+# Disable email verification & OTP requirement (ideal for local development or staging)
+EMAIL_VERIFICATION_REQUIRED=false
+```
+
+- **`EMAIL_VERIFICATION_REQUIRED=true` (Default)**: Users must verify their email address via confirmation token link before logging in.
+- **`EMAIL_VERIFICATION_REQUIRED=false`**: Bypasses the email verification check during authentication, allowing instant login without email OTP.
+- **Bootstrapped Admin Accounts**: Admin accounts created via environment variables (`KYRO_ADMIN_EMAIL`) or the `kyro auth bootstrap` CLI are automatically initialized as verified (`emailVerified: true`).
+
 ---
 
 ## Email Templates & Notifications

@@ -80,6 +80,7 @@ docker-compose -f docker-compose.prod.yml up -d
 | `KYRO_SECRET` | JWT signing secret (min 32 chars) | Yes | — |
 | `KYRO_ADMIN_EMAIL` | Bootstrap admin email | No | `admin@kyro.dev` |
 | `KYRO_ADMIN_PASSWORD` | Bootstrap admin password | No | — |
+| `EMAIL_VERIFICATION_REQUIRED` | Set to `false` to disable email OTP / verification checks | No | `true` |
 | `NODE_ENV` | Environment mode (`production` / `development`) | No | `development` |
 
 ---
