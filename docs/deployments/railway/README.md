@@ -2,6 +2,8 @@
 
 This namespace provides automated deployment scripts and documentation for hosting **Kyro CMS (Blog Template)** on Railway Web Services with PostgreSQL and S3/R2 media storage.
 
+[![Railway](https://img.shields.io/badge/Deploy_on-Railway-18181B?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2FdanielDozie%2Fkyro-cms)
+
 ---
 
 ## ⚡ One-Line Automated Deployment

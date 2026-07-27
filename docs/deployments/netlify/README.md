@@ -2,6 +2,8 @@
 
 This namespace provides automated deployment scripts and documentation for hosting **Kyro CMS (Blog Template)** on Netlify Edge with PostgreSQL and S3/R2 media storage.
 
+[![Netlify](https://img.shields.io/badge/Deploy_to-Netlify-18181B?style=for-the-badge&logo=netlify&logoColor=00C7B7)](https://app.netlify.com/start/deploy?repository=https://github.com/danielDozie/kyro-cms)
+
 ---
 
 ## ⚡ One-Line Automated Deployment

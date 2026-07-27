@@ -8,6 +8,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
 
+<br />
+
+[![Cloudflare Pages](https://img.shields.io/badge/Deploy_to-Cloudflare_Pages-18181B?style=for-the-badge&logo=cloudflare&logoColor=F38020)](https://deploy.workers.cloudflare.com/?url=https://github.com/danielDozie/kyro-cms)
+[![Vercel](https://img.shields.io/badge/Deploy_with-Vercel-18181B?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FdanielDozie%2Fkyro-cms)
+[![Netlify](https://img.shields.io/badge/Deploy_to-Netlify-18181B?style=for-the-badge&logo=netlify&logoColor=00C7B7)](https://app.netlify.com/start/deploy?repository=https://github.com/danielDozie/kyro-cms)
+[![Railway](https://img.shields.io/badge/Deploy_on-Railway-18181B?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2FdanielDozie%2Fkyro-cms)
+
 </div>
 
 ---

@@ -2,6 +2,8 @@
 
 This namespace provides automated deployment scripts and documentation for hosting **Kyro CMS (Blog Template)** on Vercel Serverless with PostgreSQL and S3/R2 media storage.
 
+[![Vercel](https://img.shields.io/badge/Deploy_with-Vercel-18181B?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FdanielDozie%2Fkyro-cms)
+
 ---
 
 ## ⚡ One-Line Automated Deployment
