@@ -7,6 +7,6 @@ pages_build_output_dir = "./dist"
 directory = "./dist"
 
 [build]
-command = "bun run build"
+command = "pnpm run build"
 
 
