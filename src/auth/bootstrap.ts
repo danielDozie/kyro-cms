@@ -74,6 +74,10 @@ export async function bootstrapAdmin(
       tenantId,
     });
 
+    await authAdapter.updateUser?.(user.id, {
+      emailVerified: true,
+    });
+
     if (sendWelcomeEmail && emailConfig) {
       const emailTransport = new EmailTransport(emailConfig);
       const templates = emailTransport.getTemplates();
