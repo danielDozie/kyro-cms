@@ -4,7 +4,7 @@ This directory contains deployment configurations and setup guides for various h
 
 ## 1-Click Instant Deployments
 
-[![Cloudflare Pages](https://img.shields.io/badge/Deploy_to-Cloudflare_Pages-18181B?style=for-the-badge&logo=cloudflare&logoColor=F38020)](https://deploy.workers.cloudflare.com/?url=https://github.com/danielDozie/kyro-cms)
+[![Cloudflare](https://img.shields.io/badge/Deploy_to-Cloudflare-18181B?style=for-the-badge&logo=cloudflare&logoColor=F38020)](https://deploy.workers.cloudflare.com/?url=https://github.com/danielDozie/kyro-cms)
 [![Vercel](https://img.shields.io/badge/Deploy_with-Vercel-18181B?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FdanielDozie%2Fkyro-cms)
 [![Netlify](https://img.shields.io/badge/Deploy_to-Netlify-18181B?style=for-the-badge&logo=netlify&logoColor=00C7B7)](https://app.netlify.com/start/deploy?repository=https://github.com/danielDozie/kyro-cms)
 [![Railway](https://img.shields.io/badge/Deploy_on-Railway-18181B?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2FdanielDozie%2Fkyro-cms)
