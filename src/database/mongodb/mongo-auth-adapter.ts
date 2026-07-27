@@ -395,8 +395,9 @@ export class MongoDBAuthAdapter implements AuthAdapter {
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
     await this.db.collection("email_verifications").insertOne({
-      userId: new (await import(/* @vite-ignore */ "mongodb")).ObjectId(userId),
+      userId: new mongoMod.ObjectId(userId),
       token,
       expiresAt,
       createdAt: new Date(),
@@ -435,8 +436,9 @@ export class MongoDBAuthAdapter implements AuthAdapter {
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
+    const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
     await this.db.collection("password_resets").insertOne({
-      userId: new (await import(/* @vite-ignore */ "mongodb")).ObjectId(user.id),
+      userId: new mongoMod.ObjectId(user.id),
       token,
       expiresAt,
       createdAt: new Date(),
