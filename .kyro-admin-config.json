@@ -97,6 +97,104 @@
                   "defaultValue": 5
                 }
               ]
+            },
+            {
+              "label": "SEO Settings",
+              "fields": [
+                {
+                  "name": "metaTitle",
+                  "type": "text",
+                  "label": "Meta Title",
+                  "admin": {
+                    "description": "The title used for search engines (recommended < 60 chars).",
+                    "autoGenerate": "title"
+                  }
+                },
+                {
+                  "name": "metaDescription",
+                  "type": "textarea",
+                  "label": "Meta Description",
+                  "admin": {
+                    "description": "A brief summary for search engines (recommended < 160 chars).",
+                    "autoGenerate": "content"
+                  }
+                },
+                {
+                  "name": "keywords",
+                  "type": "text",
+                  "label": "Keywords",
+                  "admin": {
+                    "description": "Comma-separated list of keywords for this page."
+                  }
+                },
+                {
+                  "name": "ogImage",
+                  "type": "upload",
+                  "label": "OpenGraph Image",
+                  "relationTo": "media",
+                  "admin": {
+                    "description": "The image shown when shared on social media."
+                  }
+                },
+                {
+                  "name": "twitter",
+                  "type": "group",
+                  "label": "Twitter Card",
+                  "fields": [
+                    {
+                      "name": "title",
+                      "type": "text",
+                      "label": "Twitter Title"
+                    },
+                    {
+                      "name": "description",
+                      "type": "textarea",
+                      "label": "Twitter Description"
+                    },
+                    {
+                      "name": "image",
+                      "type": "upload",
+                      "label": "Twitter Image",
+                      "relationTo": "media"
+                    }
+                  ]
+                },
+                {
+                  "name": "advanced",
+                  "type": "group",
+                  "label": "Advanced Search Settings",
+                  "fields": [
+                    {
+                      "name": "noindex",
+                      "type": "checkbox",
+                      "label": "Hide from search engines (noindex)",
+                      "defaultValue": false
+                    },
+                    {
+                      "name": "nofollow",
+                      "type": "checkbox",
+                      "label": "Do not follow links (nofollow)",
+                      "defaultValue": false
+                    },
+                    {
+                      "name": "canonicalUrl",
+                      "type": "text",
+                      "label": "Canonical URL Override",
+                      "admin": {
+                        "description": "Leave empty to use the default canonical URL."
+                      }
+                    },
+                    {
+                      "name": "structuredData",
+                      "type": "code",
+                      "label": "JSON-LD Structured Data",
+                      "admin": {
+                        "description": "Custom JSON-LD schema for this specific page."
+                      }
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -785,7 +883,6 @@
           }
         },
         {
-          "name": "tabs",
           "type": "tabs",
           "tabs": [
             {
@@ -1041,7 +1138,6 @@
           }
         },
         {
-          "name": "tabs",
           "type": "tabs",
           "tabs": [
             {
@@ -5171,6 +5267,11 @@
                       "equals": "external"
                     }
                   }
+                },
+                {
+                  "name": "label",
+                  "type": "text",
+                  "label": "Label (Optional)"
                 }
               ]
             }
@@ -9475,6 +9576,44 @@
           "defaultValue": 3,
           "admin": {
             "description": "Maximum concurrent sessions allowed per user"
+          }
+        },
+        {
+          "name": "enableRegistration",
+          "type": "checkbox",
+          "label": "Enable User Registration",
+          "required": false,
+          "defaultValue": true,
+          "admin": {
+            "description": "Allow new users to register and create accounts"
+          }
+        },
+        {
+          "name": "defaultRegistrationRole",
+          "type": "select",
+          "label": "Default Registration Role",
+          "required": false,
+          "defaultValue": "customer",
+          "options": [
+            {
+              "label": "Customer",
+              "value": "customer"
+            },
+            {
+              "label": "Author",
+              "value": "author"
+            },
+            {
+              "label": "Editor",
+              "value": "editor"
+            },
+            {
+              "label": "Admin",
+              "value": "admin"
+            }
+          ],
+          "admin": {
+            "description": "The role automatically assigned to newly registered users (e.g. customer, author, editor)"
           }
         }
       ]

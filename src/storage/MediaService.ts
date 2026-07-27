@@ -134,6 +134,45 @@ export class MediaService {
         );
         CREATE INDEX IF NOT EXISTS idx_media_folders_path ON media_folders(path);
       `);
+
+      try {
+        const columnsInfo: any[] = this.db.prepare("PRAGMA table_info(media)").all();
+        const colNames = new Set(columnsInfo.map((c: any) => c.name));
+
+        const addColIfMissing = (col: string, type: string) => {
+          if (!colNames.has(col)) {
+            this.db.exec(`ALTER TABLE media ADD COLUMN ${col} ${type}`);
+          }
+        };
+
+        addColIfMissing("created_at", "TEXT");
+        addColIfMissing("updated_at", "TEXT");
+        addColIfMissing("original_name", "TEXT");
+        addColIfMissing("mime_type", "TEXT");
+        addColIfMissing("file_size", "INTEGER");
+        addColIfMissing("thumbnail_url", "TEXT");
+
+        if (colNames.has("createdAt")) {
+          this.db.exec(`UPDATE media SET created_at = createdAt WHERE created_at IS NULL AND createdAt IS NOT NULL`);
+        }
+        if (colNames.has("updatedAt")) {
+          this.db.exec(`UPDATE media SET updated_at = updatedAt WHERE updated_at IS NULL AND updatedAt IS NOT NULL`);
+        }
+        if (colNames.has("originalName")) {
+          this.db.exec(`UPDATE media SET original_name = originalName WHERE original_name IS NULL AND originalName IS NOT NULL`);
+        }
+        if (colNames.has("mimeType")) {
+          this.db.exec(`UPDATE media SET mime_type = mimeType WHERE mime_type IS NULL AND mimeType IS NOT NULL`);
+        }
+        if (colNames.has("fileSize")) {
+          this.db.exec(`UPDATE media SET file_size = fileSize WHERE file_size IS NULL AND fileSize IS NOT NULL`);
+        }
+        if (colNames.has("thumbnailUrl")) {
+          this.db.exec(`UPDATE media SET thumbnail_url = thumbnailUrl WHERE thumbnail_url IS NULL AND thumbnailUrl IS NOT NULL`);
+        }
+      } catch (e) {
+        // Auto-migration safeguard
+      }
     } else if (this.dialect === "postgres") {
       if (_mediaTablesEnsured) return;
       const { sql } = await import("drizzle-orm");

@@ -21,6 +21,13 @@ if (!isSettings) {
   config = collections[collection];
 }
 
+import { requireAuthServer } from "../../lib/auth-server";
+
+if (collection) {
+  const redirect = await requireAuthServer(Astro.request, { collectionRead: collection });
+  if (redirect) return redirect;
+}
+
 import SettingsIndexAstro from "../settings/index.astro";
 
 let docs: any[] = [];

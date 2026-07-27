@@ -9,7 +9,7 @@ export function Toaster() {
     <div className="kyro-toasts-container" style={{ position: "fixed", bottom: "24px", right: "24px", display: "flex", flexDirection: "column", gap: "12px", zIndex: 100000, pointerEvents: "none" }}>
       {toasts.map((t) => (
         <div key={t.id} style={{ pointerEvents: "auto" }}>
-          <Toast type={t.type} message={t.message} onClose={() => removeToast(t.id)} />
+          <Toast type={t.type} message={t.message} duration={(t as any).duration} onClose={() => removeToast(t.id)} />
         </div>
       ))}
     </div>

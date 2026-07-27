@@ -3,8 +3,10 @@ import AdminLayout from '../layouts/AdminLayout.astro';
 import i18next from '../lib/i18n';
 import { MediaGallery } from '../components/MediaGallery';
 
-import { adminPath, apiPath } from '../lib/paths';
+import { requireAuthServer } from '../lib/auth-server';
 
+const redirect = await requireAuthServer(Astro.request, { collectionRead: 'media' });
+if (redirect) return redirect;
 ---
 
 <AdminLayout title={i18next.t("pages." + "Media Library".replace(/ /g, ""), { defaultValue: "Media Library" })}> 

@@ -631,10 +631,43 @@ export function createHonoApp(options: HonoAppOptions): Hono {
   });
 
   app.post("/api/auth/login", async (c) => authRoutes.login(c.req.raw));
-  app.post("/api/auth/register", async (c) => authRoutes.register(c.req.raw));
+  app.post("/api/auth/register", async (c) => {
+    try {
+      const systemDoc = await db.findOne({ collection: "_globals_system", where: {} });
+      if (systemDoc && systemDoc.enableRegistration === false) {
+        return c.json({ error: "User registration is currently disabled by administrator." }, 403);
+      }
+      if (systemDoc?.defaultRegistrationRole) {
+        const rawReq = c.req.raw;
+        const contentType = rawReq.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const jsonBody = await c.req.json();
+          if (!jsonBody.role) {
+            jsonBody.role = systemDoc.defaultRegistrationRole;
+          }
+          const newReq = new Request(rawReq.url, {
+            method: rawReq.method,
+            headers: rawReq.headers,
+            body: JSON.stringify(jsonBody),
+          });
+          return authRoutes.register(newReq);
+        }
+      }
+    } catch {
+      // Proceed if global system table is not initialized yet
+    }
+    return authRoutes.register(c.req.raw);
+  });
   app.post("/api/auth/logout", async (c) => authRoutes.logout(c.req.raw));
   app.post("/api/auth/refresh", async (c) => authRoutes.refresh(c.req.raw));
   app.get("/api/auth/me", async (c) => authRoutes.me(c.req.raw));
+  app.post("/api/auth/forgot-password", async (c) => authRoutes.forgotPassword(c.req.raw));
+  app.post("/api/auth/reset-password", async (c) => authRoutes.resetPassword(c.req.raw));
+  app.post("/api/auth/change-password", async (c) => authRoutes.changePassword(c.req.raw));
+  app.get("/api/auth/verify-email", async (c) => authRoutes.verifyEmail(c.req.raw));
+  app.post("/api/auth/verify-email", async (c) => authRoutes.verifyEmail(c.req.raw));
+  app.get("/api/auth/verify", async (c) => authRoutes.verifyEmail(c.req.raw));
+  app.post("/api/auth/verify", async (c) => authRoutes.verifyEmail(c.req.raw));
 
   // Session management
   app.get("/api/auth/sessions", async (c) => authRoutes.listSessions(c.req.raw));
@@ -783,25 +816,36 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
       const limit = Math.min(parseInt(c.req.query("limit") || "10"), 100);
       const search = c.req.query("search") || undefined;
 
-      const result = await db.find({
-        collection: "users",
-        page,
-        limit,
-        where: search ? { email: { contains: search } } : {},
-        tenantId: ctxTenantID
-      });
+      let docs: any[] = [];
+      let totalDocs = 0;
+
+      if (typeof (sessionAuthAdapter as any).findUsers === "function") {
+        const res = await (sessionAuthAdapter as any).findUsers({ page, limit, search });
+        docs = res.users || [];
+        totalDocs = res.total || 0;
+      } else {
+        const result = await db.find({
+          collection: "users",
+          page,
+          limit,
+          where: search ? { email: { contains: search } } : {},
+          tenantId: ctxTenantID,
+        });
+        docs = result.docs || [];
+        totalDocs = result.totalDocs || 0;
+      }
 
       return c.json({
-        docs: result.docs,
-        totalDocs: result.totalDocs || 0,
+        docs,
+        totalDocs,
         limit,
-        totalPages: Math.ceil((result.totalDocs || 0) / limit),
+        totalPages: Math.ceil(totalDocs / limit) || 1,
         page,
         pagingCounter: (page - 1) * limit + 1,
         hasPrevPage: page > 1,
-        hasNextPage: page < Math.ceil((result.totalDocs || 0) / limit),
+        hasNextPage: page < Math.ceil(totalDocs / limit),
         prevPage: page > 1 ? page - 1 : null,
-        nextPage: page < Math.ceil((result.totalDocs || 0) / limit) ? page + 1 : null,
+        nextPage: page < Math.ceil(totalDocs / limit) ? page + 1 : null,
       });
     } catch (error: any) {
       console.error("[API] Error listing users:", error);
@@ -863,11 +907,16 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
         return c.json({ error: "Email already in use" }, 400);
       }
 
+      const targetRole = body.role || "customer";
+      if (targetRole !== "customer" && ctxUser?.role !== "super_admin") {
+        return c.json({ error: "Forbidden: Only super_admin can assign administrative roles" }, 403);
+      }
+
       const created = await sessionAuthAdapter.createUser({
         email: body.email,
         password: body.password,
         name: body.name,
-        role: body.role || "customer",
+        role: targetRole,
         avatar: body.avatar,
         tenantId: body.tenantId,
       });
@@ -925,7 +974,12 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
       const updateData: Record<string, unknown> = {};
       if (body.name !== undefined) updateData.name = body.name;
       if (body.email !== undefined) updateData.email = body.email;
-      if (body.role !== undefined) updateData.role = body.role;
+      if (body.role !== undefined && body.role !== existing.role) {
+        if (ctxUser?.role !== "super_admin") {
+          return c.json({ error: "Forbidden: Only super_admin can modify user roles" }, 403);
+        }
+        updateData.role = body.role;
+      }
       if (body.avatar !== undefined) {
         updateData.avatar = typeof body.avatar === "object" && body.avatar !== null
           ? (body.avatar.id || String(body.avatar))
@@ -4225,6 +4279,7 @@ for (const globalConfig of registry.getGlobals()) {
         // Attempt to send a test email
         // The recipient is taken from the form body (testEmailSection.testEmail or testEmail)
         const recipient =
+          body.email ||
           body.testEmail ||
           (body.testEmailSection && body.testEmailSection.testEmail);
 
@@ -4232,29 +4287,158 @@ for (const globalConfig of registry.getGlobals()) {
           return c.json({ error: "No test recipient email provided" }, 400);
         }
 
+        const providerName = body.provider
+          ? body.provider.charAt(0).toUpperCase() + body.provider.slice(1)
+          : "SMTP";
+        const fromSender = body.fromName
+          ? `${body.fromName} <${body.fromEmail || body.from || "default"}>`
+          : (body.fromEmail || body.from || "Configured Sender");
+        const timestampStr = new Date().toUTCString();
+
         await transport.send({
           to: recipient,
-          subject: "Kyro CMS - Test Email",
-          html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <h1 style="color: #0b1222; margin-bottom: 16px;">Success! 🚀</h1>
-                <p style="font-size: 16px; color: #334155; line-height: 1.6;">
-                  Your email settings in <b>Kyro CMS</b> are working correctly.
-                </p>
-                <div style="background: #f8fafc; padding: 16px; border-radius: 6px; margin: 24px 0;">
-                  <p style="margin: 0; font-size: 14px; color: #64748b;">
-                    <b>Provider:</b> ${body.provider.toUpperCase()}
-                  </p>
-                  <p style="margin: 8px 0 0; font-size: 14px; color: #64748b;">
-                    <b>Sent at:</b> ${new Date().toLocaleString()}
-                  </p>
-                </div>
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                  This is a test email sent from the Kyro CMS Admin Panel.
-                </p>
-              </div>
-            `,
-          text: `Success! Your email settings in Kyro CMS are working correctly.\n\nProvider: ${body.provider}\nSent at: ${new Date().toLocaleString()}`,
+          subject: "Kyro CMS — Email Connection Test",
+          html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>Kyro CMS Test Email</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      .email-body { background-color: #09090b !important; color: #f4f4f5 !important; }
+      .email-card { background-color: #121215 !important; border-color: #27272a !important; box-shadow: none !important; }
+      .email-header { background-color: #18181b !important; border-color: #27272a !important; }
+      .email-brand-text { color: #ffffff !important; }
+      .email-title { color: #ffffff !important; }
+      .email-text { color: #a1a1aa !important; }
+      .email-strong { color: #ffffff !important; }
+      .email-table { background-color: #18181b !important; border-color: #27272a !important; }
+      .email-td-border { border-color: #27272a !important; }
+      .email-label { color: #a1a1aa !important; }
+      .email-value { color: #f4f4f5 !important; }
+      .email-btn-primary { background-color: #ffffff !important; color: #09090b !important; }
+      .email-btn-secondary { background-color: #18181b !important; border-color: #27272a !important; color: #f4f4f5 !important; }
+      .email-footer { background-color: #09090b !important; border-color: #27272a !important; }
+      .email-footer-text { color: #71717a !important; }
+      .email-footer-link { color: #a1a1aa !important; }
+      .logo-light { display: none !important; }
+      .logo-dark { display: inline-block !important; }
+      .badge-status { background-color: #064e3b !important; border-color: #047857 !important; color: #34d399 !important; }
+    }
+  </style>
+</head>
+<body class="email-body" style="margin: 0; padding: 36px 16px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #09090b; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-card" style="max-width: 540px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);">
+    <!-- Header Bar -->
+    <tr>
+      <td class="email-header" style="padding: 22px 28px; border-bottom: 1px solid #f4f4f5; background-color: #ffffff;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="left" valign="middle">
+              <a href="https://kyro-cms.com" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 10px;">
+                <!-- Light Mode Logo -->
+                <img src="https://kyro-cms.com/logo.svg" alt="Kyro Logo" class="logo-light" height="24" style="display: inline-block; border: 0; max-height: 24px; vertical-align: middle;" />
+                <!-- Dark Mode Logo -->
+                <img src="https://kyro-cms.com/logo-white.svg" alt="Kyro Logo" class="logo-dark" height="24" style="display: none; border: 0; max-height: 24px; vertical-align: middle;" />
+                <span class="email-brand-text" style="font-size: 16px; font-weight: 700; color: #09090b; letter-spacing: -0.3px; vertical-align: middle;">Kyro CMS</span>
+              </a>
+            </td>
+            <td align="right" valign="middle">
+              <span class="badge-status" style="display: inline-block; padding: 4px 10px; background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 9999px; font-size: 11px; font-weight: 500; color: #047857;">
+                ✓ Active Connection
+              </span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Body Section -->
+    <tr>
+      <td style="padding: 28px;">
+        <h1 class="email-title" style="margin: 0 0 10px; font-size: 20px; font-weight: 600; color: #09090b; letter-spacing: -0.3px;">
+          Test Email Dispatch Successful
+        </h1>
+        <p class="email-text" style="margin: 0 0 24px; font-size: 14px; line-height: 1.6; color: #52525b;">
+          Your email transport configuration in <strong class="email-strong" style="color: #09090b;">Kyro CMS</strong> is active and successfully delivering messages. Below are the connection diagnostics.
+        </p>
+
+        <!-- Compact Metadata Grid -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-table" style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 24px; border-collapse: separate; overflow: hidden;">
+          <tr>
+            <td class="email-label email-td-border" style="padding: 10px 14px; border-bottom: 1px solid #e4e4e7; border-right: 1px solid #e4e4e7; width: 30%; font-size: 12px; font-weight: 500; color: #71717a;">
+              Provider
+            </td>
+            <td class="email-value email-td-border" style="padding: 10px 14px; border-bottom: 1px solid #e4e4e7; font-size: 13px; font-weight: 600; color: #09090b;">
+              ${providerName}
+            </td>
+          </tr>
+          <tr>
+            <td class="email-label email-td-border" style="padding: 10px 14px; border-bottom: 1px solid #e4e4e7; border-right: 1px solid #e4e4e7; font-size: 12px; font-weight: 500; color: #71717a;">
+              Recipient
+            </td>
+            <td class="email-value email-td-border" style="padding: 10px 14px; border-bottom: 1px solid #e4e4e7; font-size: 13px; color: #18181b; font-family: monospace;">
+              ${recipient}
+            </td>
+          </tr>
+          <tr>
+            <td class="email-label email-td-border" style="padding: 10px 14px; border-bottom: 1px solid #e4e4e7; border-right: 1px solid #e4e4e7; font-size: 12px; font-weight: 500; color: #71717a;">
+              From Sender
+            </td>
+            <td class="email-value email-td-border" style="padding: 10px 14px; border-bottom: 1px solid #e4e4e7; font-size: 13px; color: #18181b;">
+              ${fromSender}
+            </td>
+          </tr>
+          <tr>
+            <td class="email-label email-td-border" style="padding: 10px 14px; border-right: 1px solid #e4e4e7; font-size: 12px; font-weight: 500; color: #71717a;">
+              Timestamp
+            </td>
+            <td class="email-value" style="padding: 10px 14px; font-size: 12px; color: #52525b;">
+              ${timestampStr}
+            </td>
+          </tr>
+        </table>
+
+        <!-- Action Links -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="left">
+              <a href="https://kyro-cms.com" target="_blank" class="email-btn-primary" style="display: inline-block; padding: 10px 18px; background-color: #09090b; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 6px;">
+                Visit Website →
+              </a>
+              <a href="https://kyro-cms.com/docs" target="_blank" class="email-btn-secondary" style="display: inline-block; padding: 10px 16px; margin-left: 8px; background-color: #ffffff; border: 1px solid #e4e4e7; color: #09090b; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 6px;">
+                Documentation
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+      <td class="email-footer" style="padding: 18px 28px; border-top: 1px solid #f4f4f5; background-color: #fafafa; text-align: center;">
+        <p class="email-footer-text" style="margin: 0 0 8px; font-size: 12px; color: #71717a;">
+          Automated test message dispatched from <strong>Kyro CMS Engine</strong>.
+        </p>
+        <p style="margin: 0; font-size: 12px; color: #71717a;">
+          <a href="https://kyro-cms.com" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">kyro-cms.com</a> &nbsp;•&nbsp; 
+          <a href="https://kyro-cms.com/docs" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">Docs</a> &nbsp;•&nbsp; 
+          <a href="https://github.com/danielDozie/kyro-cms" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">GitHub</a>
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+          text: `Success! Your email settings in Kyro CMS are working correctly.\n\nProvider: ${providerName}\nRecipient: ${recipient}\nTimestamp: ${timestampStr}\nWebsite: https://kyro-cms.com`,
         });
 
         return c.json({ message: "Test email sent successfully!" });

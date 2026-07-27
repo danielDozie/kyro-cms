@@ -20,6 +20,7 @@ Kyro CMS auto-generates REST endpoints for every collection at `/api/{slug}`. Gl
 | DELETE | `/api/{slug}/:id` | Delete document |
 | GET | `/api/globals/{slug}` | Get global singleton |
 | PATCH | `/api/globals/{slug}` | Update global singleton |
+| POST / GET | `/api/auth/*` | User authentication, session management, password resets & email verification |
 
 ## Query Parameters (List GET)
 

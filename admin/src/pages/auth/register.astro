@@ -2,14 +2,40 @@
 import AuthLayout from "../../layouts/AuthLayout.astro";
 
 import { adminPath, apiPath } from "../../lib/paths";
-import { getSiteSettings } from "../../lib/globals";
+import { getSiteSettings, getGlobal } from "../../lib/globals";
 
 const siteSettings = await getSiteSettings({ request: Astro.request });
+const systemSettings = await getGlobal("system", { request: Astro.request });
 const siteName = siteSettings?.siteName || "Kyro CMS";
+const registrationEnabled = systemSettings?.enableRegistration ?? true;
 ---
 
-<AuthLayout title="Create Account">
-  <div class="surface-tile p-8 w-full" style="max-width: 420px;">
+<AuthLayout title={registrationEnabled ? "Create Account" : "Registration Disabled"}>
+  {
+    !registrationEnabled ? (
+      <div class="surface-tile p-8 w-full text-center" style="max-width: 420px;">
+        <div class="mx-auto w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-6 shadow-sm">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-[var(--kyro-text-primary)]">
+          Registration Disabled
+        </h1>
+        <p class="text-sm text-[var(--kyro-text-secondary)] mt-3 leading-relaxed">
+          New user registration is currently disabled by the site administrator.
+        </p>
+        <div class="mt-8">
+          <a
+            href={`${adminPath}/login`}
+            class="w-full py-3 px-4 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl text-sm font-bold hover:opacity-90 transition-colors shadow-lg inline-block"
+          >
+            Sign In to {siteName} →
+          </a>
+        </div>
+      </div>
+    ) : (
+      <div class="surface-tile p-8 w-full" style="max-width: 420px;">
     <div class="text-center mb-8">
       <h1
         class="text-2xl font-bold tracking-tight text-[var(--kyro-text-primary)]"
@@ -91,6 +117,8 @@ const siteName = siteSettings?.siteName || "Kyro CMS";
       >
     </p>
   </div>
+    )
+  }
 
   <script is:inline define:vars={{ apiPath, adminPath }}>
     document
@@ -133,25 +161,23 @@ const siteName = siteSettings?.siteName || "Kyro CMS";
 
           if (res.ok && data.success && data.user) {
             // Cookies set server-side via Set-Cookie headers
-            // Store user in memory only (not localStorage)
             window.__kyroAuth = { user: data.user, verified: true };
             message.textContent = data.isFirstUser
               ? "Super admin account created!"
               : "Account created successfully!";
             message.className =
-              "block p-3 rounded-xl text-sm font-regular  bg-green-50 text-green-600";
+              "block p-3 rounded-xl text-sm font-medium bg-emerald-50 text-emerald-600";
             setTimeout(() => {
               window.location.href = adminPath;
-            }, 1000);
+            }, 800);
           } else if (res.ok && data.success) {
-            // Email verification required
-            message.textContent =
-              data.message || "Please check your email to verify your account.";
+            // Email verification required -> Navigate to Check Email page
+            message.textContent = "Account created! Redirecting to email confirmation...";
             message.className =
-              "block p-3 rounded-xl text-sm font-regular  bg-green-50 text-green-600";
+              "block p-3 rounded-xl text-sm font-medium bg-emerald-50 text-emerald-600";
             setTimeout(() => {
-              window.location.href = adminPath + "/login";
-            }, 2000);
+              window.location.href = `${adminPath}/auth/check-email?email=${encodeURIComponent(email)}&type=register`;
+            }, 600);
           } else {
             message.textContent = data.error || "Registration failed";
             message.className =

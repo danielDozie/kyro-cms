@@ -6,6 +6,10 @@ import { SettingsPage } from "../../components/SettingsPage";
 import { getGlobal } from "../../lib/globals";
 
 import { adminPath } from "../../lib/paths";
+import { requireAuthServer } from "../../lib/auth-server";
+
+const redirect = await requireAuthServer(Astro.request, { requireAdmin: true });
+if (redirect) return redirect;
 
 const slug = Astro.props.slug || Astro.params.slug || Astro.params.id;
 
@@ -61,6 +65,7 @@ const description =
             allGlobals.map((g) => (
               <a
                 href={`${adminPath}/settings/${g.slug}`}
+                data-global-tab={g.slug}
                 class={`pb-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
                   activeSlug === g.slug
                     ? "text-[var(--kyro-text-primary)] border-[var(--kyro-text-primary)]"
@@ -120,7 +125,42 @@ const description =
       });
     };
 
-    document.addEventListener("astro:page-load", initSettingsPage);
+    const pruneGlobalTabs = (user?: any, permissions?: any) => {
+      if (!user) {
+        // @ts-ignore
+        user = window.__kyroAuth?.user;
+        // @ts-ignore
+        permissions = window.__kyroAuth?.permissions;
+      }
+      if (!user) return;
+      const userRole = user.role || "";
+      const isAdmin = userRole === "admin" || userRole === "super_admin";
+
+      const tabs = document.querySelectorAll("[data-global-tab]");
+      tabs.forEach((tab) => {
+        const globalSlug = tab.getAttribute("data-global-tab");
+        if (!globalSlug) return;
+        const hasRead = isAdmin || permissions?.globals?.[globalSlug]?.read === true;
+        if (!hasRead) {
+          (tab as HTMLElement).style.display = "none";
+        } else {
+          (tab as HTMLElement).style.display = "";
+        }
+      });
+    };
+
+    const runInitAndPrune = () => {
+      initSettingsPage();
+      pruneGlobalTabs();
+    };
+
+    document.addEventListener("astro:page-load", runInitAndPrune);
+    runInitAndPrune();
+
+    window.addEventListener("kyro:auth-ready", (event: any) => {
+      const { user, permissions } = event.detail || {};
+      pruneGlobalTabs(user, permissions);
+    });
 
     // Global listeners should only be attached once
     // @ts-ignore

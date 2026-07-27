@@ -1,0 +1,146 @@
+---
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { adminPath, apiPath } from "../../lib/paths";
+import { getSiteSettings } from "../../lib/globals";
+
+const siteSettings = await getSiteSettings({ request: Astro.request });
+const siteName = siteSettings?.siteName || "Kyro CMS";
+
+const url = new URL(Astro.request.url);
+const email = url.searchParams.get("email") || "";
+const type = url.searchParams.get("type") || "register";
+
+let title = "Check your email";
+let description = `We sent a confirmation link to ${email ? email : "your email address"}. Click the link to complete your request.`;
+
+if (type === "register") {
+  title = "Verify your email address";
+  description = `We've sent an account verification link to ${email ? email : "your email address"}. Please verify your email to activate your ${siteName} account.`;
+} else if (type === "reset") {
+  title = "Password reset link sent";
+  description = `We've sent a password reset link to ${email ? email : "your email address"}. Check your inbox to set a new password.`;
+} else if (type === "magic-link") {
+  title = "Magic link sent";
+  description = `We've sent a one-time sign in link to ${email ? email : "your email address"}.`;
+}
+---
+
+<AuthLayout title={title}>
+  <div class="surface-tile p-8 w-full text-center" style="max-width: 440px;">
+    <!-- Mail Icon Badge -->
+    <div class="mx-auto w-16 h-16 rounded-2xl bg-[var(--kyro-sidebar-active)]/10 text-[var(--kyro-sidebar-active)] flex items-center justify-center mb-6 shadow-sm">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+      </svg>
+    </div>
+
+    <h1 class="text-2xl font-bold tracking-tight text-[var(--kyro-text-primary)]">
+      {title}
+    </h1>
+
+    <p class="text-sm text-[var(--kyro-text-secondary)] mt-3 leading-relaxed">
+      {description}
+    </p>
+
+    {email && (
+      <div class="mt-4 inline-block px-3 py-1.5 rounded-lg bg-[var(--kyro-input-bg)] border border-[var(--kyro-border)] text-xs font-mono font-medium text-[var(--kyro-text-primary)]">
+        {email}
+      </div>
+    )}
+
+    <!-- Helper Actions -->
+    <div class="mt-8 space-y-3">
+      {email && email.includes("@gmail.com") && (
+        <a
+          href="https://mail.google.com"
+          target="_blank"
+          class="w-full py-3 px-4 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl text-sm font-bold hover:opacity-90 transition-colors shadow-lg flex items-center justify-center gap-2"
+        >
+          Open Gmail Inbox
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
+        </a>
+      )}
+
+      {email && (email.includes("@outlook.com") || email.includes("@hotmail.com")) && (
+        <a
+          href="https://outlook.live.com"
+          target="_blank"
+          class="w-full py-3 px-4 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl text-sm font-bold hover:opacity-90 transition-colors shadow-lg flex items-center justify-center gap-2"
+        >
+          Open Outlook Inbox
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
+        </a>
+      )}
+
+      <button
+        id="resend-btn"
+        class="w-full py-3 px-4 bg-[var(--kyro-input-bg)] border border-[var(--kyro-border)] text-[var(--kyro-text-primary)] rounded-xl text-sm font-semibold hover:bg-[var(--kyro-border)]/50 transition-colors"
+      >
+        Resend Email
+      </button>
+
+      <div id="resend-message" class="hidden text-xs font-medium mt-2"></div>
+    </div>
+
+    <!-- Back to Login -->
+    <div class="mt-8 pt-6 border-t border-[var(--kyro-border)]">
+      <a
+        href={`${adminPath}/login`}
+        class="text-sm font-medium text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors inline-flex items-center gap-1.5"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to sign in
+      </a>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ apiPath, email, type }}>
+    const resendBtn = document.getElementById("resend-btn");
+    const resendMsg = document.getElementById("resend-message");
+
+    resendBtn?.addEventListener("click", async () => {
+      if (!email) {
+        if (resendMsg) {
+          resendMsg.textContent = "Please return to sign in.";
+          resendMsg.className = "block text-xs font-medium text-amber-600 mt-2";
+        }
+        return;
+      }
+
+      resendBtn.disabled = true;
+      resendBtn.textContent = "Sending...";
+
+      try {
+        const endpoint = type === "reset" ? "/auth/forgot-password" : "/auth/register";
+        const res = await fetch(apiPath + endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        if (resendMsg) {
+          resendMsg.textContent = "Confirmation email resent successfully!";
+          resendMsg.className = "block text-xs font-medium text-emerald-600 mt-2";
+        }
+      } catch (err) {
+        if (resendMsg) {
+          resendMsg.textContent = "Failed to resend. Please try again.";
+          resendMsg.className = "block text-xs font-medium text-rose-600 mt-2";
+        }
+      } finally {
+        setTimeout(() => {
+          if (resendBtn) {
+            resendBtn.disabled = false;
+            resendBtn.textContent = "Resend Email";
+          }
+        }, 5000);
+      }
+    });
+  </script>
+</AuthLayout>

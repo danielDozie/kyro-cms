@@ -3,6 +3,7 @@ import { Dropdown, DropdownItem, DropdownSeparator } from "./ui/Dropdown";
 import { User, Shield, Key, Webhook, Clock, FileText, ExternalLink, HelpCircle, LogOut, Terminal, Zap } from "./ui/icons";
 import { useAuthStore } from "../lib/stores";
 import { apiGet } from "../lib/api";
+import { resolveMedia } from "../lib/paths";
 import { useTranslation } from "react-i18next";
 import { navigate } from '../lib/navigate';
 
@@ -17,17 +18,47 @@ export function UserMenu({ adminPath }: UserMenuProps) {
   const [apiAccess, setApiAccess] = useState<{ graphqlEnabled?: boolean } | null>(null);
 
   useEffect(() => {
-    const avatar = currentUser?.avatar;
-    if (typeof avatar === "string" && /^[0-9a-f-]+$/i.test(avatar)) {
-      apiGet<any>(`/api/media/${avatar}`)
-        .then((media) => setAvatarUrl(media?.thumbnailUrl || media?.url || null))
-        .catch(() => setAvatarUrl(null));
-    } else if (typeof avatar === "string") {
-      setAvatarUrl(avatar);
-    } else {
+    const rawAvatar = (currentUser as any)?.avatar || (currentUser as any)?.photo || (currentUser as any)?.picture || (currentUser as any)?.image;
+    
+    if (!rawAvatar) {
       setAvatarUrl(null);
+      return;
     }
-  }, [currentUser?.avatar]);
+
+    if (typeof rawAvatar === "object" && rawAvatar !== null) {
+      const url = rawAvatar.thumbnailUrl || rawAvatar.url || rawAvatar.filename;
+      if (url) {
+        setAvatarUrl(resolveMedia(url));
+        return;
+      }
+    }
+
+    if (typeof rawAvatar === "string") {
+      if (rawAvatar.startsWith("http") || rawAvatar.startsWith("data:") || rawAvatar.startsWith("blob:") || rawAvatar.startsWith("/")) {
+        setAvatarUrl(resolveMedia(rawAvatar));
+      } else if (/^[0-9a-f-]+$/i.test(rawAvatar)) {
+        apiGet<any>(`/api/media/${rawAvatar}`)
+          .then((media) => {
+            const fetchedUrl = media?.thumbnailUrl || media?.url || media?.filename;
+            setAvatarUrl(fetchedUrl ? resolveMedia(fetchedUrl) : null);
+          })
+          .catch(() => setAvatarUrl(null));
+      } else {
+        setAvatarUrl(resolveMedia(rawAvatar));
+      }
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    apiGet<any>("/api/auth/me")
+      .then((res: any) => {
+        const u = res?.user || (res?.id ? res : null);
+        if (u) {
+          useAuthStore.getState().setUser(u);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     apiGet<any>("/api/globals/access-settings")
@@ -38,16 +69,29 @@ export function UserMenu({ adminPath }: UserMenuProps) {
       .catch(() => setApiAccess({}));
   }, []);
 
+  const userRole = currentUser?.role || "";
+  const isSuperAdmin = userRole === "super_admin";
+  const isAdmin = userRole === "admin" || isSuperAdmin;
+  const authPermissions = typeof window !== "undefined" ? (window as any).__kyroAuth?.permissions : null;
+  const canReadAudit = isAdmin || authPermissions?.collections?.audit_logs?.read === true;
+
+  const showDeveloperSection = isAdmin || canReadAudit;
+
   return (
     <Dropdown
       align="right"
       trigger={
         <div
-          className="flex justify-center p-.5 text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] rounded-xl transition-all shadow-sm active:scale-95"
-          title={t("userMenu.account", { defaultValue: "Account" })}
+          className="flex items-center justify-center w-7 h-7 text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] rounded-xl transition-all shadow-sm active:scale-95 overflow-hidden"
+          title={currentUser?.email || t("userMenu.account", { defaultValue: "Account" })}
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+            <img
+              src={avatarUrl}
+              alt=""
+              className="w-full h-full rounded-xl object-cover"
+              onError={() => setAvatarUrl(null)}
+            />
           ) : (
             <User className="w-4 h-4" strokeWidth={2.5} />
           )}
@@ -74,61 +118,79 @@ export function UserMenu({ adminPath }: UserMenuProps) {
         {t("userMenu.profileSettings", { defaultValue: "Profile Settings" })}
       </DropdownItem>
 
-      <DropdownItem
-        icon={<Shield className="w-4 h-4" />}
-        onClick={() => navigate(`${adminPath}/roles`)}
-      >
-        {t("userMenu.permissions", { defaultValue: "Permissions" })}
-      </DropdownItem>
-
-      <DropdownSeparator />
-
-      <div className="px-4 py-2 mb-1">
-        <p className="text-[10px] font-medium tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40">
-          {t("userMenu.developer", { defaultValue: "Developer" })}
-        </p>
-      </div>
-
-      <DropdownItem
-        icon={<Key className="w-4 h-4" />}
-        onClick={() => (navigate(`${adminPath}/keys`))}
-      >
-        {t("userMenu.apiKeys", { defaultValue: "API Keys" })}
-      </DropdownItem>
-
-      <DropdownItem
-        icon={<Webhook className="w-4 h-4" />}
-        onClick={() => (navigate(`${adminPath}/webhooks`))}
-      >
-        {t("userMenu.webHooks", { defaultValue: "Web Hooks" })}
-      </DropdownItem>
-      <DropdownItem
-        icon={<Clock className="w-4 h-4" />}
-        onClick={() => (navigate(`${adminPath}/sessions`))}
-      >
-        {t("userMenu.sessions", { defaultValue: "Sessions" })}
-      </DropdownItem>
-      <DropdownItem
-        icon={<FileText className="w-4 h-4" />}
-        onClick={() => (navigate(`${adminPath}/audit`))}
-      >
-        {t("userMenu.auditLogs", { defaultValue: "Audit Logs" })}
-      </DropdownItem>
-
-      <DropdownItem
-        icon={<Terminal className="w-4 h-4" />}
-        onClick={() => (navigate(`${adminPath}/rest-playground`))}
-      >
-        {t("userMenu.apiExplorer", { defaultValue: "API Explorer" })}
-      </DropdownItem>
-
-      {(apiAccess === null || apiAccess?.graphqlEnabled) && (
+      {isSuperAdmin && (
         <DropdownItem
-          icon={<Zap className="w-4 h-4" />}
-          onClick={() => (navigate(`${adminPath}/graphql`))}
+          icon={<Shield className="w-4 h-4" />}
+          onClick={() => navigate(`${adminPath}/roles`)}
         >
-          {t("userMenu.graphqlPlayground", { defaultValue: "GraphQL Playground" })}
+          {t("userMenu.permissions", { defaultValue: "Permissions" })}
         </DropdownItem>
+      )}
+
+      {showDeveloperSection && (
+        <>
+          <DropdownSeparator />
+
+          <div className="px-4 py-2 mb-1">
+            <p className="text-[10px] font-medium tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40">
+              {t("userMenu.developer", { defaultValue: "Developer" })}
+            </p>
+          </div>
+
+          {isAdmin && (
+            <DropdownItem
+              icon={<Key className="w-4 h-4" />}
+              onClick={() => navigate(`${adminPath}/keys`)}
+            >
+              {t("userMenu.apiKeys", { defaultValue: "API Keys" })}
+            </DropdownItem>
+          )}
+
+          {isAdmin && (
+            <DropdownItem
+              icon={<Webhook className="w-4 h-4" />}
+              onClick={() => navigate(`${adminPath}/webhooks`)}
+            >
+              {t("userMenu.webHooks", { defaultValue: "Web Hooks" })}
+            </DropdownItem>
+          )}
+
+          {isAdmin && (
+            <DropdownItem
+              icon={<Clock className="w-4 h-4" />}
+              onClick={() => navigate(`${adminPath}/sessions`)}
+            >
+              {t("userMenu.sessions", { defaultValue: "Sessions" })}
+            </DropdownItem>
+          )}
+
+          {canReadAudit && (
+            <DropdownItem
+              icon={<FileText className="w-4 h-4" />}
+              onClick={() => navigate(`${adminPath}/audit`)}
+            >
+              {t("userMenu.auditLogs", { defaultValue: "Audit Logs" })}
+            </DropdownItem>
+          )}
+
+          {isAdmin && (
+            <DropdownItem
+              icon={<Terminal className="w-4 h-4" />}
+              onClick={() => navigate(`${adminPath}/rest-playground`)}
+            >
+              {t("userMenu.apiExplorer", { defaultValue: "API Explorer" })}
+            </DropdownItem>
+          )}
+
+          {isAdmin && (apiAccess === null || apiAccess?.graphqlEnabled) && (
+            <DropdownItem
+              icon={<Zap className="w-4 h-4" />}
+              onClick={() => navigate(`${adminPath}/graphql`)}
+            >
+              {t("userMenu.graphqlPlayground", { defaultValue: "GraphQL Playground" })}
+            </DropdownItem>
+          )}
+        </>
       )}
 
       <DropdownSeparator />

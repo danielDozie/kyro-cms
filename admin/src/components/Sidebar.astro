@@ -57,7 +57,14 @@ const dynamicSections = Array.from(groupedCollections.entries()).map(([group, it
   items: items.sort((a, b) => (a.order || 999) - (b.order || 999)),
 }));
 
-const navSections: { label: string; items: NavItem[] }[] = [
+import { getAuthServer } from "../lib/auth-server";
+
+const { user: serverUser, permissions: serverPermissions } = await getAuthServer(Astro.request);
+const serverRole = serverUser?.role || "";
+const isServerSuperAdmin = serverRole === "super_admin";
+const isServerAdmin = serverRole === "admin" || isServerSuperAdmin;
+
+const navSectionsRaw: { label: string; items: NavItem[] }[] = [
   {
     label: "Dashboard",
     items: [
@@ -74,7 +81,6 @@ const navSections: { label: string; items: NavItem[] }[] = [
     label: "Settings",
     items: [
       { href: adminPath + "/users", label: "nav.users", icon: "users" },
-      { href: adminPath + "/plugins", label: "nav.plugins", icon: "plugins" },
       {
         href: adminPath + "/settings",
         label: "nav.settings",
@@ -84,12 +90,31 @@ const navSections: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+const navSections = navSectionsRaw.map((section) => {
+  if (!serverUser) return section;
+  const items = section.items.filter((item) => {
+    const slug = item.href.split("/").pop() || "";
+    if (item.href === adminPath) return true;
+    if (slug === "roles") return isServerSuperAdmin;
+    if (slug === "plugins" || slug === "keys" || slug === "webhooks" || slug === "settings") return isServerAdmin;
+    if (slug === "users") return isServerAdmin || serverPermissions?.collections?.users?.read === true;
+    if (slug === "audit") return isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
+    if (slug === "media") return isServerAdmin || serverPermissions?.collections?.media?.read === true;
+    return isServerAdmin || serverPermissions?.collections?.[slug]?.read === true;
+  });
+  return { ...section, items };
+}).filter((section) => section.items.length > 0);
+
 const iconAliases: Record<string, string> = {
   collection: "Dot",
   media: "Grid",
   home: "Home",
   users: "Users",
+  shield: "Shield",
   plugins: "Blocks",
+  key: "Key",
+  webhook: "Webhook",
+  audit: "FileText",
   settings: "Settings",
 };
 
@@ -191,6 +216,7 @@ function isActive(item: NavItem): boolean {
                     data-nav-item
                     data-slug={slug}
                     data-type={type}
+                    data-is-dashboard={item.href === adminPath ? "true" : "false"}
                     class={`flex items-center gap-4 px-6 py-2 rounded-2xl transition-all font-medium text-[13px] ${
                       item.icon === "collection"
                         ? currentPath === item.href ||
@@ -225,6 +251,8 @@ function isActive(item: NavItem): boolean {
   </nav>
 
   <script>
+    import { adminPath } from "../lib/paths";
+
     function initSidebar() {
       const sections = document.querySelectorAll("[data-section]");
       sections.forEach((section) => {
@@ -265,33 +293,57 @@ function isActive(item: NavItem): boolean {
       });
     }
 
-    // Run on load and view transitions
-    initSidebar();
-    document.addEventListener('astro:page-load', initSidebar);
+    function pruneSidebar(user?: any, permissions?: any) {
+      if (!user) {
+        // @ts-ignore
+        user = window.__kyroAuth?.user;
+        // @ts-ignore
+        permissions = window.__kyroAuth?.permissions;
+      }
+      if (!user) return;
 
-    // Handle frontend RBAC pruning in the sidebar
-    window.addEventListener("kyro:auth-ready", (event) => {
-      // @ts-ignore
-      const { permissions } = event.detail;
-      if (!permissions) return;
+      const userRole = user.role || "";
+      const isSuperAdmin = userRole === "super_admin";
+      const isAdmin = userRole === "admin" || isSuperAdmin;
 
       const navItems = document.querySelectorAll("[data-nav-item]");
       navItems.forEach((item) => {
-        const slug = item.getAttribute("data-slug");
-        const type = item.getAttribute("data-type");
+        const slug = item.getAttribute("data-slug") || "";
+        const type = item.getAttribute("data-type") || "";
 
         let hasAccess = true;
-        if (type === "collection" && permissions.collections) {
-          const colPerms = permissions.collections[slug];
-          if (colPerms && colPerms.read === false) hasAccess = false;
-        } else if (type === "global" && permissions.globals) {
-          const globalPerms = permissions.globals[slug];
-          if (globalPerms && globalPerms.read === false) hasAccess = false;
+
+        const isDashboard = item.getAttribute("data-is-dashboard") === "true" || item.getAttribute("href") === adminPath;
+        if (isDashboard) {
+          hasAccess = true;
+        } else if (slug === "roles") {
+          hasAccess = isSuperAdmin;
+        } else if (slug === "plugins" || slug === "keys" || slug === "webhooks") {
+          hasAccess = isAdmin;
+        } else if (slug === "settings") {
+          hasAccess = isAdmin;
+        } else if (slug === "users") {
+          hasAccess = isAdmin || (permissions?.collections?.users?.read === true);
+        } else if (slug === "audit" || slug === "audit_logs") {
+          hasAccess = isAdmin || (permissions?.collections?.audit_logs?.read === true);
+        } else if (slug === "media") {
+          hasAccess = isAdmin || (permissions?.collections?.media?.read === true);
+        } else if (type === "collection") {
+          if (!isAdmin) {
+            hasAccess = permissions?.collections?.[slug]?.read === true;
+          }
+        } else if (type === "global") {
+          if (!isAdmin) {
+            hasAccess = permissions?.globals?.[slug]?.read === true;
+          }
         }
 
         if (!hasAccess) {
           // @ts-ignore
           item.style.display = "none";
+        } else {
+          // @ts-ignore
+          item.style.display = "";
         }
       });
 
@@ -304,9 +356,38 @@ function isActive(item: NavItem): boolean {
         if (visibleItems.length === 0) {
           // @ts-ignore
           section.style.display = "none";
+        } else {
+          // @ts-ignore
+          section.style.display = "";
         }
       });
+    }
+
+    const runPruning = () => {
+      initSidebar();
+      pruneSidebar();
+    };
+
+    // Run on load and view transitions
+    runPruning();
+    document.addEventListener('astro:page-load', runPruning);
+
+    // Handle frontend RBAC pruning in the sidebar
+    window.addEventListener("kyro:auth-ready", (event) => {
+      // @ts-ignore
+      const { user, permissions } = event.detail || {};
+      pruneSidebar(user, permissions);
     });
+
+    // Fallback interval check to ensure pruning runs after async auth resolves
+    const authCheckInterval = setInterval(() => {
+      // @ts-ignore
+      if (window.__kyroAuth?.verified) {
+        runPruning();
+        clearInterval(authCheckInterval);
+      }
+    }, 100);
+    setTimeout(() => clearInterval(authCheckInterval), 5000);
   </script>
 
   <div class="px-6 py-4 mt-auto">

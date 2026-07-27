@@ -1,6 +1,10 @@
 ---
 import AuthLayout from "../../layouts/AuthLayout.astro";
 import { adminPath, apiPath } from "../../lib/paths";
+import { getGlobal } from "../../lib/globals";
+
+const systemSettings = await getGlobal("system", { request: Astro.request });
+const registrationEnabled = systemSettings?.enableRegistration ?? true;
 ---
 
 <AuthLayout title="Sign In">
@@ -34,11 +38,18 @@ import { adminPath, apiPath } from "../../lib/paths";
       </div>
 
       <div>
-        <label
-          for="password"
-          class="block text-sm font-medium text-[var(--kyro-text-primary)] mb-2"
-          >Password</label
-        >
+        <div class="flex items-center justify-between mb-2">
+          <label
+            for="password"
+            class="block text-sm font-medium text-[var(--kyro-text-primary)]"
+            >Password</label
+          >
+          <a
+            href={`${adminPath}/auth/forgot-password`}
+            class="text-xs font-medium text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors"
+            >Forgot password?</a
+          >
+        </div>
         <input
           type="password"
           id="password"
@@ -60,13 +71,19 @@ import { adminPath, apiPath } from "../../lib/paths";
       </button>
     </form>
 
-    <p class="text-center text-sm text-[var(--kyro-text-secondary)] mt-6">
-      Don't have an account? <a
-        href={`${adminPath}/register`}
-        class="font-medium text-[var(--kyro-text-primary)] hover:underline"
-        >Register</a
-      >
-    </p>
+    {
+      registrationEnabled && (
+        <p class="text-center text-sm text-[var(--kyro-text-secondary)] mt-6">
+          Don't have an account?{" "}
+          <a
+            href={`${adminPath}/register`}
+            class="font-medium text-[var(--kyro-text-primary)] hover:underline"
+          >
+            Register
+          </a>
+        </p>
+      )
+    }
   </div>
 
   <script define:vars={{ apiPath, adminPath }}>

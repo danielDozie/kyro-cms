@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.12.20 (2026-07-27)
+
+- **Registration Controls**: Added `Enable User Registration` toggle in System Settings global (`/admin/settings/system`) to enable/disable public sign-ups on `/admin/register` and `POST /api/auth/register`.
+- **Configurable Default Registration Role**: Added `Default Registration Role` setting allowing administrators to set the automatic role (`customer`, `author`, `editor`, `admin`) for newly registered users.
+- **RBAC & Role Assignment Protection**: Restricted user role modifications exclusively to `super_admin` users across REST API endpoints (`POST /api/users`, `PATCH /api/users/:id`) and Admin UI components (`UserDetail`, `UserManagement`).
+- **Users REST API Fix**: Fixed `GET /api/users` endpoint to query `sessionAuthAdapter.findUsers()` directly from auth storage.
+
 ## v0.12.18 (2026-07-25)
 
 - **Collection Overrides & Dynamic Content**: Full support for overriding dynamic content & block fields (e.g. `"content.recentFeed.selectedItems"`).

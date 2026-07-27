@@ -4,6 +4,10 @@ import i18next from '../../lib/i18n';
 import { UserDetail } from "../../components/users/UserDetail";
 
 import { adminPath, apiPath } from "../../lib/paths";
+import { requireAuthServer } from "../../lib/auth-server";
+
+const redirect = await requireAuthServer(Astro.request, { collectionRead: 'users' });
+if (redirect) return redirect;
 
 const { id } = Astro.params;
 let user: any = null;

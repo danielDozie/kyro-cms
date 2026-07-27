@@ -6,11 +6,26 @@ const authCollections = ["users", "audit_logs"];
 import { adminPath, apiPath } from "../lib/paths";
 import { DashboardMetrics, RevenueChart } from "../components/DashboardMetrics";
 
-const authItems = authCollections.map((slug) => ({
-  slug,
-  label: collections[slug]?.label || slug,
-  icon: slug === "users" ? "users" : "file-text",
-}));
+import { getAuthServer } from "../lib/auth-server";
+
+const { user: serverUser, permissions: serverPermissions } = await getAuthServer(Astro.request);
+const serverRole = serverUser?.role || "";
+const isServerSuperAdmin = serverRole === "super_admin";
+const isServerAdmin = serverRole === "admin" || isServerSuperAdmin;
+
+const permittedQuickLinks = Object.entries(collections)
+  .filter(([slug]) => !["users", "audit_logs", "media"].includes(slug))
+  .filter(([slug]) => {
+    if (!serverUser) return true;
+    return isServerAdmin || serverPermissions?.collections?.[slug]?.create === true;
+  })
+  .slice(0, 6);
+
+const canSeeAudit = !serverUser || isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
+const canSeeLockedUsers = !serverUser || isServerAdmin || serverPermissions?.collections?.users?.read === true;
+const canSeeRoles = !serverUser || isServerSuperAdmin;
+const canSeeHealth = !serverUser || isServerAdmin;
+const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || canSeeHealth;
 ---
 
 <AdminLayout title={i18next.t("pages." + "Dashboard".replace(/ /g, ""), { defaultValue: "Dashboard" })}>
@@ -55,24 +70,23 @@ const authItems = authCollections.map((slug) => ({
     {(!!collections["orders"] || !!collections["products"]) && <RevenueChart client:load />}
 
     <!-- Quick Links Section -->
-    <div class="surface-tile overflow-hidden mt-8">
-      <div class="flex items-center justify-between p-6 border-b border-[var(--kyro-border)]">
-        <div class="flex-1">
-          <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] flex items-center gap-2">
-            Quick Links
-          </h2>
-          <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">Create new collection documents</p>
+    {permittedQuickLinks.length > 0 && (
+      <div id="dashboard-quick-links-section" class="surface-tile overflow-hidden mt-8">
+        <div class="flex items-center justify-between p-6 border-b border-[var(--kyro-border)]">
+          <div class="flex-1">
+            <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] flex items-center gap-2">
+              Quick Links
+            </h2>
+            <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">Create new collection documents</p>
+          </div>
         </div>
-      </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-        {
-          Object.entries(collections)
-            .filter(([slug]) => !["users", "audit_logs", "media"].includes(slug))
-            .slice(0, 6)
-            .map(([slug, config]: [string, any]) => (
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+          {
+            permittedQuickLinks.map(([slug, config]: [string, any]) => (
               <a
                 href={`${adminPath}/${slug}/new`}
+                data-quick-link={slug}
                 class="group p-4 bg-[var(--kyro-surface-accent)] rounded-xl hover:bg-[var(--kyro-surface)] transition-all border border-transparent hover:border-[var(--kyro-border)] shadow-sm hover:shadow-md"
               >
                 <div class="flex items-center gap-3">
@@ -85,94 +99,172 @@ const authItems = authCollections.map((slug) => ({
                 </div>
               </a>
             ))
-        }
+          }
+        </div>
       </div>
-    </div>
+    )}
 
     <!-- Security Quick Actions -->
-    <div class="surface-tile overflow-hidden">
-      <div class="p-6 border-b border-[var(--kyro-border)]">
-        <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">Security & Monitoring</h2>
-        <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">
-          Rate limiting, audit logs, and account lockout settings
-        </p>
+    {hasAnySecurityAction && (
+      <div id="dashboard-security-section" class="surface-tile overflow-hidden">
+        <div class="p-6 border-b border-[var(--kyro-border)]">
+          <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">Security & Monitoring</h2>
+          <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">
+            Rate limiting, audit logs, and account lockout settings
+          </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
+          {canSeeAudit && (
+            <a
+              href={`${adminPath}/audit`}
+              data-sec-card="audit"
+              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+            >
+              <div class="w-10 h-10 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  ></path>
+                </svg>
+              </div>
+              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Audit Logs</h4>
+              <p class="text-xs text-[var(--kyro-text-secondary)]">View last 30 days</p>
+            </a>
+          )}
+
+          {canSeeLockedUsers && (
+            <a
+              href={`${adminPath}/users?locked=true`}
+              data-sec-card="locked-users"
+              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+            >
+              <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  ></path>
+                </svg>
+              </div>
+              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Locked Accounts</h4>
+              <p class="text-xs text-[var(--kyro-text-secondary)]">Manage lockouts</p>
+            </a>
+          )}
+
+          {canSeeRoles && (
+            <a
+              href={`${adminPath}/roles`}
+              data-sec-card="roles"
+              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+            >
+              <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  ></path>
+                </svg>
+              </div>
+              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Permissions</h4>
+              <p class="text-xs text-[var(--kyro-text-secondary)]">RBAC settings</p>
+            </a>
+          )}
+
+          {canSeeHealth && (
+            <a
+              href={`${adminPath}/health`}
+              data-sec-card="health"
+              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
+            >
+              <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-500 flex items-center justify-center mb-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">API Health</h4>
+              <p class="text-xs text-[var(--kyro-text-secondary)]">System status</p>
+            </a>
+          )}
+        </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
-        <a
-          href={`${adminPath}/audit`}
-          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-        >
-          <div class="w-10 h-10 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center mb-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              ></path>
-            </svg>
-          </div>
-          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Audit Logs</h4>
-          <p class="text-xs text-[var(--kyro-text-secondary)]">View last 30 days</p>
-        </a>
-
-        <a
-          href={`${adminPath}/users?locked=true`}
-          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-        >
-          <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center mb-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              ></path>
-            </svg>
-          </div>
-          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Locked Accounts</h4>
-          <p class="text-xs text-[var(--kyro-text-secondary)]">Manage lockouts</p>
-        </a>
-
-        <a
-          href={`${adminPath}/roles`}
-          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-        >
-          <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              ></path>
-            </svg>
-          </div>
-          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Permissions</h4>
-          <p class="text-xs text-[var(--kyro-text-secondary)]">RBAC settings</p>
-        </a>
-
-        <a
-          href={`${adminPath}/health`}
-          class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-        >
-          <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-500 flex items-center justify-center mb-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">API Health</h4>
-          <p class="text-xs text-[var(--kyro-text-secondary)]">System status</p>
-        </a>
-      </div>
-    </div>
+    )}
 
     <script is:inline define:vars={{ apiPath, adminPath }}>
       (function () {
+        function pruneDashboardRBAC(user, permissions) {
+          if (!user) {
+            user = window.__kyroAuth?.user;
+            permissions = window.__kyroAuth?.permissions;
+          }
+          if (!user) return;
+
+          var userRole = user.role || "";
+          var isSuperAdmin = userRole === "super_admin";
+          var isAdmin = userRole === "admin" || isSuperAdmin;
+
+          // Prune Quick Links
+          var quickLinkItems = document.querySelectorAll("[data-quick-link]");
+          var visibleQuickLinks = 0;
+          quickLinkItems.forEach(function (el) {
+            var slug = el.getAttribute("data-quick-link");
+            var hasCreate = isAdmin || (permissions && permissions.collections && permissions.collections[slug] && permissions.collections[slug].create === true);
+            if (!hasCreate) {
+              el.style.display = "none";
+            } else {
+              el.style.display = "";
+              visibleQuickLinks++;
+            }
+          });
+          var quickLinksSection = document.getElementById("dashboard-quick-links-section");
+          if (quickLinksSection) {
+            quickLinksSection.style.display = visibleQuickLinks > 0 ? "" : "none";
+          }
+
+          // Prune Security Cards
+          var secCards = document.querySelectorAll("[data-sec-card]");
+          var visibleSecCards = 0;
+          secCards.forEach(function (el) {
+            var card = el.getAttribute("data-sec-card");
+            var hasAccess = false;
+            if (card === "audit") {
+              hasAccess = isAdmin || (permissions && permissions.collections && permissions.collections.audit_logs && permissions.collections.audit_logs.read === true);
+            } else if (card === "locked-users") {
+              hasAccess = isAdmin || (permissions && permissions.collections && permissions.collections.users && permissions.collections.users.read === true);
+            } else if (card === "roles") {
+              hasAccess = isSuperAdmin;
+            } else if (card === "health") {
+              hasAccess = isAdmin;
+            }
+            if (!hasAccess) {
+              el.style.display = "none";
+            } else {
+              el.style.display = "";
+              visibleSecCards++;
+            }
+          });
+          var secSection = document.getElementById("dashboard-security-section");
+          if (secSection) {
+            secSection.style.display = visibleSecCards > 0 ? "" : "none";
+          }
+        }
+
+        window.addEventListener("kyro:auth-ready", function (e) {
+          var detail = e.detail || {};
+          pruneDashboardRBAC(detail.user, detail.permissions);
+        });
+
+        pruneDashboardRBAC();
         var searchInput = document.getElementById("header-search-input");
         var searchResults = document.getElementById("header-search-results");
         if (!searchInput || !searchResults) return;

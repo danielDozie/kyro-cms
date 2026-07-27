@@ -46,6 +46,32 @@ export const systemSettingsGlobal: GlobalConfig = {
         description: "Maximum concurrent sessions allowed per user",
       },
     },
+    {
+      name: "enableRegistration",
+      type: "checkbox",
+      label: "Enable User Registration",
+      required: false,
+      defaultValue: true,
+      admin: {
+        description: "Allow new users to register and create accounts",
+      },
+    },
+    {
+      name: "defaultRegistrationRole",
+      type: "select",
+      label: "Default Registration Role",
+      required: false,
+      defaultValue: "customer",
+      options: [
+        { label: "Customer", value: "customer" },
+        { label: "Author", value: "author" },
+        { label: "Editor", value: "editor" },
+        { label: "Admin", value: "admin" },
+      ],
+      admin: {
+        description: "The role automatically assigned to newly registered users (e.g. customer, author, editor)",
+      },
+    },
 
   ],
 };

@@ -32,6 +32,22 @@ export const ADMIN_ROUTES = [
     pattern: "/register",
     entrypoint: "@kyro-cms/admin/src/pages/auth/register.astro",
   },
+  {
+    pattern: "/auth/check-email",
+    entrypoint: "@kyro-cms/admin/src/pages/auth/check-email.astro",
+  },
+  {
+    pattern: "/auth/forgot-password",
+    entrypoint: "@kyro-cms/admin/src/pages/auth/forgot-password.astro",
+  },
+  {
+    pattern: "/auth/reset-password",
+    entrypoint: "@kyro-cms/admin/src/pages/auth/reset-password.astro",
+  },
+  {
+    pattern: "/auth/verify-email",
+    entrypoint: "@kyro-cms/admin/src/pages/auth/verify-email.astro",
+  },
   { pattern: "/media", entrypoint: "@kyro-cms/admin/src/pages/media.astro" },
   {
     pattern: "/users",

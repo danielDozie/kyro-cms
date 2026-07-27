@@ -59,8 +59,35 @@ export class AuthRoutes {
     this.lockout = config.lockout;
     this.rateLimiter = config.rateLimiter;
     this.auditLogger = config.auditLogger;
-    this.baseUrl = config.baseUrl || "http://localhost:3000";
+    this.baseUrl = config.baseUrl || "http://localhost:4321";
     this.emailVerificationRequired = config.emailVerificationRequired ?? true;
+  }
+
+  private getBaseUrl(req?: Request): string {
+    if (req) {
+      try {
+        const proto =
+          req.headers.get("x-forwarded-proto") ||
+          (req.url.startsWith("https") ? "https" : "http");
+        const host =
+          req.headers.get("x-forwarded-host") || req.headers.get("host");
+        if (host) {
+          return `${proto}://${host}`;
+        }
+        const urlObj = new URL(req.url);
+        return urlObj.origin;
+      } catch {
+        // Fallback to environment variable or config
+      }
+    }
+    return (
+      process.env.KYRO_BASE_URL ||
+      process.env.SERVER_URL ||
+      process.env.PUBLIC_URL ||
+      process.env.SITE_URL ||
+      this.baseUrl ||
+      "http://localhost:4321"
+    );
   }
 
   async register(req: Request): Promise<Response> {
@@ -93,6 +120,25 @@ export class AuthRoutes {
 
       const existingUser = await this.authAdapter.findUserByEmail(body.email);
       if (existingUser) {
+        if (!existingUser.emailVerified && this.emailVerificationRequired && this.email) {
+          const tokenRes = await this.authAdapter.createEmailVerificationToken?.(existingUser.id);
+          const verificationToken = tokenRes?.token || randomBytes(32).toString("hex");
+          const baseUrl = this.getBaseUrl(req);
+          const verificationUrl = `${baseUrl}/admin/auth/verify-email?token=${verificationToken}`;
+
+          const template = this.email.getTemplates().verifyEmail(verificationUrl, body.email);
+          await this.email.send({ to: body.email, ...template });
+
+          return this.jsonResponse(
+            {
+              success: true,
+              message: "An unverified account already exists with this email. We have resent the confirmation link to your inbox.",
+              requiresVerification: true,
+            },
+            200,
+          );
+        }
+
         return this.errorResponse("Email already registered", 400);
       }
 
@@ -105,7 +151,8 @@ export class AuthRoutes {
 
       if (this.emailVerificationRequired && this.email) {
         const verificationToken = randomBytes(32).toString("hex");
-        const verificationUrl = `${this.baseUrl}/api/auth/verify?token=${verificationToken}`;
+        const baseUrl = this.getBaseUrl(req);
+        const verificationUrl = `${baseUrl}/admin/auth/verify-email?token=${verificationToken}`;
 
         await this.authAdapter.createSession(user.id, { ipAddress, userAgent });
         const template = this.email
@@ -212,6 +259,21 @@ if (!body.email || !body.password) {
       if (!verifiedUser) {
         await this.recordFailedLogin(ipAddress, userAgent, user.id, user.email);
         return this.errorResponse("Invalid credentials", 401);
+      }
+
+      if (this.emailVerificationRequired && verifiedUser.emailVerified === false) {
+        if (this.email) {
+          const tokenRes = await this.authAdapter.createEmailVerificationToken?.(verifiedUser.id);
+          const verificationToken = tokenRes?.token || randomBytes(32).toString("hex");
+          const baseUrl = this.getBaseUrl(req);
+          const verificationUrl = `${baseUrl}/admin/auth/verify-email?token=${verificationToken}`;
+          const template = this.email.getTemplates().verifyEmail(verificationUrl, verifiedUser.email);
+          await this.email.send({ to: verifiedUser.email, ...template });
+        }
+        return this.errorResponse(
+          "Your email address is not verified yet. We have sent a new confirmation link to your email inbox.",
+          403,
+        );
       }
 
       if (this.lockout) {
@@ -458,8 +520,13 @@ if (!body.email || !body.password) {
       }
 
       if (this.email) {
-        const resetToken = randomBytes(32).toString("hex");
-        const resetUrl = `${this.baseUrl}/api/auth/reset-password?token=${resetToken}`;
+        let resetToken = randomBytes(32).toString("hex");
+        if (this.authAdapter.createPasswordResetToken) {
+          const res = await this.authAdapter.createPasswordResetToken(user.email);
+          if (res.token) resetToken = res.token;
+        }
+        const baseUrl = this.getBaseUrl(req);
+        const resetUrl = `${baseUrl}/admin/auth/reset-password?token=${resetToken}`;
         const template = this.email
           .getTemplates()
           .resetPassword(resetUrl, user.email);
@@ -487,6 +554,50 @@ if (!body.email || !body.password) {
     }
   }
 
+  async resetPassword(req: Request): Promise<Response> {
+    const { ipAddress, userAgent } = createAuditContext(req);
+
+    if (this.rateLimiter) {
+      const limit = await this.rateLimiter.check("auth:reset", ipAddress);
+      if (!limit.allowed) {
+        return this.rateLimitResponse(limit);
+      }
+    }
+
+    try {
+      const body = await req.json() as { token?: string; newPassword?: string; confirmPassword?: string };
+      const { token, newPassword, confirmPassword } = body;
+
+      if (!token || !newPassword) {
+        return this.errorResponse("Reset token and new password are required", 400);
+      }
+
+      if (newPassword !== confirmPassword) {
+        return this.errorResponse("Passwords do not match", 400);
+      }
+
+      const passwordValidation = this.passwordPolicy.validate(newPassword);
+      if (!passwordValidation.valid) {
+        return this.errorResponse(passwordValidation.errors.join(". "), 400);
+      }
+
+      if (this.authAdapter.resetPasswordWithToken) {
+        const result = await this.authAdapter.resetPasswordWithToken(token, newPassword);
+        if (!result.success) {
+          return this.errorResponse(result.error || "Password reset failed or token expired", 400);
+        }
+      }
+
+      return this.jsonResponse({
+        success: true,
+        message: "Password reset successful. You can now log in with your new password.",
+      });
+    } catch (error) {
+      console.error("[AuthRoutes.resetPassword] Error:", error);
+      return this.errorResponse("Password reset failed", 500);
+    }
+  }
+
   async verifyEmail(req: Request): Promise<Response> {
     const url = new URL(req.url);
     const token = url.searchParams.get("token");
@@ -496,8 +607,24 @@ if (!body.email || !body.password) {
     }
 
     try {
-      return this.jsonResponse({ success: true, message: "Email verified" });
+      if (this.authAdapter.verifyEmailToken) {
+        const result = await this.authAdapter.verifyEmailToken(token);
+        if (!result.success) {
+          return this.errorResponse(result.error || "Invalid or expired verification token", 400);
+        }
+
+        if (result.userId && this.email) {
+          const user = await this.authAdapter.findUserById(result.userId);
+          if (user) {
+            const template = this.email.getTemplates().welcome(user.email);
+            await this.email.send({ to: user.email, ...template });
+          }
+        }
+      }
+
+      return this.jsonResponse({ success: true, message: "Email address verified successfully" });
     } catch (error) {
+      console.error("[AuthRoutes.verifyEmail] Error:", error);
       return this.errorResponse("Email verification failed", 500);
     }
   }

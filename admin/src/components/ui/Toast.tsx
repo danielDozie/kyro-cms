@@ -14,16 +14,17 @@ type ToastType = "success" | "error" | "warning" | "info";
 interface ToastProps {
   type: ToastType;
   message: string;
+  duration?: number;
   onClose: () => void;
 }
 
-export function Toast({ type, message, onClose }: ToastProps) {
+export function Toast({ type, message, duration = 3000, onClose }: ToastProps) {
   const [isPaused, setIsPaused] = React.useState(false);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const startTimer = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(onClose, 5000);
+    timerRef.current = setTimeout(onClose, duration);
   };
 
   const clearTimer = () => {

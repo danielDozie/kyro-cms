@@ -1,6 +1,10 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import i18next from "../../lib/i18n";
+import { requireAuthServer } from "../../lib/auth-server";
+
+const redirect = await requireAuthServer(Astro.request, { requireSuperAdmin: true });
+if (redirect) return redirect;
 
 const defaultRoles = [
   {
@@ -58,51 +62,71 @@ const permissions: Record<string, string[]> = {
 ---
 
 <AdminLayout title={i18next.t("pages." + "Roles".replace(/ /g, ""), { defaultValue: "Roles" })}>
-  <div class="flex-1 overflow-y-auto space-y-8">
+  <div class="flex-1 overflow-y-auto space-y-6">
     <!-- Header -->
-    <div class="surface-tile p-6">
-      <h1 class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">Roles & Permissions</h1>
-      <p class="text-sm text-[var(--kyro-text-secondary)] mt-1 font-regular">
-        Role-based access control with hierarchical permissions
-      </p>
+    <div class="surface-tile p-6 rounded-xl border border-[var(--kyro-border)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-lg font-semibold text-[var(--kyro-text-primary)]">Roles & Access Control</h1>
+        <p class="text-xs text-[var(--kyro-text-secondary)] mt-0.5">
+          Role hierarchy, inheritance rules, and system-wide permission assignments.
+        </p>
+      </div>
+      <div class="flex items-center gap-2 text-xs font-medium text-[var(--kyro-text-secondary)] bg-[var(--kyro-surface-accent)] px-3 py-1.5 rounded-lg border border-[var(--kyro-border)]">
+        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <span>6 System Roles Defined</span>
+      </div>
     </div>
 
-    <!-- Role Hierarchy -->
+    <!-- Role Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {
         defaultRoles.map((role) => (
-          <div class={`surface-tile p-6 border-2 ${role.color.split(" ").slice(2).join(" ")} rounded-2xl`}>
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tighter">{role.name}</h3>
-              <span class={`px-3 py-1 rounded-lg text-xs font-bold ${role.color.split(" ").slice(0, 2).join(" ")}`}>
-                Level {role.level}
-              </span>
-            </div>
-            <p class="text-sm text-[var(--kyro-text-secondary)] mb-4">{role.description}</p>
-            {role.inherits.length > 0 && (
-              <div class="mb-4">
-                <span class="text-xs font-bold text-[var(--kyro-text-secondary)]  tracking-[0.1em] opacity-50">
-                  Inherits:
+          <div class="surface-tile p-5 rounded-xl border border-[var(--kyro-border)] flex flex-col justify-between transition-all hover:border-[var(--kyro-text-secondary)]/30">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-semibold text-[var(--kyro-text-primary)] capitalize">{role.name.replace("_", " ")}</h3>
+                  {role.name === "super_admin" && (
+                    <span class="px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md border border-amber-500/20">
+                      Root
+                    </span>
+                  )}
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] border border-[var(--kyro-border)]">
+                  Lvl {role.level}
                 </span>
-                <div class="flex gap-2 mt-2">
-                  {role.inherits.map((parent) => (
-                    <span class="px-2 py-1 bg-[var(--kyro-surface-accent)] rounded text-xs font-bold text-[var(--kyro-text-secondary)]">
-                      {parent}
+              </div>
+              <p class="text-xs text-[var(--kyro-text-secondary)] leading-relaxed mb-4">{role.description}</p>
+            </div>
+
+            <div class="space-y-3 pt-3 border-t border-[var(--kyro-border)]">
+              {role.inherits.length > 0 && (
+                <div>
+                  <span class="text-[11px] font-medium text-[var(--kyro-text-muted)] uppercase tracking-wider">
+                    Inherits From
+                  </span>
+                  <div class="flex flex-wrap gap-1.5 mt-1">
+                    {role.inherits.map((parent) => (
+                      <span class="px-2 py-0.5 bg-[var(--kyro-surface-accent)] rounded text-xs font-mono font-medium text-[var(--kyro-text-secondary)] border border-[var(--kyro-border)]">
+                        {parent}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <span class="text-[11px] font-medium text-[var(--kyro-text-muted)] uppercase tracking-wider">
+                  Granted Scope
+                </span>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  {(permissions[role.name] || []).map((perm) => (
+                    <span class="px-2 py-0.5 bg-[var(--kyro-surface-accent)] rounded text-[11px] font-mono text-[var(--kyro-text-primary)] border border-[var(--kyro-border)]">
+                      {perm}
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
-            <div>
-              <span class="text-xs font-bold text-[var(--kyro-text-secondary)]  tracking-[0.1em] opacity-50">
-                Permissions:
-              </span>
-              <div class="flex flex-wrap gap-1.5 mt-2">
-                {(permissions[role.name] || []).map((perm) => (
-                  <span class="px-2 py-0.5 bg-[var(--kyro-surface-accent)] rounded text-[10px] font-medium text-[var(--kyro-text-primary)]">
-                    {perm}
-                  </span>
-                ))}
               </div>
             </div>
           </div>
@@ -111,75 +135,62 @@ const permissions: Record<string, string[]> = {
     </div>
 
     <!-- Permission Matrix -->
-    <div class="surface-tile overflow-hidden">
-      <div class="p-6 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]">
-        <h2 class="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tighter">Permission Matrix</h2>
+    <div class="surface-tile rounded-xl border border-[var(--kyro-border)] overflow-hidden">
+      <div class="p-5 border-b border-[var(--kyro-border)]">
+        <h2 class="text-sm font-semibold text-[var(--kyro-text-primary)]">Permission Matrix</h2>
+        <p class="text-xs text-[var(--kyro-text-secondary)] mt-0.5">Resource capability distribution across system roles</p>
       </div>
-      <table class="w-full text-left">
-        <thead>
-          <tr
-            class="text-[var(--kyro-text-secondary)] font-bold text-[10px] tracking-[0.3em] border-b border-[var(--kyro-border)]"
-          >
-            <th class="px-6 py-4">Resource</th>
-            {defaultRoles.map((role) => <th class="px-4 py-4 text-center">{role.name}</th>)}
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--kyro-border)]">
-          {
-            [
-              {
-                resource: "Users",
-                actions: ["create", "read", "update", "delete"],
-              },
-              {
-                resource: "Roles",
-                actions: ["create", "read", "update", "delete"],
-              },
-              {
-                resource: "Content",
-                actions: ["create", "read", "update", "delete", "publish"],
-              },
-              {
-                resource: "Media",
-                actions: ["create", "read", "update", "delete"],
-              },
-              { resource: "Settings", actions: ["read", "update"] },
-              { resource: "Audit Logs", actions: ["read"] },
-            ].map((row) => (
-              <tr class="hover:bg-[var(--kyro-surface-accent)] transition-colors">
-                <td class="px-6 py-4 font-medium text-[var(--kyro-text-primary)]">{row.resource}</td>
-                {defaultRoles.map((role) => {
-                  const hasAll = permissions[role.name]?.includes("*");
-                  const hasResource = permissions[role.name]?.some(
-                    (p) => p.startsWith(row.resource.toLowerCase() + ":") || p === "*",
-                  );
-                  return (
-                    <td class="px-4 py-4 text-center">
-                      {hasAll || hasResource ? (
-                        <svg class="w-5 h-5 text-green-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      ) : (
-                        <svg class="w-5 h-5 text-[var(--kyro-border)] mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                            clip-rule="evenodd"
-                          />
-                        </svg>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-[var(--kyro-surface-accent)] border-b border-[var(--kyro-border)] text-xs font-medium text-[var(--kyro-text-secondary)]">
+              <th class="px-5 py-3">Resource</th>
+              {defaultRoles.map((role) => (
+                <th class="px-4 py-3 text-center capitalize font-semibold">{role.name.replace("_", " ")}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--kyro-border)] text-xs">
+            {
+              [
+                { resource: "Users", key: "users" },
+                { resource: "Roles & Access", key: "roles" },
+                { resource: "Content Collections", key: "content" },
+                { resource: "Media Library", key: "media" },
+                { resource: "Global Settings", key: "settings" },
+                { resource: "Audit Logs", key: "audit" },
+              ].map((row) => (
+                <tr class="hover:bg-[var(--kyro-surface-accent)]/50 transition-colors">
+                  <td class="px-5 py-3 font-medium text-[var(--kyro-text-primary)]">{row.resource}</td>
+                  {defaultRoles.map((role) => {
+                    const hasAll = permissions[role.name]?.includes("*");
+                    const hasResource = permissions[role.name]?.some(
+                      (p) => p.startsWith(row.key + ":") || p === "*" || p.startsWith(row.resource.toLowerCase() + ":"),
+                    );
+                    return (
+                      <td class="px-4 py-3 text-center">
+                        {hasAll || hasResource ? (
+                          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        ) : (
+                          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-muted)] opacity-50">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                            </svg>
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </AdminLayout>

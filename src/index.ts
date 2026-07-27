@@ -6,6 +6,9 @@
 // Main Factory
 export { Kyro, createKyro, applyCollectionOverrides } from "./createKyro.js";
 
+// Email Engine & Templates
+export * from "./email/index.js";
+
 // Registry
 export {
   Registry,

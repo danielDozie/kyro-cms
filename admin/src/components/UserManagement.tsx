@@ -39,9 +39,30 @@ export function UserManagement() {
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
   const { confirm, alert } = useUIStore();
+  const [currentUserRole, setCurrentUserRole] = useState<string>(() => {
+    return (typeof window !== "undefined" && (window as any).__kyroAuth?.user?.role) || "";
+  });
 
   useEffect(() => {
     loadUsers();
+
+    if ((window as any).__kyroAuth?.user?.role) {
+      setCurrentUserRole((window as any).__kyroAuth.user.role);
+    } else {
+      apiGet<any>("/api/auth/me")
+        .then((res) => {
+          if (res?.user?.role) setCurrentUserRole(res.user.role);
+        })
+        .catch(() => {});
+    }
+
+    const handler = (e: any) => {
+      if (e.detail?.user?.role) {
+        setCurrentUserRole(e.detail.user.role);
+      }
+    };
+    window.addEventListener("kyro:auth-ready", handler);
+    return () => window.removeEventListener("kyro:auth-ready", handler);
   }, []);
 
   const loadUsers = async () => {
@@ -300,15 +321,28 @@ export function UserManagement() {
             </div>
             <div>
               <label className="block text-xs font-bold mb-1.5 text-[var(--kyro-text-secondary)] uppercase tracking-wider">Role</label>
-              <select
-                value={createForm.role}
-                onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                className="w-full px-4 py-3 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-xl text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]"
-              >
-                {roleOptions.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+              {(() => {
+                const isSuperAdmin = currentUserRole === "super_admin";
+                return (
+                  <div>
+                    <select
+                      value={createForm.role}
+                      disabled={!isSuperAdmin}
+                      onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                      className="w-full px-4 py-3 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-xl text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)] disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {roleOptions.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    {!isSuperAdmin && (
+                      <p className="text-[11px] text-[var(--kyro-text-secondary)] mt-1 font-medium">
+                        Only Super Admin can assign administrative roles.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             {createError && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-500 text-xs font-bold">

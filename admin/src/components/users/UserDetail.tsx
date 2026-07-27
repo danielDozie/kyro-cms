@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiGet } from "../../lib/api";
-import { useUIStore, toast } from "../../lib/stores";
+import { useUIStore, useAuthStore, toast } from "../../lib/stores";
 import { UploadField } from "../fields/UploadField";
 import { useTranslation } from "react-i18next";
 import { navigate } from '../../lib/navigate';
@@ -47,6 +47,29 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
   const [, setDeleting] = useState(false);
   const [locking, setLocking] = useState(false);
   const [isLocked, setIsLocked] = useState(user.locked || false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>(() => {
+    return (typeof window !== "undefined" && (window as any).__kyroAuth?.user?.role) || "";
+  });
+
+  useEffect(() => {
+    if ((window as any).__kyroAuth?.user?.role) {
+      setCurrentUserRole((window as any).__kyroAuth.user.role);
+    } else {
+      apiGet<any>("/api/auth/me")
+        .then((res) => {
+          if (res?.user?.role) setCurrentUserRole(res.user.role);
+        })
+        .catch(() => {});
+    }
+
+    const handler = (e: any) => {
+      if (e.detail?.user?.role) {
+        setCurrentUserRole(e.detail.user.role);
+      }
+    };
+    window.addEventListener("kyro:auth-ready", handler);
+    return () => window.removeEventListener("kyro:auth-ready", handler);
+  }, []);
 
   useEffect(() => {
     if (typeof avatar === "string" && /^[0-9a-f-]+$/i.test(avatar)) {
@@ -105,6 +128,15 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
 
       if (res.ok) {
         toast.success("User updated");
+        const currentMe = (window as any).__kyroAuth?.user || useAuthStore.getState().user;
+        if (currentMe && (currentMe.id === user.id || currentMe.email === user.email)) {
+          apiGet<any>("/api/auth/me").then((meRes) => {
+            const updatedUser = meRes?.user || meRes;
+            if (updatedUser) {
+              useAuthStore.getState().setUser(updatedUser);
+            }
+          });
+        }
         navigate(adminPath + "/users");
       } else {
         toast.error(data.error || "Failed to save user");
@@ -242,20 +274,33 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
             </p>
           </div>
           <div>
-            <label className="text-xs font-bold text-[var(--kyro-text-secondary)]  tracking-wider">
+            <label className="text-xs font-bold text-[var(--kyro-text-secondary)] tracking-wider">
               Role
             </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] rounded-lg text-sm font-medium text-[var(--kyro-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)]"
-            >
-              {roleOptions.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+            {(() => {
+              const isSuperAdmin = currentUserRole === "super_admin";
+              return (
+                <div>
+                  <select
+                    value={role}
+                    disabled={!isSuperAdmin}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="mt-1 w-full px-3 py-2 border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] rounded-lg text-sm font-medium text-[var(--kyro-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {roleOptions.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                  {!isSuperAdmin && (
+                    <p className="text-[11px] text-[var(--kyro-text-secondary)] mt-1 font-medium">
+                      Only Super Admin can modify user roles.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           <div>
             <label className="text-xs font-bold text-[var(--kyro-text-secondary)]  tracking-wider">

@@ -25,6 +25,14 @@ if (!isSettings) {
     : `Edit ${config.singularLabel || config.label || collection}`;
 }
 
+import { requireAuthServer } from "../../lib/auth-server";
+
+if (collection) {
+  const reqOp = (!id || id === "new") ? "collectionCreate" : "collectionRead";
+  const redirect = await requireAuthServer(Astro.request, { [reqOp]: collection });
+  if (redirect) return redirect;
+}
+
 import SettingsPageAstro from "../settings/[slug].astro";
 ---
 

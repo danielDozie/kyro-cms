@@ -140,7 +140,7 @@ export function CommandPalette({
       type: "action",
       view: "media",
       icon: ImageIcon,
-      visible: permissions?.collections?.media?.read !== false,
+      visible: isAdmin || permissions?.collections?.media?.read === true,
     },
     {
       id: "action-users",

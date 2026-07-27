@@ -112,50 +112,42 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
           }
 
           // Navigation Guard - Check if user has read access to current page
-          if (permissions) {
+          if (permissions && user) {
             const path = window.location.pathname;
             const relativePath = path.replace(adminPath, "");
+            const userRole = user.role || "";
+            const isSuperAdmin = userRole === "super_admin";
+            const isAdmin = userRole === "admin" || isSuperAdmin;
 
-            // Extract slug and type
-            let slug = "";
-            let type = "";
+            let hasAccess = true;
 
-            if (relativePath.startsWith("/users")) {
-              slug = "users";
-              type = "collection";
+            if (relativePath.startsWith("/roles")) {
+              if (!isSuperAdmin) hasAccess = false;
+            } else if (relativePath.startsWith("/plugins") || relativePath.startsWith("/keys") || relativePath.startsWith("/webhooks")) {
+              if (!isAdmin) hasAccess = false;
+            } else if (relativePath.startsWith("/users")) {
+              if (!isAdmin && permissions.collections?.users?.read !== true) hasAccess = false;
             } else if (relativePath.startsWith("/audit")) {
-              slug = "audit_logs";
-              type = "collection";
+              if (!isAdmin && permissions.collections?.audit_logs?.read !== true) hasAccess = false;
             } else if (relativePath.startsWith("/media")) {
-              slug = "media";
-              type = "collection";
-            } else if (relativePath.startsWith("/settings/")) {
-              slug = relativePath.split("/")[2];
-              type = "global";
+              if (!isAdmin && permissions.collections?.media?.read !== true) hasAccess = false;
+            } else if (relativePath.startsWith("/settings")) {
+              if (!isAdmin) hasAccess = false;
             } else if (
               relativePath.includes("/") &&
               !relativePath.startsWith("/login") &&
-              !relativePath.startsWith("/403")
+              !relativePath.startsWith("/403") &&
+              !relativePath.startsWith("/auth/")
             ) {
-              // Dynamic collections: /[adminPath]/[collectionSlug]/...
-              slug = relativePath.split("/")[1];
-              type = "collection";
+              const colSlug = relativePath.split("/")[1];
+              if (!isAdmin && colSlug && permissions.collections?.[colSlug]?.read !== true) {
+                hasAccess = false;
+              }
             }
 
-            if (slug && type) {
-              let hasAccess = true;
-              if (type === "collection" && permissions.collections) {
-                const p = permissions.collections[slug];
-                if (p && p.read === false) hasAccess = false;
-              } else if (type === "global" && permissions.globals) {
-                const p = permissions.globals[slug];
-                if (p && p.read === false) hasAccess = false;
-              }
-
-              if (!hasAccess) {
-                console.log("[AdminLayout] Access denied for", slug, "redirecting to 403");
-                window.location.href = adminPath + "/403";
-              }
+            if (!hasAccess) {
+              console.log("[AdminLayout] Access denied for", relativePath, "redirecting to 403");
+              window.location.href = adminPath + "/403";
             }
           }
         } catch (err) {

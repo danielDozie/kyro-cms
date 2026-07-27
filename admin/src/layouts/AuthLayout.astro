@@ -61,16 +61,25 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     />
     <script is:inline define:vars={{ adminPath, apiPath }}>
       (async () => {
-        try {
-          const res = await fetch(apiPath + "/auth/me", { credentials: "include" });
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.user) {
-              window.location.href = adminPath;
-              return;
+        const pathname = window.location.pathname;
+        const isAuthActionPage =
+          pathname.includes("/auth/check-email") ||
+          pathname.includes("/auth/verify-email") ||
+          pathname.includes("/auth/reset-password") ||
+          pathname.includes("/auth/forgot-password");
+
+        if (!isAuthActionPage) {
+          try {
+            const res = await fetch(apiPath + "/auth/me", { credentials: "include" });
+            if (res.ok) {
+              const data = await res.json();
+              if (data?.user) {
+                window.location.href = adminPath;
+                return;
+              }
             }
-          }
-        } catch {}
+          } catch {}
+        }
         const getTheme = () => {
           const stored = localStorage.getItem("theme");
           if (stored) return stored;

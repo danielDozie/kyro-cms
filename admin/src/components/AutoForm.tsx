@@ -571,6 +571,7 @@ export function AutoForm({
         onActionSuccess?.(
           isPost ? "Document created successfully" : "Changes saved",
         );
+        toast.success(isPost ? "Document created successfully" : "Changes saved successfully");
         if (globalSlug) {
           window.dispatchEvent(new Event("kyro:soft-reload"));
         }
@@ -638,6 +639,7 @@ export function AutoForm({
         useAutoFormStore.getState().loadDocument(savedData, savedData);
         setLocalSaveStatus("saved");
         onActionSuccess?.("Published successfully");
+        toast.success("Published changes successfully");
 
         setTimeout(() => {
           setLocalSaveStatus("idle");
@@ -795,7 +797,10 @@ export function AutoForm({
                       if (!emailValue && rowName && typeof rowName === "string" && emailFieldName) {
                         emailValue = (formData[rowName] as Record<string, unknown>)?.[emailFieldName] as string | undefined;
                       }
-                      if (!emailValue) return;
+                      if (!emailValue) {
+                        toast.error("Please enter a test recipient email address.");
+                        return;
+                      }
 
                       setLoadingFields((prev) => ({
                         ...prev,
@@ -805,7 +810,12 @@ export function AutoForm({
                         const response = await fetchWithAuth(resolveUrl(actionUrl), {
                           method: (fAdmin.method as string) || "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ email: emailValue }),
+                          body: JSON.stringify({
+                            ...formData,
+                            email: emailValue,
+                            testEmail: emailValue,
+                            testEmailSection: { testEmail: emailValue },
+                          }),
                         });
                         let result: { success?: boolean; message?: string; error?: string } = {};
                         try {
@@ -813,9 +823,9 @@ export function AutoForm({
                         } catch {
                           result = {};
                         }
-                        if (response.ok && result.success) {
+                        if (response.ok && (result.success || result.message)) {
                           onActionSuccess?.(
-                            result.message || "Action completed successfully",
+                            result.message || "Test email sent successfully!",
                           );
                         } else {
                           const errorMsg =

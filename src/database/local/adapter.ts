@@ -382,6 +382,18 @@ export class LocalAdapter extends AbstractBaseAdapter {
   // SQL Quoting
   // ========================================================================
 
+  private resolveCol(tableName: string, colName: string): string {
+    const cleanName = colName.replace(/^-/, "");
+    const cols = getTableColumns(this.db, tableName);
+    if (!cols.includes(cleanName)) {
+      if (cleanName === "created_at" && cols.includes("createdAt")) return '"createdAt"';
+      if (cleanName === "createdAt" && cols.includes("created_at")) return '"created_at"';
+      if (cleanName === "updated_at" && cols.includes("updatedAt")) return '"updatedAt"';
+      if (cleanName === "updatedAt" && cols.includes("updated_at")) return '"updated_at"';
+    }
+    return this.col(cleanName);
+  }
+
   private col(name: string): string {
     return `"${name}"`;
   }
@@ -488,22 +500,23 @@ export class LocalAdapter extends AbstractBaseAdapter {
 
       for (const [key, value] of Object.entries(effectiveWhere)) {
         if (key === "AND" || key === "OR") continue;
+        const colSql = this.resolveCol(tableName, key);
 
         if (typeof value === "object" && value !== null) {
           if (value.equals !== undefined) {
-            conditions.push(`${this.col(key)} = ?`);
+            conditions.push(`${colSql} = ?`);
             params.push(value.equals);
           }
           if (value.in !== undefined) {
-            conditions.push(`${this.col(key)} IN (${value.in.map(() => "?").join(", ")})`);
+            conditions.push(`${colSql} IN (${value.in.map(() => "?").join(", ")})`);
             params.push(...value.in);
           }
           if (value.not_equals !== undefined) {
-            conditions.push(`${this.col(key)} != ?`);
+            conditions.push(`${colSql} != ?`);
             params.push(value.not_equals);
           }
         } else {
-          conditions.push(`${this.col(key)} = ?`);
+          conditions.push(`${colSql} = ?`);
           params.push(value);
         }
       }
@@ -512,8 +525,9 @@ export class LocalAdapter extends AbstractBaseAdapter {
         sql += ` WHERE ${conditions.join(" AND ")}`;
       }
 
-      const sortField = this.col(sort?.replace("-", "") || "createdAt");
-      const sortDir = sort?.startsWith("-") ? "DESC" : "ASC";
+      const rawSort = sort || "-createdAt";
+      const sortField = this.resolveCol(tableName, rawSort);
+      const sortDir = rawSort.startsWith("-") ? "DESC" : "ASC";
       sql += ` ORDER BY ${sortField} ${sortDir}`;
 
     const countSql = sql.replace("SELECT *", "SELECT COUNT(*) as count");

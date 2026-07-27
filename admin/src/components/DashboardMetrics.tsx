@@ -153,13 +153,35 @@ function CustomTooltip({ active, payload, label, currency }: any) {
 export const RevenueChart: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [auth, setAuth] = useState<any>(() => (typeof window !== "undefined" ? (window as any).__kyroAuth : null));
 
   useEffect(() => {
+    const handleAuth = () => {
+      if (typeof window !== "undefined") {
+        setAuth((window as any).__kyroAuth);
+      }
+    };
+    handleAuth();
+    window.addEventListener("kyro:auth-ready", handleAuth);
+    return () => window.removeEventListener("kyro:auth-ready", handleAuth);
+  }, []);
+
+  const userRole = auth?.user?.role || "";
+  const isAdmin = userRole === "admin" || userRole === "super_admin";
+  const canReadOrders = isAdmin || auth?.permissions?.collections?.orders?.read === true;
+
+  useEffect(() => {
+    if (!canReadOrders) {
+      setLoading(false);
+      return;
+    }
     apiGet<any>("/api/analytics", { autoToast: false })
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [canReadOrders]);
+
+  if (!canReadOrders) return null;
 
   if (loading)
     return (
@@ -396,6 +418,24 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [auth, setAuth] = useState<any>(() => (typeof window !== "undefined" ? (window as any).__kyroAuth : null));
+
+  useEffect(() => {
+    const handleAuth = () => {
+      if (typeof window !== "undefined") {
+        setAuth((window as any).__kyroAuth);
+      }
+    };
+    handleAuth();
+    window.addEventListener("kyro:auth-ready", handleAuth);
+    return () => window.removeEventListener("kyro:auth-ready", handleAuth);
+  }, []);
+
+  const user = auth?.user;
+  const permissions = auth?.permissions;
+  const userRole = user?.role || "";
+  const isSuperAdmin = userRole === "super_admin";
+  const isAdmin = userRole === "admin" || isSuperAdmin;
 
   useEffect(() => {
     Promise.all([
@@ -438,6 +478,7 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
 
   const ecommerceCards = [
     {
+      id: "revenue",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
       gradient: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
       value: analyticsData?.totalRevenue !== undefined
@@ -445,41 +486,51 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
         : "$0",
       label: "Total Revenue",
       subtext: "From system orders",
+      visible: isAdmin || permissions?.collections?.orders?.read === true,
     },
     {
+      id: "products",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
       gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
       value: productCount,
       label: "Products / Menu Items",
       subtext: "Active inventory & menu items",
+      visible: isAdmin || permissions?.collections?.products?.read === true,
     },
     {
+      id: "orders",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
       gradient: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)",
       value: analyticsData?.totalOrders !== undefined ? analyticsData.totalOrders : (data?.collectionCounts?.["orders"] || 0),
       label: "Orders",
       subtext: "Total orders placed",
+      visible: isAdmin || permissions?.collections?.orders?.read === true,
     },
     {
+      id: "customers",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
       gradient: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
       value: data?.collectionCounts?.["customers"] || 0,
       label: "Customers",
       subtext: "Registered shoppers",
+      visible: isAdmin || permissions?.collections?.customers?.read === true || permissions?.collections?.users?.read === true,
     },
     {
+      id: "reviews",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>,
       gradient: "linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)",
       value: data?.collectionCounts?.["reviews"] || 0,
       label: "Reviews",
       subtext: "Customer feedback",
+      visible: isAdmin || permissions?.collections?.reviews?.read === true,
     },
-  ];
+  ].filter((c) => c.visible);
 
-  // Dynamically extract top active custom collections if present
+  // Dynamically extract top active custom collections permitted for user
   const activeCustomCollections = data?.collectionCounts
     ? Object.entries(data.collectionCounts)
         .filter(([slug, count]) => count > 0 && !["users", "audit_logs", "media"].includes(slug))
+        .filter(([slug]) => isAdmin || permissions?.collections?.[slug]?.read === true)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
     : [];
@@ -487,6 +538,7 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
   const dynamicCollectionCards = activeCustomCollections.map(([slug, count]) => {
     const formattedLabel = slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
     return {
+      id: `col-${slug}`,
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
       gradient: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
       value: count,
@@ -497,30 +549,36 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
 
   const baseCmsCards = [
     {
+      id: "documents",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
       gradient: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
       value: data?.totalDocuments || 0,
       label: "Documents",
       subtext: `Across ${data?.collections || 0} collection${data?.collections !== 1 ? "s" : ""}`,
+      visible: true,
     },
     {
+      id: "media",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
       gradient: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
       value: data?.totalMedia || 0,
       label: "Media Files",
       subtext: "Images, videos & docs",
+      visible: isAdmin || permissions?.collections?.media?.read === true,
     },
-  ];
+  ].filter((c) => c.visible);
 
   const trailingCmsCards = [
     {
+      id: "team",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
       gradient: "linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%)",
       value: data?.totalUsers || 0,
       label: "Team Members",
       subtext: "Active user accounts",
+      visible: isAdmin || permissions?.collections?.users?.read === true,
     },
-  ];
+  ].filter((c) => c.visible);
 
   const cmsCards = [
     ...baseCmsCards,
