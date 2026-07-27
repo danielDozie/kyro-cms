@@ -42,9 +42,9 @@ nonAuthCollections
       href: `${adminPath}/${col.slug}`,
       label: col.label || col.slug,
       icon: (col.admin?.icon as string) || "collection",
-      order: typeof col.admin?.order === 'number' ? col.admin.order : 999,
+      order: typeof col.admin?.order === "number" ? col.admin.order : 999,
     };
-    
+
     const groupName = (col.admin?.group as string) || "Content";
     if (!groupedCollections.has(groupName)) {
       groupedCollections.set(groupName, []);
@@ -94,35 +94,42 @@ const isServerEditor = serverRole === "editor";
 const isServerAuthor = serverRole === "author";
 const isServerCustomer = serverRole === "customer";
 
-const navSections = navSectionsRaw.map((section) => {
-  if (!serverUser) return section;
-  const items = section.items.filter((item) => {
-    const slug = item.href.split("/").pop() || "";
-    if (item.href === adminPath) return true;
-    if (slug === "roles") return isServerSuperAdmin;
-    if (slug === "plugins" || slug === "keys" || slug === "webhooks" || slug === "settings") return isServerAdmin;
-    if (slug === "users") return isServerAdmin || serverPermissions?.collections?.users?.read === true;
-    if (slug === "audit" || slug === "audit_logs") return isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
-    if (slug === "media") return !isServerCustomer && (isServerAdmin || isServerEditor || isServerAuthor || serverPermissions?.collections?.media?.read === true);
+const navSections = navSectionsRaw
+  .map((section) => {
+    if (!serverUser) return section;
+    const items = section.items.filter((item) => {
+      const slug = item.href.split("/").pop() || "";
+      if (item.href === adminPath) return true;
+      if (slug === "roles") return isServerSuperAdmin;
+      if (slug === "plugins" || slug === "keys" || slug === "webhooks" || slug === "settings") return isServerAdmin;
+      if (slug === "users") return isServerAdmin || serverPermissions?.collections?.users?.read === true;
+      if (slug === "audit" || slug === "audit_logs")
+        return isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
+      if (slug === "media")
+        return (
+          !isServerCustomer &&
+          (isServerAdmin || isServerEditor || isServerAuthor || serverPermissions?.collections?.media?.read === true)
+        );
 
-    if (isServerAdmin) return true;
-    if (serverPermissions?.collections?.[slug]) {
-      return serverPermissions.collections[slug].read === true;
-    }
+      if (isServerAdmin) return true;
+      if (serverPermissions?.collections?.[slug]) {
+        return serverPermissions.collections[slug].read === true;
+      }
 
-    if (isServerEditor) {
-      return !["users", "audit_logs", "roles", "plugins", "keys", "webhooks", "settings"].includes(slug);
-    }
-    if (isServerAuthor) {
-      return ["posts", "categories", "orders"].includes(slug);
-    }
-    if (isServerCustomer) {
-      return ["orders"].includes(slug);
-    }
-    return false;
-  });
-  return { ...section, items };
-}).filter((section) => section.items.length > 0);
+      if (isServerEditor) {
+        return !["users", "audit_logs", "roles", "plugins", "keys", "webhooks", "settings"].includes(slug);
+      }
+      if (isServerAuthor) {
+        return ["posts", "categories", "orders"].includes(slug);
+      }
+      if (isServerCustomer) {
+        return ["orders"].includes(slug);
+      }
+      return false;
+    });
+    return { ...section, items };
+  })
+  .filter((section) => section.items.length > 0);
 
 const iconAliases: Record<string, string> = {
   collection: "Dot",
@@ -139,8 +146,7 @@ const iconAliases: Record<string, string> = {
 
 function isActive(item: NavItem): boolean {
   if (item.href === adminPath) return title === "Dashboard";
-  if (item.href.startsWith(adminPath + "/settings"))
-    return currentPath.startsWith(adminPath + "/settings");
+  if (item.href.startsWith(adminPath + "/settings")) return currentPath.startsWith(adminPath + "/settings");
   if (item.href === adminPath + "/users") return title === "Users";
   if (item.href === adminPath + "/roles") return title === "Permissions";
   if (item.href === adminPath + "/audit") return title === "Audit Logs";
@@ -149,8 +155,7 @@ function isActive(item: NavItem): boolean {
   if (item.href === adminPath + "/plugins") return title === "Plugins";
   if (item.href === adminPath + "/marketplace") return title === "Marketplace";
   // Collections: match /collection-name and /collection-name/* paths
-  if (currentPath === item.href || currentPath.startsWith(item.href + "/"))
-    return true;
+  if (currentPath === item.href || currentPath.startsWith(item.href + "/")) return true;
   return false;
 }
 ---
@@ -159,8 +164,10 @@ function isActive(item: NavItem): boolean {
   id="kyro-sidebar"
   class="surface-tile w-[280px] md:w-[320px] flex flex-col flex-shrink-0 overflow-hidden fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r md:border-r-0 border-[var(--kyro-border)] rounded-r-2xl md:rounded-3xl rounded-l-none md:rounded-l-3xl shadow-2xl md:shadow-none"
 >
-  <div class="px-6 md:px-6 py-6 flex items-center justify-between gap-2 border-b border-[var(--kyro-border)]/50 shrink-0">
-    <div class="flex items-center gap-3 overflow-hidden min-w-0">
+  <div
+    class="sidebar-header px-6 md:px-6 py-6 flex items-center justify-between gap-2 border-b border-[var(--kyro-border)]/50 shrink-0 transition-all duration-300"
+  >
+    <div class="sidebar-brand flex items-center gap-3 overflow-hidden min-w-0 transition-all duration-300">
       {
         siteLogo || darkLogo ? (
           <div class="flex items-center gap-3">
@@ -191,7 +198,7 @@ function isActive(item: NavItem): boolean {
               )}
             </div>
             {showSiteName && (
-              <span class="sidebar-text text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] truncate">
+              <span class="sidebar-text text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] truncate transition-opacity duration-200">
                 {siteName}
               </span>
             )}
@@ -200,7 +207,7 @@ function isActive(item: NavItem): boolean {
           <div class="flex items-center gap-3 overflow-hidden">
             <img src="/logo-white.svg" alt="Kyro CMS" class="w-7 h-7 hidden dark:block flex-shrink-0" />
             <img src="/logo.svg" alt="Kyro CMS" class="w-7 h-7 block dark:hidden flex-shrink-0" />
-            <span class="sidebar-text text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)] truncate">
+            <span class="sidebar-text text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)] truncate transition-opacity duration-200">
               {siteName}
             </span>
           </div>
@@ -216,26 +223,53 @@ function isActive(item: NavItem): boolean {
       aria-label="Toggle Sidebar"
       class="hidden md:flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
     >
-      <svg id="sidebar-toggle-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+      <svg
+        id="sidebar-toggle-icon"
+        class="w-4 h-4 transition-transform duration-300"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
       </svg>
     </button>
 
     {/* Mobile Close Button */}
-    <button id="mobile-close-btn" class="md:hidden p-2 -mr-2 rounded-lg text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <button
+      id="mobile-close-btn"
+      class="md:hidden p-2 -mr-2 rounded-lg text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
+      >
     </button>
   </div>
 
-  <nav class="flex-1 px-4 overflow-y-auto" id="sidebar-nav">
+  <nav class="flex-1 px-4 overflow-y-auto overflow-x-hidden" id="sidebar-nav">
     <div class="space-y-4">
       {
         navSections.map((section) => (
           <div class="space-y-2 group/section" data-section={section.label}>
             <div class="pt-4 pb-2">
-              <button type="button" class="w-full flex items-center justify-between px-6 focus:outline-none sidebar-section-toggle transition-opacity hover:opacity-80">
+              <button
+                type="button"
+                class="w-full flex items-center justify-between px-6 focus:outline-none sidebar-section-toggle transition-opacity hover:opacity-80"
+              >
                 <p class="text-[10px] font-medium text-[var(--kyro-text-secondary)] tracking-[0.2em] opacity-40 uppercase">
-                  {i18next.t(section.label, { defaultValue: section.label.split('.').pop()?.toUpperCase() || section.label }) || (section.label.split('.').pop()?.toUpperCase() || section.label)}
+                  {i18next.t(section.label, {
+                    defaultValue: section.label.split(".").pop()?.toUpperCase() || section.label,
+                  }) ||
+                    section.label.split(".").pop()?.toUpperCase() ||
+                    section.label}
                 </p>
                 <Icons.ChevronDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 transition-transform duration-200 group-data-[collapsed=true]/section:-rotate-90" />
               </button>
@@ -243,10 +277,8 @@ function isActive(item: NavItem): boolean {
             <div class="section-items space-y-1">
               {section.items.map((item) => {
                 const slug = item.href.split("/").pop();
-                const type = item.href.includes("/settings")
-                  ? "global"
-                  : "collection";
-                const fallback = item.label.split('.').pop() || item.label;
+                const type = item.href.includes("/settings") ? "global" : "collection";
+                const fallback = item.label.split(".").pop() || item.label;
                 const capitalized = fallback.charAt(0).toUpperCase() + fallback.slice(1);
                 const itemText = i18next.t(item.label, { defaultValue: capitalized }) || capitalized;
                 return (
@@ -257,25 +289,24 @@ function isActive(item: NavItem): boolean {
                     data-slug={slug}
                     data-type={type}
                     data-is-dashboard={item.href === adminPath ? "true" : "false"}
-                    class={`flex items-center gap-4 px-6 py-2 rounded-2xl transition-all font-medium text-[13px] ${
+                    class={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm ${
                       item.icon === "collection"
-                        ? currentPath === item.href ||
-                          currentPath.startsWith(item.href + "/")
+                        ? currentPath === item.href || currentPath.startsWith(item.href + "/")
                           ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] active-nav-item"
                           : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"
                         : isActive(item)
-                          ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-lg active-nav-item"
+                          ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md active-nav-item"
                           : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"
                     }`}
                   >
-                    {(() => {
-                      const iconName = iconAliases[item.icon] || item.icon;
-                      const Icon = (Icons as any)[iconName] || Icons.Dot;
-                      return <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
-                    })()}
-                    <span class="sidebar-text truncate">
-                      {itemText}
-                    </span>
+                    <div class="nav-icon-wrapper flex items-center justify-center flex-shrink-0">
+                      {(() => {
+                        const iconName = iconAliases[item.icon] || item.icon;
+                        const Icon = (Icons as any)[iconName] || Icons.Dot;
+                        return <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
+                      })()}
+                    </div>
+                    <span class="sidebar-text truncate">{itemText}</span>
                   </a>
                 );
               })}
@@ -293,37 +324,37 @@ function isActive(item: NavItem): boolean {
       const sections = document.querySelectorAll("[data-section]");
       sections.forEach((section) => {
         const label = section.getAttribute("data-section");
-        const toggleBtn = section.querySelector('.sidebar-section-toggle');
-        const itemsContainer = section.querySelector('.section-items');
-        
-        const isCollapsed = localStorage.getItem(`kyro-sidebar-collapsed-${label}`) === 'true';
+        const toggleBtn = section.querySelector(".sidebar-section-toggle");
+        const itemsContainer = section.querySelector(".section-items");
+
+        const isCollapsed = localStorage.getItem(`kyro-sidebar-collapsed-${label}`) === "true";
         if (isCollapsed) {
-          section.setAttribute('data-collapsed', 'true');
-          if (itemsContainer) itemsContainer.classList.add('hidden');
+          section.setAttribute("data-collapsed", "true");
+          if (itemsContainer) itemsContainer.classList.add("hidden");
         }
 
-        const activeItem = section.querySelector('.active-nav-item');
+        const activeItem = section.querySelector(".active-nav-item");
         if (activeItem && isCollapsed) {
-          section.removeAttribute('data-collapsed');
-          if (itemsContainer) itemsContainer.classList.remove('hidden');
-          localStorage.setItem(`kyro-sidebar-collapsed-${label}`, 'false');
+          section.removeAttribute("data-collapsed");
+          if (itemsContainer) itemsContainer.classList.remove("hidden");
+          localStorage.setItem(`kyro-sidebar-collapsed-${label}`, "false");
         }
-        
+
         // Remove old listeners to prevent duplicates
         const newToggleBtn = toggleBtn?.cloneNode(true);
         if (toggleBtn && newToggleBtn && toggleBtn.parentNode) {
           toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
-          newToggleBtn.addEventListener('click', () => {
-             const currentlyCollapsed = section.getAttribute('data-collapsed') === 'true';
-             if (currentlyCollapsed) {
-               section.removeAttribute('data-collapsed');
-               if (itemsContainer) itemsContainer.classList.remove('hidden');
-               localStorage.setItem(`kyro-sidebar-collapsed-${label}`, 'false');
-             } else {
-               section.setAttribute('data-collapsed', 'true');
-               if (itemsContainer) itemsContainer.classList.add('hidden');
-               localStorage.setItem(`kyro-sidebar-collapsed-${label}`, 'true');
-             }
+          newToggleBtn.addEventListener("click", () => {
+            const currentlyCollapsed = section.getAttribute("data-collapsed") === "true";
+            if (currentlyCollapsed) {
+              section.removeAttribute("data-collapsed");
+              if (itemsContainer) itemsContainer.classList.remove("hidden");
+              localStorage.setItem(`kyro-sidebar-collapsed-${label}`, "false");
+            } else {
+              section.setAttribute("data-collapsed", "true");
+              if (itemsContainer) itemsContainer.classList.add("hidden");
+              localStorage.setItem(`kyro-sidebar-collapsed-${label}`, "true");
+            }
           });
         }
       });
@@ -352,7 +383,8 @@ function isActive(item: NavItem): boolean {
 
         let hasAccess = true;
 
-        const isDashboard = item.getAttribute("data-is-dashboard") === "true" || item.getAttribute("href") === adminPath;
+        const isDashboard =
+          item.getAttribute("data-is-dashboard") === "true" || item.getAttribute("href") === adminPath;
         if (isDashboard) {
           hasAccess = true;
         } else if (slug === "roles") {
@@ -360,11 +392,12 @@ function isActive(item: NavItem): boolean {
         } else if (slug === "plugins" || slug === "keys" || slug === "webhooks" || slug === "settings") {
           hasAccess = isAdmin;
         } else if (slug === "users") {
-          hasAccess = isAdmin || (permissions?.collections?.users?.read === true);
+          hasAccess = isAdmin || permissions?.collections?.users?.read === true;
         } else if (slug === "audit" || slug === "audit_logs") {
-          hasAccess = isAdmin || (permissions?.collections?.audit_logs?.read === true);
+          hasAccess = isAdmin || permissions?.collections?.audit_logs?.read === true;
         } else if (slug === "media") {
-          hasAccess = !isCustomer && (isAdmin || isEditor || isAuthor || (permissions?.collections?.media?.read === true));
+          hasAccess =
+            !isCustomer && (isAdmin || isEditor || isAuthor || permissions?.collections?.media?.read === true);
         } else if (type === "collection") {
           if (isAdmin) {
             hasAccess = true;
@@ -397,9 +430,7 @@ function isActive(item: NavItem): boolean {
       // Hide empty sections after RBAC
       const sections = document.querySelectorAll("[data-section]");
       sections.forEach((section) => {
-        const visibleItems = section.querySelectorAll(
-          '[data-nav-item]:not([style*="display: none"])'
-        );
+        const visibleItems = section.querySelectorAll('[data-nav-item]:not([style*="display: none"])');
         if (visibleItems.length === 0) {
           // @ts-ignore
           section.style.display = "none";
@@ -414,7 +445,80 @@ function isActive(item: NavItem): boolean {
       initSidebar();
       pruneSidebar();
       initPanelToggle();
+      initTooltips();
     };
+
+    function initTooltips() {
+      const sidebar = document.getElementById("kyro-sidebar");
+      if (!sidebar) return;
+
+      let tooltipBadge = document.getElementById("sidebar-tooltip-badge");
+      if (!tooltipBadge) {
+        tooltipBadge = document.createElement("div");
+        tooltipBadge.id = "sidebar-tooltip-badge";
+        tooltipBadge.className =
+          "fixed z-[9999] pointer-events-none opacity-0 transition-opacity duration-150 ease-out px-2.5 py-1.5 text-xs font-semibold rounded-sm bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] border border-[var(--kyro-border)] shadow-md whitespace-nowrap hidden";
+        document.body.appendChild(tooltipBadge);
+      }
+
+      const navItems = document.querySelectorAll("[data-nav-item]");
+      navItems.forEach((item) => {
+        const handleMouseEnter = () => {
+          if (sidebar.getAttribute("data-minimized") !== "true") return;
+          const textSpan = item.querySelector(".sidebar-text");
+          const label = textSpan?.textContent?.trim() || item.getAttribute("title") || "";
+          if (!label || !tooltipBadge) return;
+
+          tooltipBadge.textContent = label;
+          tooltipBadge.classList.remove("hidden");
+
+          const rect = item.getBoundingClientRect();
+          const top = rect.top + rect.height / 2;
+          const left = rect.right + 10;
+
+          tooltipBadge.style.top = `${top}px`;
+          tooltipBadge.style.left = `${left}px`;
+          tooltipBadge.style.transform = "translateY(-50%)";
+
+          requestAnimationFrame(() => {
+            tooltipBadge?.classList.remove("opacity-0");
+            tooltipBadge?.classList.add("opacity-100");
+          });
+        };
+
+        const handleMouseLeave = () => {
+          if (!tooltipBadge) return;
+          tooltipBadge.classList.remove("opacity-100");
+          tooltipBadge.classList.add("opacity-0");
+          setTimeout(() => {
+            if (tooltipBadge?.classList.contains("opacity-0")) {
+              tooltipBadge.classList.add("hidden");
+            }
+          }, 150);
+        };
+
+        item.removeEventListener("mouseenter", (item as any)._tpEnter);
+        item.removeEventListener("mouseleave", (item as any)._tpLeave);
+        (item as any)._tpEnter = handleMouseEnter;
+        (item as any)._tpLeave = handleMouseLeave;
+        item.addEventListener("mouseenter", handleMouseEnter);
+        item.addEventListener("mouseleave", handleMouseLeave);
+      });
+
+      const navContainer = document.getElementById("sidebar-nav");
+      if (navContainer) {
+        navContainer.addEventListener(
+          "scroll",
+          () => {
+            if (tooltipBadge) {
+              tooltipBadge.classList.remove("opacity-100");
+              tooltipBadge.classList.add("opacity-0", "hidden");
+            }
+          },
+          { passive: true },
+        );
+      }
+    }
 
     function initPanelToggle() {
       const sidebar = document.getElementById("kyro-sidebar");
@@ -425,11 +529,11 @@ function isActive(item: NavItem): boolean {
         if (isMin) {
           sidebar.setAttribute("data-minimized", "true");
           sidebar.classList.remove("md:w-[280px]", "md:w-[320px]");
-          sidebar.classList.add("md:w-[80px]");
+          sidebar.classList.add("md:w-[76px]");
           toggleBtn.setAttribute("title", "Expand Sidebar");
         } else {
           sidebar.removeAttribute("data-minimized");
-          sidebar.classList.remove("md:w-[80px]");
+          sidebar.classList.remove("md:w-[76px]");
           sidebar.classList.add("md:w-[280px]");
           toggleBtn.setAttribute("title", "Minimize Sidebar");
         }
@@ -451,7 +555,7 @@ function isActive(item: NavItem): boolean {
 
     // Run on load and view transitions
     runPruning();
-    document.addEventListener('astro:page-load', runPruning);
+    document.addEventListener("astro:page-load", runPruning);
 
     // Handle frontend RBAC pruning in the sidebar
     window.addEventListener("kyro:auth-ready", (event) => {
@@ -471,38 +575,194 @@ function isActive(item: NavItem): boolean {
     setTimeout(() => clearInterval(authCheckInterval), 5000);
   </script>
 
-  <style>
+  <style is:global>
+    #kyro-sidebar {
+      transition:
+        width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-x: hidden !important;
+    }
+
+    #kyro-sidebar #sidebar-nav {
+      overflow-x: hidden !important;
+    }
+
+    /* Collapsed Rail State */
     #kyro-sidebar[data-minimized="true"] {
-      width: 80px !important;
+      width: 76px !important;
+      min-width: 76px !important;
+      max-width: 76px !important;
+      overflow-x: hidden !important;
     }
-    #kyro-sidebar[data-minimized="true"] .sidebar-text {
-      display: none !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle p,
-    #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle svg {
-      display: none !important;
-    }
-    #kyro-sidebar[data-minimized="true"] [data-nav-item] {
-      justify-content: center !important;
+    #kyro-sidebar[data-minimized="true"] #sidebar-nav,
+    #kyro-sidebar[data-minimized="true"] #sidebar-nav > div,
+    #kyro-sidebar[data-minimized="true"] #sidebar-nav .group\/section,
+    #kyro-sidebar[data-minimized="true"] #sidebar-nav .section-items {
       padding-left: 0 !important;
       padding-right: 0 !important;
-      width: 44px !important;
-      height: 44px !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      overflow-x: hidden !important;
+      box-sizing: border-box !important;
+    }
+    #kyro-sidebar[data-minimized="true"] #sidebar-nav::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+
+    #kyro-sidebar[data-minimized="true"] .sidebar-header {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      padding-top: 1rem !important;
+      padding-bottom: 0.75rem !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-brand {
+      justify-content: center !important;
+      width: 100% !important;
+      margin: 0 auto !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-brand > div {
+      justify-content: center !important;
+      width: 100% !important;
+      margin: 0 auto !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-brand img {
+      margin: 0 auto !important;
+      width: 28px !important;
+      height: 28px !important;
+      max-width: 28px !important;
+      max-height: 28px !important;
+    }
+
+    /* Hide text & section headers cleanly */
+    #kyro-sidebar[data-minimized="true"] .sidebar-text,
+    #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle,
+    #kyro-sidebar[data-minimized="true"] [data-section] > div:first-child {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      opacity: 0 !important;
+      overflow: hidden !important;
+      visibility: hidden !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* Center Nav Item Buttons and force Icons to be visible & perfectly centered */
+    #kyro-sidebar[data-minimized="true"] a[data-nav-item] {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0 !important;
+      width: 28px !important;
+      height: 28px !important;
+      min-width: 28px !important;
+      max-width: 28px !important;
       margin-left: auto !important;
       margin-right: auto !important;
-      border-radius: 12px !important;
+      margin-top: 8px !important;
+      margin-bottom: 4px !important;
+      border-radius: 5px !important;
+      padding: 8px !important;
     }
+
+    #kyro-sidebar[data-minimized="true"] .nav-icon-wrapper {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* #kyro-sidebar[data-minimized="true"] .nav-icon-wrapper svg {
+      display: block !important;
+      width: 20px !important;
+      height: 20px !important;
+      min-width: 20px !important;
+      min-height: 20px !important;
+      max-width: 20px !important;
+      max-height: 20px !important;
+      flex-shrink: 0 !important;
+      margin: 0 auto !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    } */
+
     #kyro-sidebar[data-minimized="true"] #sidebar-toggle-icon {
       transform: rotate(180deg);
     }
+
+    /* Footer & User Menu Rail alignment for Collapsed State */
+    #kyro-sidebar[data-minimized="true"] .sidebar-footer {
+      padding: 0.75rem 0 !important;
+      margin-top: auto !important;
+      width: 100% !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner {
+      display: flex !important;
+      flex-direction: column-reverse !important;
+      gap: 0.625rem !important;
+      padding: 0 !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      width: 100% !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .theme-toggle-box {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.25rem !important;
+      padding: 0.25rem !important;
+      width: 32px !important;
+      margin: 0 auto !important;
+      border-radius: 8px !important;
+    }
+    #kyro-sidebar[data-minimized="true"] #theme-light-btn,
+    #kyro-sidebar[data-minimized="true"] #theme-dark-btn {
+      width: 24px !important;
+      height: 24px !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 6px !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner > div.flex {
+      width: 100% !important;
+      justify-content: center !important;
+      gap: 0 !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner [title*="Account"],
+    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner div[class*="items-center"][class*="justify-center"] {
+      width: 32px !important;
+      height: 32px !important;
+      margin: 0 auto !important;
+      border-radius: 8px !important;
+    }
   </style>
 
-  <div class="px-6 py-4 mt-auto">
+  <div class="sidebar-footer px-6 py-4 mt-auto transition-all duration-300">
     <div
-      class="flex items-center justify-between p-2 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-2xl"
+      class="sidebar-footer-inner flex items-center justify-between p-2 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-2xl transition-all duration-300"
     >
       <div
-        class="flex p-1 bg-[var(--kyro-bg)] rounded-xl border border-[var(--kyro-border)] shadow-inner"
+        class="theme-toggle-box flex p-1 bg-[var(--kyro-bg)] rounded-xl border border-[var(--kyro-border)] shadow-inner transition-all duration-300"
       >
         <button
           id="theme-light-btn"

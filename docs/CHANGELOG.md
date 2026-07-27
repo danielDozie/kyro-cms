@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.12.21 (2026-07-27)
+
+- **Collapsible Sidebar & Icon Rail**: Interactive minimization toggle for the admin sidebar with smooth transitions to a compact 76px icon rail mode.
+- **Hover Context Tooltips**: Instant floating context tooltips on hover for minimized navigation items.
+- **React Portal Dropdowns**: Upgraded `Dropdown.tsx` to mount menus via `createPortal`, floating user account menus cleanly to the right of the minimized rail without clipping.
+- **Role-Based Navigation & Explorer Pruning**: Automatic filtering of sidebar links and dashboard quick-actions based on active user role permissions (`super_admin`, `admin`, `editor`, `author`, `customer`).
+- **React Hydration & Vite Optimization**: Resolved React hydration mismatch errors in `UserDetail.tsx` and optimized client directives (`client:only="react"`) for dynamic dashboard metric cards and charts.
+
 ## v0.12.20 (2026-07-27)
 
 - **Registration Controls**: Added `Enable User Registration` toggle in System Settings global (`/admin/settings/system`) to enable/disable public sign-ups on `/admin/register` and `POST /api/auth/register`.

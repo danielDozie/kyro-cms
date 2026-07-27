@@ -43,7 +43,7 @@ if (id) {
     </div>
   ) : user ? (
     <UserDetail
-      client:load
+      client:only="react"
       user={user}
       apiPath={apiPath}
       adminPath={adminPath}

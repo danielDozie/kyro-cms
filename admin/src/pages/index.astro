@@ -97,13 +97,13 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
     </div>
 
     <!-- CMS Metrics -->
-    <DashboardMetrics client:load isEcommerce={!!collections["orders"] || !!collections["products"]} />
-    {(!!collections["orders"] || !!collections["products"]) && <RevenueChart client:load />}
+    <DashboardMetrics client:only="react" isEcommerce={!!collections["orders"] || !!collections["products"]} />
+    {(!!collections["orders"] || !!collections["products"]) && <RevenueChart client:only="react" />}
 
 
     <!-- Role-filtered Quick Actions & Explore Content -->
     <DashboardQuickSections
-      client:load
+      client:only="react"
       collections={serializedCollections}
       serverUserRole={serverRole}
       serverPermissions={serverPermissions}

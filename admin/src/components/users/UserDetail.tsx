@@ -47,9 +47,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
   const [, setDeleting] = useState(false);
   const [locking, setLocking] = useState(false);
   const [isLocked, setIsLocked] = useState(user.locked || false);
-  const [currentUserRole, setCurrentUserRole] = useState<string>(() => {
-    return (typeof window !== "undefined" && (window as any).__kyroAuth?.user?.role) || "";
-  });
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
 
   useEffect(() => {
     if ((window as any).__kyroAuth?.user?.role) {
