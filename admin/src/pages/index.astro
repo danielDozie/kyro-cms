@@ -5,6 +5,9 @@ import { collections } from "../lib/config";
 const authCollections = ["users", "audit_logs"];
 import { adminPath, apiPath } from "../lib/paths";
 import { DashboardMetrics, RevenueChart } from "../components/DashboardMetrics";
+import { CustomerDashboard } from "../components/CustomerDashboard";
+import { AuthorDashboard } from "../components/AuthorDashboard";
+import { DashboardQuickSections } from "../components/DashboardQuickSections";
 
 import { getAuthServer } from "../lib/auth-server";
 
@@ -12,6 +15,15 @@ const { user: serverUser, permissions: serverPermissions } = await getAuthServer
 const serverRole = serverUser?.role || "";
 const isServerSuperAdmin = serverRole === "super_admin";
 const isServerAdmin = serverRole === "admin" || isServerSuperAdmin;
+const isServerCustomer = serverRole === "customer";
+const isServerAuthor = serverRole === "author";
+
+// Serialize collections for client-side role-based dashboards
+const serializedCollections = JSON.parse(JSON.stringify(
+  Object.fromEntries(
+    Object.entries(collections).map(([slug, config]) => [slug, { label: (config as any).label || slug, slug }])
+  )
+));
 
 const permittedQuickLinks = Object.entries(collections)
   .filter(([slug]) => !["users", "audit_logs", "media"].includes(slug))
@@ -30,6 +42,25 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
 
 <AdminLayout title={i18next.t("pages." + "Dashboard".replace(/ /g, ""), { defaultValue: "Dashboard" })}>
   <div class="flex-1 overflow-y-auto space-y-8">
+    {/* ── Role-Based Dashboard Fork ── */}
+    {isServerCustomer ? (
+      <CustomerDashboard
+          client:load
+          collections={serializedCollections}
+          userName={serverUser?.name || serverUser?.email || ""}
+          userAvatar={serverUser?.avatar || ""}
+          userId={serverUser?.id || ""}
+        />
+    ) : isServerAuthor ? (
+     <AuthorDashboard
+          client:load
+          collections={serializedCollections}
+          userName={serverUser?.name || serverUser?.email || ""}
+          userAvatar={serverUser?.avatar || ""}
+          userId={serverUser?.id || ""}
+        />
+    ) : (
+    <>
     <!-- Header -->
     <div class="surface-tile p-6 flex items-center justify-between gap-8">
       <div class="relative flex-1 max-w-2xl">
@@ -69,44 +100,18 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
     <DashboardMetrics client:load isEcommerce={!!collections["orders"] || !!collections["products"]} />
     {(!!collections["orders"] || !!collections["products"]) && <RevenueChart client:load />}
 
-    <!-- Quick Links Section -->
-    {permittedQuickLinks.length > 0 && (
-      <div id="dashboard-quick-links-section" class="surface-tile overflow-hidden mt-8">
-        <div class="flex items-center justify-between p-6 border-b border-[var(--kyro-border)]">
-          <div class="flex-1">
-            <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] flex items-center gap-2">
-              Quick Links
-            </h2>
-            <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">Create new collection documents</p>
-          </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-          {
-            permittedQuickLinks.map(([slug, config]: [string, any]) => (
-              <a
-                href={`${adminPath}/${slug}/new`}
-                data-quick-link={slug}
-                class="group p-4 bg-[var(--kyro-surface-accent)] rounded-xl hover:bg-[var(--kyro-surface)] transition-all border border-transparent hover:border-[var(--kyro-border)] shadow-sm hover:shadow-md"
-              >
-                <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--kyro-bg-secondary)] text-[var(--kyro-text-secondary)] group-hover:bg-[var(--kyro-surface-accent)] group-hover:text-[var(--kyro-primary)] transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14M5 12h14" />
-                    </svg>
-                  </div>
-                  <span class="text-sm font-medium text-[var(--kyro-text-primary)]">New {config.label || slug}</span>
-                </div>
-              </a>
-            ))
-          }
-        </div>
-      </div>
-    )}
+    <!-- Role-filtered Quick Actions & Explore Content -->
+    <DashboardQuickSections
+      client:load
+      collections={serializedCollections}
+      serverUserRole={serverRole}
+      serverPermissions={serverPermissions}
+    />
 
-    <!-- Security Quick Actions -->
+        <!-- Security Quick Actions -->
     {hasAnySecurityAction && (
-      <div id="dashboard-security-section" class="surface-tile overflow-hidden">
+      <div id="dashboard-security-section" class="surface-tile overflow-hidden rounded-lg mt-6">
         <div class="p-6 border-b border-[var(--kyro-border)]">
           <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">Security & Monitoring</h2>
           <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">
@@ -337,5 +342,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
         });
       })();
     </script>
+    </>
+    )}
   </div>
 </AdminLayout>

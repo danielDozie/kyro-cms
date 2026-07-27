@@ -64,16 +64,25 @@ const permissions: Record<string, string[]> = {
 <AdminLayout title={i18next.t("pages." + "Roles".replace(/ /g, ""), { defaultValue: "Roles" })}>
   <div class="flex-1 overflow-y-auto space-y-6">
     <!-- Header -->
-    <div class="surface-tile p-6 rounded-xl border border-[var(--kyro-border)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div
+      class="surface-tile p-6 rounded-xl border border-[var(--kyro-border)] flex flex-col md:flex-row md:items-center justify-between gap-4"
+    >
       <div>
         <h1 class="text-lg font-semibold text-[var(--kyro-text-primary)]">Roles & Access Control</h1>
         <p class="text-xs text-[var(--kyro-text-secondary)] mt-0.5">
           Role hierarchy, inheritance rules, and system-wide permission assignments.
         </p>
       </div>
-      <div class="flex items-center gap-2 text-xs font-medium text-[var(--kyro-text-secondary)] bg-[var(--kyro-surface-accent)] px-3 py-1.5 rounded-lg border border-[var(--kyro-border)]">
+      <div
+        class="flex items-center gap-2 text-xs font-medium text-[var(--kyro-text-secondary)] bg-[var(--kyro-surface-accent)] px-3 py-1.5 rounded-lg border border-[var(--kyro-border)]"
+      >
         <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+          ></path>
         </svg>
         <span>6 System Roles Defined</span>
       </div>
@@ -83,11 +92,13 @@ const permissions: Record<string, string[]> = {
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {
         defaultRoles.map((role) => (
-          <div class="surface-tile p-5 rounded-xl border border-[var(--kyro-border)] flex flex-col justify-between transition-all hover:border-[var(--kyro-text-secondary)]/30">
+          <div class="surface-tile p-5 rounded-lg border border-[var(--kyro-border)] flex flex-col justify-between transition-all hover:border-[var(--kyro-text-secondary)]/30">
             <div>
               <div class="flex items-center justify-between gap-2 mb-2">
                 <div class="flex items-center gap-2">
-                  <h3 class="text-sm font-semibold text-[var(--kyro-text-primary)] capitalize">{role.name.replace("_", " ")}</h3>
+                  <h3 class="text-sm font-semibold text-[var(--kyro-text-primary)] capitalize">
+                    {role.name.replace("_", " ")}
+                  </h3>
                   {role.name === "super_admin" && (
                     <span class="px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md border border-amber-500/20">
                       Root
@@ -135,19 +146,25 @@ const permissions: Record<string, string[]> = {
     </div>
 
     <!-- Permission Matrix -->
-    <div class="surface-tile rounded-xl border border-[var(--kyro-border)] overflow-hidden">
+    <div class="surface-tile rounded-lg border border-[var(--kyro-border)] overflow-hidden">
       <div class="p-5 border-b border-[var(--kyro-border)]">
         <h2 class="text-sm font-semibold text-[var(--kyro-text-primary)]">Permission Matrix</h2>
-        <p class="text-xs text-[var(--kyro-text-secondary)] mt-0.5">Resource capability distribution across system roles</p>
+        <p class="text-xs text-[var(--kyro-text-secondary)] mt-0.5">
+          Resource capability distribution across system roles
+        </p>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-[var(--kyro-surface-accent)] border-b border-[var(--kyro-border)] text-xs font-medium text-[var(--kyro-text-secondary)]">
+            <tr
+              class="bg-[var(--kyro-surface-accent)] border-b border-[var(--kyro-border)] text-xs font-medium text-[var(--kyro-text-secondary)]"
+            >
               <th class="px-5 py-3">Resource</th>
-              {defaultRoles.map((role) => (
-                <th class="px-4 py-3 text-center capitalize font-semibold">{role.name.replace("_", " ")}</th>
-              ))}
+              {
+                defaultRoles.map((role) => (
+                  <th class="px-4 py-3 text-center capitalize font-semibold">{role.name.replace("_", " ")}</th>
+                ))
+              }
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--kyro-border)] text-xs">
@@ -172,7 +189,12 @@ const permissions: Record<string, string[]> = {
                         {hasAll || hasResource ? (
                           <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2.5"
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           </span>
                         ) : (

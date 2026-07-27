@@ -1,66 +1,85 @@
 ---
 import AdminLayout from "../layouts/AdminLayout.astro";
-import i18next from '../lib/i18n';
-import { adminPath } from "../lib/paths";
+import i18next from "../lib/i18n";
+import { adminPath, apiPath } from "../lib/paths";
+import { getAuthServer } from "../lib/auth-server";
 
-// Ensure this page looks premium
+const { user } = await getAuthServer(Astro.request);
+const userEmail = user?.email || "";
+const userRole = user?.role || "";
 ---
 
-<AdminLayout title={i18next.t("pages." + "Access Denied".replace(/ /g, ""), { defaultValue: "Access Denied" })}> 
-  <div class="flex-1 flex items-center justify-center p-8">
-    <div class="max-w-md w-full text-center space-y-8">
-      <div class="relative">
-        <div class="absolute inset-0 bg-red-500/20 blur-3xl rounded-full"></div>
+<AdminLayout title={i18next.t("pages." + "Access Denied".replace(/ /g, ""), { defaultValue: "Access Denied" })}>
+  <div class="flex-1 flex items-center justify-center p-6 min-h-[calc(100vh-120px)]">
+    <div
+      class="surface-tile max-w-md w-full p-8 rounded-2xl border border-[var(--kyro-border)] shadow-sm text-center space-y-6"
+    >
+      <!-- Icon & Status Tag -->
+      <div class="flex flex-col items-center gap-3">
         <div
-          class="relative w-24 h-24 mx-auto bg-red-500/10 border border-red-500/20 rounded-3xl flex items-center justify-center text-red-500"
+          class="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center"
         >
-          <svg
-            class="w-12 h-12"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              stroke-width="2"
+              stroke-width="1.75"
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
             ></path>
           </svg>
         </div>
+        <span
+          class="text-[10px] font-mono font-semibold tracking-widest uppercase px-3 py-1 bg-red-500/10 text-rose-500 rounded-full border border-red-500/20"
+        >
+          HTTP 403 · Restricted
+        </span>
       </div>
 
-      <div class="space-y-2">
-        <h1
-          class="text-4xl font-bold tracking-tighter text-[var(--kyro-text-primary)]"
-        >
-          Access Denied
-        </h1>
-        <p class="text-[var(--kyro-text-secondary)] font-medium">
-          You don't have the required permissions to access this page. Please
-          contact your administrator if you believe this is an error.
+      <!-- Text Header -->
+      <div class="space-y-1.5">
+        <h1 class="text-base font-semibold text-[var(--kyro-text-primary)]">Access Restricted</h1>
+        <p class="text-xs text-[var(--kyro-text-secondary)] leading-relaxed max-w-xs mx-auto">
+          Your current account role does not have permission to view or manage this resource.
         </p>
       </div>
 
-      <div class="pt-4">
+      <!-- Account Context Badge -->
+      {
+        userRole && (
+          <div class="p-3 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-lg text-left flex items-center justify-between text-xs">
+            <div class="min-w-0 pr-2">
+              <p class="text-[10px] capitalise font-bold tracking-wider text-[var(--kyro-text-muted)]">Signed In As</p>
+              <p class="font-medium text-[var(--kyro-text-primary)] truncate">{userEmail || "Authenticated User"}</p>
+            </div>
+            <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] text-[var(--kyro-text-secondary)] capitalize tracking-wider flex-shrink-0">
+              {userRole.replace("_", " ")}
+            </span>
+          </div>
+        )
+      }
+
+      <!-- Action Buttons -->
+      <div class="pt-1 flex items-center justify-center gap-2">
+        <button
+          onclick="window.history.back()"
+          class="px-4 py-2 text-xs font-semibold rounded-xl border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] transition-colors cursor-pointer"
+        >
+          Go Back
+        </button>
+
         <a
           href={adminPath}
-          class="inline-flex items-center gap-2 px-8 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold transition-all hover:opacity-90 active:scale-95 shadow-lg"
+          class="px-4 py-2 text-xs font-semibold rounded-xl bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] hover:opacity-90 transition-opacity inline-flex items-center gap-1.5"
         >
-          <svg
-            class="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              stroke-width="2.5"
+              stroke-width="2"
               d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
             ></path>
           </svg>
-          Back to Dashboard
+          Dashboard
         </a>
       </div>
     </div>

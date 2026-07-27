@@ -232,20 +232,22 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleLockToggle}
-            className="px-4 py-2 border border-[var(--kyro-border)] rounded-xl text-sm font-bold text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
-          >
-            {isLocked ? "Unlock User" : "Lock User"}
-          </button>
-          <button
-            onClick={handleDelete}
-            className="px-4 py-2 border border-red-200 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
-          >
-            Delete
-          </button>
-        </div>
+        {(currentUserRole === "admin" || currentUserRole === "super_admin") && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleLockToggle}
+              className="px-4 py-2 border border-[var(--kyro-border)] rounded-xl text-sm font-bold text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+            >
+              {isLocked ? "Unlock User" : "Lock User"}
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 border border-red-200 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="surface-tile p-6">

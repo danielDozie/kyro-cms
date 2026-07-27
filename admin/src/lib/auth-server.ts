@@ -61,6 +61,7 @@ export async function requireAuthServer(
 
   const isSuperAdmin = user.role === "super_admin";
   const isAdmin = user.role === "admin" || isSuperAdmin;
+  const isCustomer = user.role === "customer";
 
   let hasAccess = true;
 
@@ -70,10 +71,12 @@ export async function requireAuthServer(
     hasAccess = false;
   } else if (options?.collectionRead) {
     const col = options.collectionRead;
-    if (col === "settings" && !isAdmin) {
+    if ((col === "settings" || (col === "media" && isCustomer)) && !isAdmin) {
       hasAccess = false;
     } else if (col !== "settings") {
-      const canRead = isAdmin || permissions?.collections?.[col]?.read === true;
+      const url = new URL(request.url);
+      const isSelfUserAccess = col === "users" && !!user?.id && url.pathname.endsWith(`/users/${user.id}`);
+      const canRead = isAdmin || isSelfUserAccess || permissions?.collections?.[col]?.read === true;
       if (!canRead) hasAccess = false;
     }
   } else if (options?.collectionCreate) {

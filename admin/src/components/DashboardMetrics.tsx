@@ -153,15 +153,18 @@ function CustomTooltip({ active, payload, label, currency }: any) {
 export const RevenueChart: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [auth, setAuth] = useState<any>(() => (typeof window !== "undefined" ? (window as any).__kyroAuth : null));
+  const [auth, setAuth] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const handleAuth = () => {
-      if (typeof window !== "undefined") {
-        setAuth((window as any).__kyroAuth);
-      }
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      setAuth((window as any).__kyroAuth || null);
+    }
+    const handleAuth = (e: any) => {
+      if (e?.detail) setAuth(e.detail);
+      else if (typeof window !== "undefined") setAuth((window as any).__kyroAuth || null);
     };
-    handleAuth();
     window.addEventListener("kyro:auth-ready", handleAuth);
     return () => window.removeEventListener("kyro:auth-ready", handleAuth);
   }, []);
@@ -171,6 +174,7 @@ export const RevenueChart: React.FC = () => {
   const canReadOrders = isAdmin || auth?.permissions?.collections?.orders?.read === true;
 
   useEffect(() => {
+    if (!mounted) return;
     if (!canReadOrders) {
       setLoading(false);
       return;
@@ -179,9 +183,9 @@ export const RevenueChart: React.FC = () => {
       .then(setData)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [canReadOrders]);
+  }, [mounted, canReadOrders]);
 
-  if (!canReadOrders) return null;
+  if (!mounted || !canReadOrders) return null;
 
   if (loading)
     return (
@@ -418,15 +422,18 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [auth, setAuth] = useState<any>(() => (typeof window !== "undefined" ? (window as any).__kyroAuth : null));
+  const [auth, setAuth] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const handleAuth = () => {
-      if (typeof window !== "undefined") {
-        setAuth((window as any).__kyroAuth);
-      }
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      setAuth((window as any).__kyroAuth || null);
+    }
+    const handleAuth = (e: any) => {
+      if (e?.detail) setAuth(e.detail);
+      else if (typeof window !== "undefined") setAuth((window as any).__kyroAuth || null);
     };
-    handleAuth();
     window.addEventListener("kyro:auth-ready", handleAuth);
     return () => window.removeEventListener("kyro:auth-ready", handleAuth);
   }, []);

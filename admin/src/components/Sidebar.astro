@@ -90,6 +90,10 @@ const navSectionsRaw: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+const isServerEditor = serverRole === "editor";
+const isServerAuthor = serverRole === "author";
+const isServerCustomer = serverRole === "customer";
+
 const navSections = navSectionsRaw.map((section) => {
   if (!serverUser) return section;
   const items = section.items.filter((item) => {
@@ -98,9 +102,24 @@ const navSections = navSectionsRaw.map((section) => {
     if (slug === "roles") return isServerSuperAdmin;
     if (slug === "plugins" || slug === "keys" || slug === "webhooks" || slug === "settings") return isServerAdmin;
     if (slug === "users") return isServerAdmin || serverPermissions?.collections?.users?.read === true;
-    if (slug === "audit") return isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
-    if (slug === "media") return isServerAdmin || serverPermissions?.collections?.media?.read === true;
-    return isServerAdmin || serverPermissions?.collections?.[slug]?.read === true;
+    if (slug === "audit" || slug === "audit_logs") return isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
+    if (slug === "media") return !isServerCustomer && (isServerAdmin || isServerEditor || isServerAuthor || serverPermissions?.collections?.media?.read === true);
+
+    if (isServerAdmin) return true;
+    if (serverPermissions?.collections?.[slug]) {
+      return serverPermissions.collections[slug].read === true;
+    }
+
+    if (isServerEditor) {
+      return !["users", "audit_logs", "roles", "plugins", "keys", "webhooks", "settings"].includes(slug);
+    }
+    if (isServerAuthor) {
+      return ["posts", "categories", "orders"].includes(slug);
+    }
+    if (isServerCustomer) {
+      return ["orders"].includes(slug);
+    }
+    return false;
   });
   return { ...section, items };
 }).filter((section) => section.items.length > 0);
@@ -305,6 +324,9 @@ function isActive(item: NavItem): boolean {
       const userRole = user.role || "";
       const isSuperAdmin = userRole === "super_admin";
       const isAdmin = userRole === "admin" || isSuperAdmin;
+      const isEditor = userRole === "editor";
+      const isAuthor = userRole === "author";
+      const isCustomer = userRole === "customer";
 
       const navItems = document.querySelectorAll("[data-nav-item]");
       navItems.forEach((item) => {
@@ -318,19 +340,27 @@ function isActive(item: NavItem): boolean {
           hasAccess = true;
         } else if (slug === "roles") {
           hasAccess = isSuperAdmin;
-        } else if (slug === "plugins" || slug === "keys" || slug === "webhooks") {
-          hasAccess = isAdmin;
-        } else if (slug === "settings") {
+        } else if (slug === "plugins" || slug === "keys" || slug === "webhooks" || slug === "settings") {
           hasAccess = isAdmin;
         } else if (slug === "users") {
           hasAccess = isAdmin || (permissions?.collections?.users?.read === true);
         } else if (slug === "audit" || slug === "audit_logs") {
           hasAccess = isAdmin || (permissions?.collections?.audit_logs?.read === true);
         } else if (slug === "media") {
-          hasAccess = isAdmin || (permissions?.collections?.media?.read === true);
+          hasAccess = !isCustomer && (isAdmin || isEditor || isAuthor || (permissions?.collections?.media?.read === true));
         } else if (type === "collection") {
-          if (!isAdmin) {
-            hasAccess = permissions?.collections?.[slug]?.read === true;
+          if (isAdmin) {
+            hasAccess = true;
+          } else if (permissions?.collections?.[slug]) {
+            hasAccess = permissions.collections[slug].read === true;
+          } else if (isEditor) {
+            hasAccess = !["users", "audit_logs", "roles", "plugins", "keys", "webhooks", "settings"].includes(slug);
+          } else if (isAuthor) {
+            hasAccess = ["posts", "categories", "orders"].includes(slug);
+          } else if (isCustomer) {
+            hasAccess = ["orders"].includes(slug);
+          } else {
+            hasAccess = false;
           }
         } else if (type === "global") {
           if (!isAdmin) {
