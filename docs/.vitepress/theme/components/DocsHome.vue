@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
-import pkg from '../../../package.json'
+import pkg from '../../../../package.json'
 import LogoMarquee from './LogoMarquee.vue'
 import ArchitectureDiagram from './ArchitectureDiagram.vue'
 
