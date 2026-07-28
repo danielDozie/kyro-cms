@@ -2,8 +2,6 @@
 
 This namespace provides automated deployment scripts and documentation for hosting **Kyro CMS (Blog Template)** on Cloudflare (Pages + Hyperdrive PostgreSQL + R2 Storage).
 
-[![Cloudflare](https://img.shields.io/badge/Deploy_to-Cloudflare-18181B?style=for-the-badge&logo=cloudflare&logoColor=F38020)](https://deploy.workers.cloudflare.com/?url=https://github.com/danielDozie/kyro-cms)
-
 ---
 
 ## ⚡ One-Line Automated Deployment

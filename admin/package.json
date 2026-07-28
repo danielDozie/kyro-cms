@@ -55,6 +55,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "build:pages": "CLOUDFLARE=true astro build",
     "preview": "astro preview",
     "check": "astro check",
     "test": "vitest",
@@ -62,6 +63,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.1.5",
     "@astrojs/node": "^11.0.2",
     "@astrojs/react": "^6.0.1",
     "@codemirror/autocomplete": "^6.20.3",

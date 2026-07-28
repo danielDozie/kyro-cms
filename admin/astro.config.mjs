@@ -2,10 +2,13 @@ import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import node from "@astrojs/node";
+import cloudflare from "@astrojs/cloudflare";
 import fs from "fs";
 import path from "path";
 import kyro from "@kyro-cms/core/integration";
 import { kyroAdmin } from "./src/integration";
+
+const isCloudflare = !!(process.env.CLOUDFLARE || process.env.CF_PAGES || process.env.PAGES);
 
 const UPLOADS_SRC = path.join(process.cwd(), "src", "uploads");
 const UPLOADS_DEST = path.join(process.cwd(), "public", "uploads");
@@ -104,7 +107,7 @@ export default defineConfig({
   },
 
   output: "server",
-  adapter: node({
+  adapter: isCloudflare ? cloudflare() : node({
     mode: "standalone",
   }),
   session: {

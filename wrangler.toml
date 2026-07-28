@@ -1,7 +1,8 @@
 name = "kyro-cms"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "./dist"
+pages_build_output_dir = "./admin/dist"
+
 
 
 

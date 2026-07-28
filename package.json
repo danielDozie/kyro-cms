@@ -123,6 +123,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "build:pages": "pnpm build && pnpm --filter @kyro-cms/admin build:pages",
     "dev": "NODE_NO_WARNINGS=1 tsup --watch",
     "test": "vitest",
     "test:run": "vitest run",

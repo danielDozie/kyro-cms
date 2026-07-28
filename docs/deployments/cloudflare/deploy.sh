@@ -150,7 +150,7 @@ fi
 
 # 8. Build Workspace & Deploy to Cloudflare Pages
 echo "🛠️ Compiling workspace & deploying to Cloudflare Pages..."
-$PACKAGER run build
+$PACKAGER run build:pages
 npx wrangler pages deploy "$BUILD_OUTPUT_DIR" --project-name="$PROJECT_NAME" --branch="main"
 
 echo ""
