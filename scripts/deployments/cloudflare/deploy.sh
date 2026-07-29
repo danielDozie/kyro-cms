@@ -301,8 +301,16 @@ else
         echo -e "\n🗂️ Selecting or creating D1 database…"
         SELECTED_DB=$(bash "${SCRIPT_DIR}/select-or-create-d1.sh")
         D1_NAME="$SELECTED_DB"
-        # Fetch the ID of the selected (or newly created) DB
-        D1_ID=$($WRANGLER d1 list --json | jq -r ".[] | select(.name==\"$D1_NAME\") | .id" | head -n1)
+        # Fetch the ID of the selected (or newly created) DB using node instead of jq
+        D1_ID=$($WRANGLER d1 list --output json 2>/dev/null | node -e "
+          let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{
+            try { 
+              const list = JSON.parse(d);
+              const db = list.find(x => x.name === '$D1_NAME');
+              if (db) console.log(db.uuid || db.id || '');
+            } catch(e){}
+          });
+        ")
         echo -e "${GREEN}✅ Using D1 database: $D1_NAME (ID: $D1_ID)${NC}"
       fi
     fi
@@ -337,7 +345,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "${PROJECT_NAME}-d1"
+database_name = "$D1_NAME"
 database_id = "$D1_ID"
 
 [[r2_buckets]]
