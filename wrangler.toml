@@ -1,8 +1,12 @@
-name = "kyro-cms"
+name = "hugo"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "./admin/dist"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "hugo-d1"
+database_id = "null"
 
-
-
+[[r2_buckets]]
+binding = "STORAGE_BUCKET"
+bucket_name = "hugo-p"

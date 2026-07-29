@@ -322,7 +322,6 @@ export {
   ecommerceCollections,
   ecommerceGlobals,
   blogCollections,
-  blogGlobals,
   minimalCollections,
   kitchenSinkCollections,
   mediaCollections,

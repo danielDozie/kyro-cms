@@ -37,6 +37,7 @@ import { AuthRoutes } from "./auth-routes.js";
 import { SQLiteAuthAdapter } from "../../auth/sqlite-adapter.js";
 import { DrizzleAdapter } from "../../database/drizzle/adapter.js";
 import { PostgresAuthAdapter } from "../../database/drizzle/postgres-auth-adapter.js";
+import { D1AuthAdapter } from "../../database/drizzle/d1-auth-adapter.js";
 import { MongoDBAdapter } from "../../database/mongodb/adapter.js";
 import { MongoDBAuthAdapter } from "../../database/mongodb/mongo-auth-adapter.js";
 import { MediaService } from "../../storage/MediaService.js";
@@ -385,6 +386,9 @@ function createDefaultAuthAdapter(
 ): any {
   if ('dialect' in db && db.dialect === "postgres" && db instanceof DrizzleAdapter) {
     return new PostgresAuthAdapter({ db: db.client });
+  }
+  if ('dialect' in db && db.dialect === "sqlite" && db instanceof DrizzleAdapter) {
+    return new D1AuthAdapter({ db: db.client });
   }
   if ('dialect' in db && db.dialect === "mongodb") {
     // We safely assert db as MongoDBAdapter

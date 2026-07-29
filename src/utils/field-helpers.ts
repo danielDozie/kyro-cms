@@ -1,4 +1,4 @@
-import type { Field } from "../registry/types.js";
+import type { Field } from "../fields/types.js";
 
 export function findFieldByName(fields: Field[], name: string): Field | null {
   for (const field of fields) {

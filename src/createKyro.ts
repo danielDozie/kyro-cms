@@ -169,7 +169,7 @@ export class Kyro {
   constructor(config: KyroConfig) {
     this.config = config;
     this.registry = createRegistry();
-    this.db = config.adapter;
+    this.db = config.adapter || (config as any).db;
     this.pubsub = new KyroPubSub(this.registry);
     this.webhookService = createWebhookService(this.db);
 

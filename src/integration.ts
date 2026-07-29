@@ -2,18 +2,16 @@ import type { AstroIntegration } from "astro";
 import path from "path";
 import fs from "fs";
 
-const API_HANDLER_ENTRYPOINT = path.resolve(
-  new URL(".", import.meta.url).pathname,
-  "api-handler.js",
-);
-const GRAPHQL_HANDLER_ENTRYPOINT = path.resolve(
-  new URL(".", import.meta.url).pathname,
-  "api-handler-graphql.js",
-);
-const TRPC_HANDLER_ENTRYPOINT = path.resolve(
-  new URL(".", import.meta.url).pathname,
-  "api-handler-trpc.js",
-);
+const resolveEntrypoint = (fileStem: string) => {
+  const dir = new URL(".", import.meta.url).pathname;
+  const tsPath = path.resolve(dir, `${fileStem}.ts`);
+  const jsPath = path.resolve(dir, `${fileStem}.js`);
+  return fs.existsSync(tsPath) ? tsPath : jsPath;
+};
+
+const API_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler");
+const GRAPHQL_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler-graphql");
+const TRPC_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler-trpc");
 
 export interface KyroIntegrationOptions {
   configPath?: string;

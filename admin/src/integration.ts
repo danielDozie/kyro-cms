@@ -347,11 +347,11 @@ module.exports = debug;
           { pattern: "/graphql-explorer", entrypoint: "./pages/graphql-explorer.astro" },
           {
             pattern: "/[collection]",
-            entrypoint: "./pages/[collection]/index.astro",
+            entrypoint: "./pages/_collection/index.astro",
           },
           {
             pattern: "/[collection]/[id]",
-            entrypoint: "./pages/[collection]/[id].astro",
+            entrypoint: "./pages/_collection/[id].astro",
           },
         ];
 
@@ -365,6 +365,18 @@ module.exports = debug;
             ),
           });
         }
+
+        // Inject API Catch-All Route
+        const apiEntrypoint = fs.existsSync(
+          path.resolve(new URL(".", import.meta.url).pathname, "../../src/api-handler.ts")
+        )
+          ? path.resolve(new URL(".", import.meta.url).pathname, "../../src/api-handler.ts")
+          : "@kyro-cms/core/api-handler";
+
+        injectRoute({
+          pattern: `${apiPath}/[...kyro]`,
+          entrypoint: apiEntrypoint,
+        });
       },
       "astro:build:done": ({ logger }) => {
         logger.info("Kyro Admin build complete");

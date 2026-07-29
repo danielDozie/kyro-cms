@@ -26,7 +26,7 @@ export function kyroAuthMiddleware(options: KyroAuthMiddlewareOptions = {}) {
       // Decode / verify JWT session token
       user = {
         id: 'user_1',
-        email: 'admin@kyro.dev',
+        email: 'admin@kyro-cms.com',
         role: 'admin',
       };
     }

@@ -492,8 +492,27 @@ bucket_name = "${r2Bucket}"
       }
     }
 
-    // 2. Install the necessary packages directly using the package manager.
-    await run(`${packager} add @astrojs/cloudflare@^14.1.6 wrangler@^4.115.0`, projectDir, env);
+    // 2. Inject Cloudflare D1 adapter into kyro.config.ts
+    const kyroConfigPath = join(projectDir, 'kyro.config.ts');
+    if (existsSync(kyroConfigPath) && database === 'd1') {
+      let kyroConfigStr = readFileSync(kyroConfigPath, 'utf8');
+      
+      // Inject imports if not present
+      if (kyroConfigStr.includes('createLocalAdapter')) {
+        kyroConfigStr = kyroConfigStr.replace(
+          /import\s*\{\s*createLocalAdapter\s*\}\s*from\s*['"]@kyro-cms\/core['"];?/,
+          "import { createDrizzleAdapter } from '@kyro-cms/core';"
+        );
+        kyroConfigStr = kyroConfigStr.replace(
+          /adapter:\s*createLocalAdapter\(\{[^}]+\}\),/,
+          `adapter: createDrizzleAdapter({ type: 'sqlite', client: (globalThis as any).DB || (process.env as any).DB }),`
+        );
+      }
+      
+      writeFileSync(kyroConfigPath, kyroConfigStr);
+    }
+
+    // 3. Packages are now installed by default during scaffolding, so no need to install here.
   } catch (err: any) {
     yield emit('warning', 'build', `Could not auto-configure adapter: ${err?.message}`);
   }

@@ -24,7 +24,7 @@ export function kyroAuthMiddleware(options: KyroAuthMiddlewareOptions = {}) {
     if (token) {
       user = {
         id: 'user_1',
-        email: 'admin@kyro.dev',
+        email: 'admin@kyro-cms.com',
         role: 'admin',
       };
     }

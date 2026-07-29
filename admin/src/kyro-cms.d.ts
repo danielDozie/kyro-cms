@@ -199,7 +199,6 @@ declare module '@kyro-cms/core/templates' {
   export const minimalCollections: Record<string, CollectionConfig>;
   export const starterCollections: Record<string, CollectionConfig>;
   export const blogCollections: Record<string, CollectionConfig>;
-  export const blogGlobals: GlobalConfig[];
   export const ecommerceCollections: Record<string, CollectionConfig>;
   export const ecommerceGlobals: GlobalConfig[];
   export const kitchenSinkCollections: Record<string, CollectionConfig>;

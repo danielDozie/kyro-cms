@@ -10,6 +10,6 @@
     "declaration": true,
     "lib": ["ES2022"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "templates/**/*"],
   "exclude": ["node_modules", "dist"]
 }

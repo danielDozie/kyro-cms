@@ -2,7 +2,7 @@ import type { CollectionConfig, GlobalConfig } from "../registry/types.js";
 
 import { minimalCollections } from "./minimal";
 import { starterCollections } from "./starter";
-import { blogCollections, blogGlobals } from "./blog";
+import { blogCollections } from "./blog";
 import { ecommerceCollections, ecommerceGlobals } from "./ecommerce";
 import { kitchenSinkCollections } from "./kitchen-sink";
 import { authCollections } from "./auth.js";
@@ -23,7 +23,7 @@ import { brandsCollections, brandsCollection } from "./brands.js";
 
 export { minimalCollections } from "./minimal";
 export { starterCollections } from "./starter";
-export { blogCollections, blogGlobals } from "./blog";
+export { blogCollections } from "./blog";
 export { ecommerceCollections, ecommerceGlobals } from "./ecommerce";
 export { kitchenSinkCollections } from "./kitchen-sink";
 export { authCollections } from "./auth.js";

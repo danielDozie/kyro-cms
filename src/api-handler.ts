@@ -3,6 +3,7 @@ import { createKyro } from "./createKyro.js";
 import { autoBootstrap } from "./auth/bootstrap.js";
 import { DrizzleAdapter } from "./database/drizzle/adapter.js";
 import { PostgresAuthAdapter } from "./database/drizzle/postgres-auth-adapter.js";
+import { D1AuthAdapter } from "./database/drizzle/d1-auth-adapter.js";
 import { LocalAdapter } from "./database/local/adapter.js";
 import { SQLiteAuthAdapter } from "./auth/sqlite-adapter.js";
 import { MongoDBAdapter } from "./database/mongodb/adapter.js";
@@ -40,8 +41,7 @@ async function doInit(): Promise<void> {
       if (db.dialect === "postgres") {
         bootstrapAuthAdapter = new PostgresAuthAdapter({ db: db.client });
       } else if (db.dialect === "sqlite") {
-        const authDbPath = process.env.KYRO_AUTH_DB_PATH || "./data/auth.db";
-        bootstrapAuthAdapter = new SQLiteAuthAdapter({ path: authDbPath });
+        bootstrapAuthAdapter = new D1AuthAdapter({ db: db.client });
       }
     } else if (db instanceof LocalAdapter) {
       const authDbPath = process.env.KYRO_AUTH_DB_PATH || "./data/auth.db";
@@ -104,6 +104,20 @@ async function checkAccessEnabled(key: string): Promise<boolean> {
 }
 
 export const ALL: APIRoute = async (context) => {
+  let runtimeEnv: any = null;
+  try {
+    runtimeEnv = (context.locals as any)?.cfContext?.env || (process.env as any);
+  } catch {
+    runtimeEnv = process.env;
+  }
+
+  if (runtimeEnv?.DB) {
+    (globalThis as any).DB = runtimeEnv.DB;
+  }
+  if (runtimeEnv?.STORAGE_BUCKET) {
+    (globalThis as any).STORAGE_BUCKET = runtimeEnv.STORAGE_BUCKET;
+  }
+
   if (!kyroInstance) {
     if (!initPromise) {
       initPromise = doInit();

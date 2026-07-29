@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getSessionConfig } from "../../lib/secret.js";
 import { createStorage } from "unstorage";
 import fsDriver from "unstorage/drivers/fs";
+import memoryDriver from "unstorage/drivers/memory";
 
 // Get session config from DB or defaults
 const sessionConfig = getSessionConfig();
@@ -56,8 +57,23 @@ let storage: any = null;
 async function getStorage() {
   if (storage) return storage;
 
+  try {
+    const isEdge = typeof window === "undefined" && (
+      (typeof process !== "undefined" && (process.env?.CLOUDFLARE || process.env?.CF_PAGES)) ||
+      (globalThis as any).DB
+    );
+    if (!isEdge) {
+      storage = createStorage({
+        driver: fsDriver({ base: ".astro/sessions" }),
+      });
+      return storage;
+    }
+  } catch {
+    // Fall back to memory driver for edge/Cloudflare Workers
+  }
+
   storage = createStorage({
-    driver: fsDriver({ base: ".astro/sessions" }),
+    driver: memoryDriver(),
   });
 
   return storage;

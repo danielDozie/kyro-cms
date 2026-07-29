@@ -126,6 +126,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "dotenv-cli": "^11.0.0",

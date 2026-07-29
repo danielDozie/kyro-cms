@@ -1,4 +1,4 @@
-import { defineConfig } from "astro/config";
+import { defineConfig, sessionDrivers } from "astro/config";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import node from "@astrojs/node";
@@ -111,7 +111,7 @@ export default defineConfig({
     mode: "standalone",
   }),
   session: {
-    driver: "fs",
+    driver: sessionDrivers.memory(),
   },
   server: {
     port: 4555,

@@ -19,8 +19,8 @@ export function generatePackageJson(
     "@astrojs/react": "^5.0.4",
     "@tailwindcss/vite": "^4.0.0",
     "tailwindcss": "^4.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "@kyro-cms/core": "latest",
     "@kyro-cms/admin": "latest",
     // Core APIs
@@ -48,8 +48,10 @@ export function generatePackageJson(
 
   const devDeps: Record<string, string> = {
     "typescript": "^5.7.3",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@astrojs/cloudflare": "^14.1.6",
+    "wrangler": "^4.115.0",
   };
 
   const scripts: Record<string, string> = {

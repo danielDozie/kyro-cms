@@ -1,6 +1,5 @@
-import type { GlobalConfig } from "../registry/types.js";
-
+import { coreSettingsGlobals } from "./settings/index.js";
 
 export const blogCollections: Record<string, any> = {};
 
-export const blogGlobals: GlobalConfig[] = [];
+export { coreSettingsGlobals };

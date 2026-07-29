@@ -121,7 +121,7 @@ describe("file generation", () => {
         expect(config).not.toContain("require(");
         expect(config).not.toContain("mysql");
         expect(config).not.toContain("api {");
-        expect(config).toContain("defineConfig");
+        expect(config).toContain("defineKyroConfig");
         expect(config).toContain("APP_SECRET");
       });
 
@@ -225,7 +225,7 @@ describe("all database × template combinations produce valid output", () => {
       it(`${db} + ${template} generates valid config`, () => {
         const answers: Answers = { projectName: "combo-test", database: db, template, adminEmail: "admin@combo-test.local" };
         const config = generateKyroConfig(answers);
-        expect(config).toContain("defineConfig");
+        expect(config).toContain("defineKyroConfig");
         expect(config).not.toContain("mysql");
         expect(config).not.toContain("undefined");
         expect(config).not.toContain("require(");

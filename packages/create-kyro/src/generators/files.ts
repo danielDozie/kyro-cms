@@ -2,6 +2,7 @@ import type { Answers } from "../prompts.js";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { randomBytes } from "crypto";
+import { generateCloudflareScripts } from "./cloudflare.js";
 
 function generateAppSecret(): string {
   return randomBytes(32).toString("hex");
@@ -23,10 +24,12 @@ export function generateProjectFiles(
   const publicDir = join(projectDir, "public");
 
   const agentsDir = join(projectDir, ".agents");
+  const scriptsDir = join(projectDir, "scripts");
   mkdirSync(pagesDir, { recursive: true });
   mkdirSync(stylesDir, { recursive: true });
   mkdirSync(publicDir, { recursive: true });
   mkdirSync(agentsDir, { recursive: true });
+  mkdirSync(scriptsDir, { recursive: true });
 
   if (answers.database === "sqlite") {
     mkdirSync(join(projectDir, "data"), { recursive: true });
@@ -74,6 +77,25 @@ npm run dev
 Visit [http://localhost:4321/admin](http://localhost:4321/admin) to access the admin.
 
 The first user to register will automatically be granted super admin privileges.
+
+## Deploy to Cloudflare
+
+Make sure you are logged in to Cloudflare, then run:
+
+\`\`\`bash
+npm run deploy:cloudflare
+\`\`\`
+
+The interactive wizard will guide you through selecting a database, bucket name,
+and admin credentials. Everything is provisioned automatically.
+
+For CI/CD pipelines (non-interactive):
+
+\`\`\`bash
+npm run deploy:cloudflare:ci
+# or pass flags directly:
+bash scripts/deploy-cloudflare.sh -y -d d1 -n my-project -e admin@example.com
+\`\`\`
 
 ## Documentation
 
@@ -229,4 +251,7 @@ const title = "${answers.projectName}";
 `;
 
   writeFileSync(join(pagesDir, "index.astro"), indexPage);
+
+  // Deployment scripts
+  generateCloudflareScripts(projectDir);
 }

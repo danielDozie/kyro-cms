@@ -1,5 +1,5 @@
 {
-  "name": "create-kyro",
+  "name": "@kyro-cms/create-kyro",
   "version": "0.12.23",
   "description": "Interactive scaffolding for Kyro CMS projects",
   "type": "module",
@@ -8,19 +8,40 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./headless": {
+      "import": "./dist/headless.js",
+      "types": "./dist/headless.d.ts"
+    },
+    "./server": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    },
+    "./deployers/cloudflare": {
+      "import": "./dist/deployers/cloudflare.js",
+      "types": "./dist/deployers/cloudflare.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "serve": "node --import tsx/esm src/server.ts"
   },
   "dependencies": {
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
+    "@kyro-cms/core": "workspace:*",
     "@types/node": "^22.13.0",
+    "@types/prompts": "^2.4.9",
     "tsup": "^8.4.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.0"

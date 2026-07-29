@@ -62,7 +62,11 @@ export const ecommerceCollections: Record<string, CollectionConfig> = {
         name: 'status',
         type: 'select',
         label: 'Status',
-        options: ['draft', 'active', 'archived'],
+        options: [
+          { label: 'Draft', value: 'draft' },
+          { label: 'Active', value: 'active' },
+          { label: 'Archived', value: 'archived' }
+        ],
         defaultValue: 'draft'
       },
       {
@@ -148,7 +152,11 @@ export const ecommerceCollections: Record<string, CollectionConfig> = {
         name: 'status',
         type: 'select',
         label: 'Status',
-        options: ['active', 'inactive', 'banned'],
+        options: [
+          { label: 'Active', value: 'active' },
+          { label: 'Inactive', value: 'inactive' },
+          { label: 'Banned', value: 'banned' }
+        ],
         defaultValue: 'active'
       }
     ],
@@ -183,14 +191,27 @@ export const ecommerceCollections: Record<string, CollectionConfig> = {
         name: 'status',
         type: 'select',
         label: 'Status',
-        options: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'],
+        options: [
+          { label: 'Pending', value: 'pending' },
+          { label: 'Confirmed', value: 'confirmed' },
+          { label: 'Processing', value: 'processing' },
+          { label: 'Shipped', value: 'shipped' },
+          { label: 'Delivered', value: 'delivered' },
+          { label: 'Cancelled', value: 'cancelled' },
+          { label: 'Refunded', value: 'refunded' }
+        ],
         defaultValue: 'pending'
       },
       {
         name: 'paymentStatus',
         type: 'select',
         label: 'Payment Status',
-        options: ['pending', 'paid', 'failed', 'refunded'],
+        options: [
+          { label: 'Pending', value: 'pending' },
+          { label: 'Paid', value: 'paid' },
+          { label: 'Failed', value: 'failed' },
+          { label: 'Refunded', value: 'refunded' }
+        ],
         defaultValue: 'pending'
       },
       {
@@ -231,7 +252,11 @@ export const ecommerceCollections: Record<string, CollectionConfig> = {
         type: 'select',
         required: true,
         label: 'Type',
-        options: ['percentage', 'fixed', 'freeShipping']
+        options: [
+          { label: 'Percentage', value: 'percentage' },
+          { label: 'Fixed Amount', value: 'fixed' },
+          { label: 'Free Shipping', value: 'freeShipping' }
+        ]
       },
       { name: 'value', type: 'number', label: 'Value' },
       { name: 'minPurchase', type: 'number', label: 'Minimum Purchase' },
@@ -248,25 +273,26 @@ export const ecommerceCollections: Record<string, CollectionConfig> = {
 
 export const ecommerceGlobals: Record<string, GlobalConfig> = {
   storeSettings: {
-    name: 'storeSettings',
+    slug: 'storeSettings',
     label: 'Store Settings',
-    fields: {
-      storeName: { type: 'text', defaultValue: 'My Store' },
-      storeEmail: { type: 'email', label: 'Contact Email' },
-      storePhone: { type: 'text', label: 'Phone' },
-      address: {
+    fields: [
+      { name: 'storeName', type: 'text', defaultValue: 'My Store', label: 'Store Name' },
+      { name: 'storeEmail', type: 'email', label: 'Contact Email' },
+      { name: 'storePhone', type: 'text', label: 'Phone' },
+      {
+        name: 'address',
         type: 'group',
         label: 'Address',
-        fields: {
-          line1: { type: 'text', label: 'Address Line 1' },
-          city: { type: 'text', label: 'City' },
-          state: { type: 'text', label: 'State' },
-          postalCode: { type: 'text', label: 'Postal Code' },
-          country: { type: 'text', label: 'Country' }
-        }
+        fields: [
+          { name: 'line1', type: 'text', label: 'Address Line 1' },
+          { name: 'city', type: 'text', label: 'City' },
+          { name: 'state', type: 'text', label: 'State' },
+          { name: 'postalCode', type: 'text', label: 'Postal Code' },
+          { name: 'country', type: 'text', label: 'Country' }
+        ]
       },
-      currency: { type: 'text', defaultValue: 'USD', label: 'Currency' },
-      taxRate: { type: 'number', defaultValue: 0, label: 'Tax Rate (%)' }
-    }
+      { name: 'currency', type: 'text', defaultValue: 'USD', label: 'Currency' },
+      { name: 'taxRate', type: 'number', defaultValue: 0, label: 'Tax Rate (%)' }
+    ]
   }
 };

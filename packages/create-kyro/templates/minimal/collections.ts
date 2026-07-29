@@ -35,7 +35,10 @@ export const minimalCollections: Record<string, CollectionConfig> = {
         name: 'status',
         type: 'select',
         label: 'Status',
-        options: ['draft', 'published'],
+        options: [
+          { label: 'Draft', value: 'draft' },
+          { label: 'Published', value: 'published' }
+        ],
         defaultValue: 'draft',
         admin: {
           description: 'Publication status'
