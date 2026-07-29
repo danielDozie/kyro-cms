@@ -15,7 +15,7 @@ export function generatePackageJson(
   answers: Answers,
 ): PackageJson {
   const deps: Record<string, string> = {
-    "astro": "^6.3.1",
+    "astro": "^7.1.5",
     "@astrojs/react": "^5.0.4",
     "@tailwindcss/vite": "^4.0.0",
     "tailwindcss": "^4.0.0",
@@ -39,7 +39,7 @@ export function generatePackageJson(
 
   // Database Adapters
   if (answers.database === "sqlite") {
-    deps["better-sqlite3"] = "^9.4.0"; // Drizzle SQLite driver
+    deps["better-sqlite3"] = "^11.8.0"; // Drizzle SQLite driver (Node 22/24 compatible)
   } else if (answers.database === "postgres") {
     deps["pg"] = "^8.11.3"; // Postgres driver
   } else if (answers.database === "mongodb") {
@@ -58,6 +58,8 @@ export function generatePackageJson(
     "preview": "astro preview",
     "kyro:dev": "kyro dev",
     "kyro:generate": "kyro generate",
+    "deploy:cloudflare": "bash scripts/deploy-cloudflare.sh",
+    "deploy:cloudflare:ci": "bash scripts/deploy-cloudflare.sh --non-interactive",
   };
 
   if (answers.database === "sqlite") {
@@ -74,9 +76,6 @@ export function generatePackageJson(
     scripts,
     dependencies: deps,
     devDependencies: devDeps,
-    overrides: {
-      "vite": "^7",
-    },
   };
 }
 
