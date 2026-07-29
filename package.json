@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.12.23",
+  "version": "0.12.24",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
