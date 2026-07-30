@@ -68,6 +68,7 @@ export async function bootstrapAdmin(
 
   try {
     const user = await authAdapter.createUser({
+      name: "Super Admin",
       email: adminEmail,
       password: adminPassword,
       role: (adminRole as UserRole) || "admin",

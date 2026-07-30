@@ -7,8 +7,11 @@ import { generateAstroConfig } from './generators/astro.js';
 import { generateProjectFiles } from './generators/files.js';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { randomBytes } from 'crypto';
+
+const execAsync = promisify(exec);
 
 function generatePassword(length = 24): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
@@ -57,9 +60,8 @@ async function main() {
 
   s.message('Step 3/4: Installing dependencies (this may take a minute)...');
   try {
-    execSync('npm install', {
+    await execAsync('npm install', {
       cwd: projectDir,
-      stdio: 'pipe',
       env: { ...process.env, npm_config_loglevel: 'warn' }
     });
   } catch (error) {
@@ -69,9 +71,8 @@ async function main() {
 
   s.message('Step 4/4: Initializing git repository...');
   try {
-    execSync('git init && git add . && git commit -m "Initial commit - created with create-kyro"', {
-      cwd: projectDir,
-      stdio: 'pipe'
+    await execAsync('git init && git add . && git commit -m "Initial commit - created with create-kyro"', {
+      cwd: projectDir
     });
   } catch {
     // Ignore git errors if git is not installed
