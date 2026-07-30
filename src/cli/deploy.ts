@@ -1,7 +1,6 @@
 import { Command } from "commander";
 import { execSync, exec } from "child_process";
-import * as readline from "node:readline/promises";
-import { stdin as input, stdout as output } from "process";
+import prompts from "prompts";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -45,55 +44,75 @@ export function createDeployCommand() {
       }
 
       if (!nonInteractive && process.stdout.isTTY) {
-        const rl = readline.createInterface({ input, output });
-
         console.log(chalk.yellow.bold("📋 Setup Configuration"));
-        console.log(chalk.dim("Answer the prompts below to configure your deployment.\n"));
+        console.log(chalk.dim("Answer the prompts below to configure your deployment.\\n"));
+
+        const questions: prompts.PromptObject[] = [];
 
         if (!database) {
-          console.log(chalk.cyan("┌─ ") + chalk.bold("Select Database Infrastructure"));
-          console.log(chalk.cyan("│") + chalk.green.bold("  1 ") + "Native Cloudflare D1  " + chalk.dim("— serverless SQLite, auto-provisioned ") + chalk.dim("← default"));
-          console.log(chalk.cyan("│") + chalk.dim("  2 ") + "PostgreSQL  " + chalk.dim("— via Cloudflare Hyperdrive"));
-          console.log(chalk.cyan("└──────────────────────────────────────────"));
-          const dbChoice = await rl.question(chalk.magenta("  › ") + "Enter number (default: 1): ");
-          database = dbChoice.trim() === "2" ? "postgres" : "d1";
+          questions.push({
+            type: "select",
+            name: "database",
+            message: chalk.cyan("┌─ ") + chalk.bold("Select Database Infrastructure") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › "),
+            choices: [
+              { title: "Native Cloudflare D1 (serverless SQLite, auto-provisioned)", value: "d1" },
+              { title: "PostgreSQL (via Cloudflare Hyperdrive)", value: "postgres" }
+            ],
+            initial: 0
+          });
         }
 
         if (database === "postgres" && !databaseUrl) {
-          console.log(chalk.cyan("\n┌─ ") + chalk.bold("PostgreSQL Connection URL"));
-          console.log(chalk.cyan("└──────────────────────────────────────────"));
-          databaseUrl = await rl.question(chalk.magenta("  › ") + "postgresql://user:pass@host/db: ");
+          questions.push({
+            type: "text",
+            name: "databaseUrl",
+            message: chalk.cyan("\\n┌─ ") + chalk.bold("PostgreSQL Connection URL") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › "),
+          });
         }
 
         if (!name) {
-          console.log(chalk.cyan("\n┌─ ") + chalk.bold("Cloudflare Project Name"));
-          console.log(chalk.cyan("└──────────────────────────────────────────"));
-          const n = await rl.question(chalk.magenta("  › ") + chalk.dim(`(default: kyro-app-${randomSuffix}): `));
-          name = n.trim() || `kyro-app-${randomSuffix}`;
+          questions.push({
+            type: "text",
+            name: "name",
+            message: chalk.cyan("\\n┌─ ") + chalk.bold("Cloudflare Project Name") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-app-${randomSuffix})`),
+            initial: `kyro-app-${randomSuffix}`
+          });
         }
 
         if (!r2Bucket) {
-          console.log(chalk.cyan("\n┌─ ") + chalk.bold("Cloudflare R2 Bucket Name"));
-          console.log(chalk.cyan("└──────────────────────────────────────────"));
-          const r = await rl.question(chalk.magenta("  › ") + chalk.dim(`(default: kyro-media-${randomSuffix}): `));
-          r2Bucket = r.trim() || `kyro-media-${randomSuffix}`;
+          questions.push({
+            type: "text",
+            name: "r2Bucket",
+            message: chalk.cyan("\\n┌─ ") + chalk.bold("Cloudflare R2 Bucket Name") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-media-${randomSuffix})`),
+            initial: `kyro-media-${randomSuffix}`
+          });
         }
 
         if (!email) {
-          console.log(chalk.cyan("\n┌─ ") + chalk.bold("Initial Super Admin Email"));
-          console.log(chalk.cyan("└──────────────────────────────────────────"));
-          const e = await rl.question(chalk.magenta("  › ") + chalk.dim("(default: admin@kyro-cms.com): "));
-          email = e.trim() || "admin@kyro-cms.com";
+          questions.push({
+            type: "text",
+            name: "email",
+            message: chalk.cyan("\\n┌─ ") + chalk.bold("Initial Super Admin Email") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim("(default: admin@kyro-cms.com)"),
+            initial: "admin@kyro-cms.com"
+          });
         }
 
         if (!password) {
-          console.log(chalk.cyan("\n┌─ ") + chalk.bold("Initial Super Admin Password"));
-          console.log(chalk.cyan("└──────────────────────────────────────────"));
-          const p = await rl.question(chalk.magenta("  › ") + chalk.dim("(default: auto-generate secure password): "));
-          password = p.trim() || randomPass;
+          questions.push({
+            type: "text",
+            name: "password",
+            message: chalk.cyan("\\n┌─ ") + chalk.bold("Initial Super Admin Password") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim("(default: auto-generate secure password)"),
+          });
         }
 
-        rl.close();
+        const answers = await prompts(questions);
+
+        if (answers.database) database = answers.database;
+        if (answers.databaseUrl) databaseUrl = answers.databaseUrl;
+        if (answers.name) name = answers.name;
+        if (answers.r2Bucket) r2Bucket = answers.r2Bucket;
+        if (answers.email) email = answers.email;
+        if (answers.password) password = answers.password;
       }
 
       // Fallbacks
