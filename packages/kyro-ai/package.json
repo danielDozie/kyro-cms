@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/ai",
-  "version": "0.12.32",
+  "version": "0.12.33",
   "description": "AI Plugins for Kyro CMS powered by Vercel AI SDK",
   "type": "module",
   "main": "./dist/index.js",
