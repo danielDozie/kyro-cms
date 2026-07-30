@@ -11,6 +11,7 @@ export default defineConfig({
   dts: true,
   splitting: false,
   clean: true,
+  publicDir: 'templates/public',
   target: 'node18',
   platform: 'node'
 });

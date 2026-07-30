@@ -1,7 +1,8 @@
 import type { Answers } from "../prompts.js";
-import { writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { writeFileSync, mkdirSync, copyFileSync, existsSync } from "fs";
+import { join, dirname } from "path";
 import { randomBytes } from "crypto";
+import { fileURLToPath } from "url";
 
 function generateAppSecret(): string {
   return randomBytes(32).toString("hex");
@@ -29,6 +30,17 @@ export function generateProjectFiles(
   mkdirSync(publicDir, { recursive: true });
   mkdirSync(agentsDir, { recursive: true });
   mkdirSync(scriptsDir, { recursive: true });
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+
+  const logos = ["logo.svg", "logo-white.svg", "favicon.svg"];
+  for (const logo of logos) {
+    const srcLogoPath = join(__dirname, logo);
+    if (existsSync(srcLogoPath)) {
+      copyFileSync(srcLogoPath, join(publicDir, logo));
+    }
+  }
 
   if (answers.database === "sqlite") {
     mkdirSync(join(projectDir, "data"), { recursive: true });
