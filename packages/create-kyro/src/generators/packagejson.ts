@@ -78,6 +78,9 @@ export function generatePackageJson(
     scripts,
     dependencies: deps,
     devDependencies: devDeps,
+    overrides: {
+      vite: "^7",
+    },
   };
 }
 

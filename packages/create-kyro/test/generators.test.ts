@@ -82,15 +82,13 @@ describe("generators", () => {
 
     it("imports settings globals per template", () => {
       const minimal = generateKyroConfig({ ...baseAnswers, template: "minimal" });
-      expect(minimal).toContain("siteSettingsGlobal");
-      expect(minimal).toContain("seoSettingsGlobal");
-      expect(minimal).not.toContain("coreGlobalSettings");
+      expect(minimal).toContain("coreGlobalSettings");
 
       const starter = generateKyroConfig({ ...baseAnswers, template: "starter" });
       expect(starter).toContain("coreGlobalSettings");
 
       const blog = generateKyroConfig({ ...baseAnswers, template: "blog" });
-      expect(blog).toContain("allGlobalSettings");
+      expect(blog).toContain("coreGlobalSettings");
 
       const ecommerce = generateKyroConfig({ ...baseAnswers, template: "ecommerce" });
       expect(ecommerce).toContain("allGlobalSettings");
