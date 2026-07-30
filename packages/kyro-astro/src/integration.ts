@@ -100,6 +100,11 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
                 "nock",
               ],
             },
+            server: {
+              watch: {
+                ignored: ["**/*.db", "**/*.db-journal", "**/data/**"],
+              },
+            },
             resolve: {
               alias: {
                 "kyro:config": resolvedConfigPath,

@@ -112,6 +112,11 @@ export default function kyro(options: KyroIntegrationOptions = {}): AstroIntegra
                 "nock",
               ],
             },
+            server: {
+              watch: {
+                ignored: ["**/*.db", "**/*.db-journal", "**/data/**"],
+              },
+            },
             plugins: [
               {
                 name: "use-sync-external-store-shim-fix",
