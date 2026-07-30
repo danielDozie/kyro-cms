@@ -395,7 +395,7 @@ function createDefaultAuthAdapter(
     const mongoDb = db as MongoDBAdapter;
     return new MongoDBAuthAdapter({ db: () => mongoDb.db });
   }
-  const defaultAuthDbPath = resolve(rootDir, "data", "kyro.db");
+  const defaultAuthDbPath = resolve(rootDir, "data", "auth.db");
   return new SQLiteAuthAdapter({
     path: process.env.KYRO_AUTH_DB_PATH || defaultAuthDbPath,
   });
