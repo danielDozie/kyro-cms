@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.12.24",
+  "version": "0.12.31",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
@@ -175,7 +175,7 @@
     "@ai-sdk/openai": "^0.0.14",
     "@aws-sdk/client-s3": "^3.751.0",
     "@aws-sdk/s3-request-presigner": "^3.751.0",
-    "@kyro-cms/ai": "0.12.23",
+    "@kyro-cms/ai": "workspace:*",
     "@smithy/node-http-handler": "^4.7.0",
     "@tiptap/core": "^3.23.6",
     "@tiptap/extension-color": "^3.23.6",
