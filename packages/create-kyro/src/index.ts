@@ -1,4 +1,5 @@
 import { promptUser, type Answers } from './prompts.js';
+import { spinner } from '@clack/prompts';
 import { logger } from './utils/logger.js';
 import { generatePackageJson, formatPackageJson } from './generators/packagejson.js';
 import { generateKyroConfig } from './generators/config.js';
@@ -34,62 +35,49 @@ async function main() {
 
   const adminPassword = generatePassword();
 
-  const steps = [
-    'Creating project directory',
-    'Generating configuration files',
-    'Installing dependencies',
-    'Initializing git repository',
-  ];
+  const s = spinner();
 
-  logger.step(1, steps.length, steps[0]);
+  s.start('Step 1/4: Creating project directory...');
   mkdirSync(projectDir, { recursive: true });
-  logger.success('Project directory created');
-
-  logger.step(2, steps.length, steps[1]);
+  s.message('Step 2/4: Generating configuration files...');
 
   const pkg = generatePackageJson(answers);
   writeFileSync(
     join(projectDir, 'package.json'),
     formatPackageJson(pkg)
   );
-  logger.success('package.json generated');
 
   const kyroConfig = generateKyroConfig(answers);
   writeFileSync(join(projectDir, 'kyro.config.ts'), kyroConfig);
-  logger.success('kyro.config.ts generated');
 
   const astroConfig = generateAstroConfig(answers);
   writeFileSync(join(projectDir, 'astro.config.mjs'), astroConfig);
-  logger.success('astro.config.mjs generated');
 
   generateProjectFiles(answers, projectDir, { adminEmail: answers.adminEmail, adminPassword });
-  logger.success('Project files generated');
 
-  logger.step(3, steps.length, steps[2]);
+  s.message('Step 3/4: Installing dependencies (this may take a minute)...');
   try {
     execSync('npm install', {
       cwd: projectDir,
-      stdio: 'inherit',
+      stdio: 'pipe',
       env: { ...process.env, npm_config_loglevel: 'warn' }
     });
-    logger.success('Dependencies installed');
   } catch (error) {
-    logger.error('Failed to install dependencies');
+    s.stop('Failed to install dependencies');
     process.exit(1);
   }
 
-  logger.step(4, steps.length, steps[3]);
+  s.message('Step 4/4: Initializing git repository...');
   try {
     execSync('git init && git add . && git commit -m "Initial commit - created with create-kyro"', {
       cwd: projectDir,
       stdio: 'pipe'
     });
-    logger.success('Git repository initialized');
   } catch {
-    logger.warning('Could not initialize git repository');
+    // Ignore git errors if git is not installed
   }
 
-  logger.done();
+  s.stop('Project initialization complete!');
 
   console.log('\n=========================================');
   console.log('🎉 Kyro CMS App Created Successfully!');

@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/create",
-  "version": "0.12.33",
+  "version": "0.12.34",
   "description": "Interactive scaffolding for Kyro CMS projects",
   "type": "module",
   "bin": {
@@ -35,6 +35,7 @@
     "serve": "node --import tsx/esm src/server.ts"
   },
   "dependencies": {
+    "@clack/prompts": "^1.7.0",
     "kolorist": "^1.8.0",
     "prompts": "^2.4.2"
   },
