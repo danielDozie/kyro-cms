@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.12.36",
+  "version": "0.12.38",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
@@ -222,6 +222,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.0",
     "@types/nodemailer": "^7.0.11",
+    "@types/prompts": "^2.4.9",
     "@types/react": "^19.2.17",
     "@types/ssh2-sftp-client": "^9.0.6",
     "@types/ws": "^8.18.1",
