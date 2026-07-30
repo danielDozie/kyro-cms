@@ -8,8 +8,8 @@ import {
   kitchenSinkCollections,
   mediaCollections,
   authCollections,
-  allSettingsGlobals,
-  coreSettingsGlobals,
+  allGlobalSettings,
+  coreGlobalSettings,
 } from "@kyro-cms/core/templates";
 import { projectConfig } from "virtual:kyro-plugins";
 type ConfigCollectionInput =
@@ -207,19 +207,19 @@ export function getAdminConfig(template: AdminTemplate = "blog") {
   switch (template) {
     case "minimal":
       collections.push(...Object.values(minimalCollections));
-      globals.push(...coreSettingsGlobals);
+      globals.push(...coreGlobalSettings);
       break;
     case "starter":
       collections.push(...Object.values(starterCollections));
-      globals.push(...coreSettingsGlobals);
+      globals.push(...coreGlobalSettings);
       break;
     case "blog":
       collections.push(...Object.values(blogCollections));
-      globals.push(...coreSettingsGlobals);
+      globals.push(...coreGlobalSettings);
       break;
     case "ecommerce":
       collections.push(...Object.values(ecommerceCollections));
-      globals.push(...allSettingsGlobals);
+      globals.push(...allGlobalSettings);
       break;
     case "kitchen-sink":
       collections.push(
@@ -229,7 +229,7 @@ export function getAdminConfig(template: AdminTemplate = "blog") {
         ...Object.values(ecommerceCollections),
         ...Object.values(kitchenSinkCollections),
       );
-      globals.push(...allSettingsGlobals);
+      globals.push(...allGlobalSettings);
       break;
   }
 

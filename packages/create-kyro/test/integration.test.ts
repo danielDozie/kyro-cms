@@ -132,7 +132,7 @@ describe("file generation", () => {
 
       it("includes settings globals", () => {
         const config = generateKyroConfig(baseAnswers);
-        expect(config).toContain("allSettingsGlobals");
+        expect(config).toContain("allGlobalSettings");
       });
     });
 

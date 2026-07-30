@@ -46,8 +46,8 @@ export { reviewsCollections, reviewsCollection } from "./reviews.js";
 export { brandsCollections, brandsCollection } from "./brands.js";
 
 export {
-  allSettingsGlobals,
-  coreSettingsGlobals,
+  allGlobalSettings,
+  coreGlobalSettings,
   settingsBySlug,
   getSettingsForTemplate,
   siteSettingsGlobal,
@@ -91,7 +91,7 @@ const standardCollections = [
 export const templateCollections = {
   minimal: deduplicateCollections([
     ...Object.values(minimalCollections),
-    ...baseCollections,
+    ...standardCollections,
   ]),
   starter: deduplicateCollections([
     ...Object.values(starterCollections),
@@ -132,8 +132,8 @@ export const templateCollections = {
 } as const;
 
 import {
-  allSettingsGlobals,
-  coreSettingsGlobals,
+  allGlobalSettings,
+  coreGlobalSettings,
   getSettingsForTemplate,
   settingsBySlug,
 } from "./settings/index.js";
@@ -180,13 +180,13 @@ export function createTemplateConfig(
 
   const templateSettings = options.template
     ? getSettingsForTemplate(options.template)
-    : coreSettingsGlobals;
+    : coreGlobalSettings;
 
   if (options.includeSettings) {
     if (options.includeSettings === "all") {
-      globals.push(...allSettingsGlobals);
+      globals.push(...allGlobalSettings);
     } else if (options.includeSettings === "core") {
-      globals.push(...coreSettingsGlobals);
+      globals.push(...coreGlobalSettings);
     } else if (Array.isArray(options.includeSettings)) {
       for (const setting of options.includeSettings) {
         const global = settingsBySlug[setting];

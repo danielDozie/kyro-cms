@@ -68,8 +68,8 @@ function noop() {}
 
 /**
  * Scaffold a new Kyro CMS project programmatically.
- * Equivalent to running `pnpm create kyro@latest <projectName>` and
- * answering all prompts with the supplied options.
+ * Equivalent to running `pnpm create @kyro-cms@latest <projectName>` and
+ * accepting all prompts automatically.
  */
 export async function createProject(
   options: CreateProjectOptions

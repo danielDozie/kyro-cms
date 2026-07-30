@@ -1,11 +1,11 @@
-import { templateCollections, coreSettingsGlobals } from "./src/templates/index.js";
+import { templateCollections, coreGlobalSettings } from "./src/templates/index.js";
 import { createDrizzleAdapter } from "./src/database/drizzle/index.js";
 import { createS3Storage } from "./src/storage/s3.js";
 
 export default {
   // Public Blog Template (posts, pages, categories, media, menu, users, audit_logs, forms)
   collections: templateCollections["blog"],
-  globals: coreSettingsGlobals,
+  globals: coreGlobalSettings,
 
   // Database adapter — PostgreSQL for Cloudflare/Production, local SQLite fallback
   db: createDrizzleAdapter({

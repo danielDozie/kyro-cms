@@ -13,23 +13,6 @@ export default defineConfig({
   vite: {
     plugins: [
       tailwind(),
-      {
-        name: 'use-sync-external-store-shim-fix',
-        enforce: 'pre',
-        resolveId(id) {
-          if (
-            id === 'use-sync-external-store/shim' ||
-            id === 'use-sync-external-store/shim/index.js'
-          ) {
-            return '\\0virtual:use-sync-external-store-shim';
-          }
-        },
-        load(id) {
-          if (id === '\\0virtual:use-sync-external-store-shim') {
-            return \`export { useSyncExternalStore } from 'react';\`;
-          }
-        },
-      },
     ],
   },
   server: {

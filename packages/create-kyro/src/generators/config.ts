@@ -33,16 +33,16 @@ export function generateKyroConfig(answers: Answers): string {
       templateGlobals = "import { siteSettingsGlobal, seoSettingsGlobal } from '@kyro-cms/core/templates';";
       break;
     case "starter":
-      templateGlobals = "import { coreSettingsGlobals } from '@kyro-cms/core/templates';";
+      templateGlobals = "import { coreGlobalSettings } from '@kyro-cms/core/templates';";
       break;
     case "blog":
-      templateGlobals = "import { allSettingsGlobals } from '@kyro-cms/core/templates';";
+      templateGlobals = "import { allGlobalSettings } from '@kyro-cms/core/templates';";
       break;
     case "ecommerce":
-      templateGlobals = "import { allSettingsGlobals } from '@kyro-cms/core/templates';";
+      templateGlobals = "import { allGlobalSettings } from '@kyro-cms/core/templates';";
       break;
     case "kitchen-sink":
-      templateGlobals = "import { allSettingsGlobals } from '@kyro-cms/core/templates';";
+      templateGlobals = "import { allGlobalSettings } from '@kyro-cms/core/templates';";
       break;
   }
 
@@ -59,9 +59,9 @@ export function generateKyroConfig(answers: Answers): string {
   if (answers.template === "minimal") {
     globalsConfig = `  globals: [siteSettingsGlobal, seoSettingsGlobal],`;
   } else if (answers.template === "starter") {
-    globalsConfig = `  globals: coreSettingsGlobals,`;
+    globalsConfig = `  globals: coreGlobalSettings,`;
   } else if (answers.template === "blog" || answers.template === "ecommerce" || answers.template === "kitchen-sink") {
-    globalsConfig = `  globals: allSettingsGlobals,`;
+    globalsConfig = `  globals: allGlobalSettings,`;
   }
 
   return `${imports.join("\n")}

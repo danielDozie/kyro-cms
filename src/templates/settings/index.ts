@@ -23,7 +23,7 @@ import { systemSettingsGlobal } from "./system.js";
 import { storageSettingsGlobal } from "./storage.js";
 import type { GlobalConfig } from "../../registry/types.js";
 
-export const allSettingsGlobals: GlobalConfig[] = [
+export const allGlobalSettings: GlobalConfig[] = [
   siteSettingsGlobal,
   seoSettingsGlobal,
   brandSettingsGlobal,
@@ -35,7 +35,7 @@ export const allSettingsGlobals: GlobalConfig[] = [
   systemSettingsGlobal,
 ];
 
-export const coreSettingsGlobals: GlobalConfig[] = [
+export const coreGlobalSettings: GlobalConfig[] = [
   siteSettingsGlobal,
   seoSettingsGlobal,
   brandSettingsGlobal,
@@ -61,15 +61,10 @@ export function getSettingsForTemplate(
   template: "minimal" | "starter" | "blog" | "ecommerce" | "kitchen-sink",
 ): GlobalConfig[] {
   switch (template) {
-    case "minimal":
-      return [siteSettingsGlobal, seoSettingsGlobal, brandSettingsGlobal];
-    case "starter":
-    case "blog":
-      return coreSettingsGlobals;
     case "ecommerce":
     case "kitchen-sink":
-      return allSettingsGlobals;
+      return allGlobalSettings;
     default:
-      return coreSettingsGlobals;
+      return coreGlobalSettings;
   }
 }

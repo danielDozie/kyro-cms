@@ -52,10 +52,15 @@ nonAuthCollections
     groupedCollections.get(groupName)!.push(item);
   });
 
-const dynamicSections = Array.from(groupedCollections.entries()).map(([group, items]) => ({
-  label: group,
-  items: items.sort((a, b) => (a.order || 999) - (b.order || 999)),
-}));
+const dynamicSections = Array.from(groupedCollections.entries()).map(([group, items]) => {
+  const sortedItems = items.sort((a, b) => (a.order || 999) - (b.order || 999));
+  const minOrder = sortedItems.length > 0 ? (sortedItems[0].order ?? 999) : 999;
+  return {
+    label: group,
+    items: sortedItems,
+    minOrder
+  };
+}).sort((a, b) => a.minOrder - b.minOrder);
 
 import { getAuthServer } from "../lib/auth-server";
 

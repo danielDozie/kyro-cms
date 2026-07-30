@@ -90,6 +90,18 @@ async function main() {
   }
 
   logger.done();
+
+  console.log('\n=========================================');
+  console.log('🎉 Kyro CMS App Created Successfully!');
+  console.log('=========================================');
+  console.log(`\nNext steps:`);
+  console.log(`  1. cd ${answers.projectName}`);
+  console.log(`  2. pnpm dev (or npm run dev)\n`);
+  console.log('🔑 Super Admin Credentials (Local):');
+  console.log(`  Email:    ${answers.adminEmail}`);
+  console.log(`  Password: ${adminPassword}`);
+  console.log('\n(These have been saved to your .env.local file)');
+  console.log('=========================================\n');
 }
 
 main().catch((error) => {

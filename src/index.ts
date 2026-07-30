@@ -326,8 +326,8 @@ export {
   kitchenSinkCollections,
   mediaCollections,
   templateCollections,
-  allSettingsGlobals,
-  coreSettingsGlobals,
+  allGlobalSettings,
+  coreGlobalSettings,
   createTemplateConfig,
 } from "./templates/index";
 export type { TemplateConfig } from "./templates/index";

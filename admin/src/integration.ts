@@ -264,10 +264,7 @@ module.exports = debug;
             optimizeDeps: {
               include: [
                 '@kyro-cms/admin > recharts',
-                '@kyro-cms/admin > recharts > recharts-scale',
-                '@kyro-cms/admin > recharts > recharts-scale > decimal.js-light',
-                '@kyro-cms/admin > recharts > react-smooth',
-                '@kyro-cms/admin > recharts > react-smooth > react-transition-group',
+                '@kyro-cms/admin > recharts > decimal.js-light',
                 '@kyro-cms/admin > react-i18next',
                 '@kyro-cms/admin > react-i18next > html-parse-stringify',
                 '@kyro-cms/admin > react-i18next > html-parse-stringify > void-elements',
@@ -275,7 +272,7 @@ module.exports = debug;
                 '@kyro-cms/admin > use-sync-external-store/with-selector.js',
               ],
               needsInterop: [
-                '@kyro-cms/admin > recharts > recharts-scale > decimal.js-light',
+                '@kyro-cms/admin > recharts > decimal.js-light',
                 '@kyro-cms/admin > react-i18next > html-parse-stringify > void-elements',
                 '@kyro-cms/admin > use-sync-external-store',
                 '@kyro-cms/admin > use-sync-external-store/with-selector.js',
@@ -366,17 +363,7 @@ module.exports = debug;
           });
         }
 
-        // Inject API Catch-All Route
-        const apiEntrypoint = fs.existsSync(
-          path.resolve(new URL(".", import.meta.url).pathname, "../../src/api-handler.ts")
-        )
-          ? path.resolve(new URL(".", import.meta.url).pathname, "../../src/api-handler.ts")
-          : "@kyro-cms/core/api-handler";
-
-        injectRoute({
-          pattern: `${apiPath}/[...kyro]`,
-          entrypoint: apiEntrypoint,
-        });
+        // API Catch-All Route is now exclusively handled by @kyro-cms/core kyro() integration
       },
       "astro:build:done": ({ logger }) => {
         logger.info("Kyro Admin build complete");

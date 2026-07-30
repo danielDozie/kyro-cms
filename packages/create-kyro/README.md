@@ -5,13 +5,13 @@ Interactive scaffolding for Kyro CMS projects.
 ## Usage
 
 ```bash
-npm create kyro@latest
+pnpm create @kyro-cms@latest
 ```
 
 Or directly:
 
 ```bash
-npx create-kyro
+npx @kyro-cms/create
 ```
 
 ## What it does

@@ -31,7 +31,7 @@ Kyro turns a single TypeScript config into a full CMS backend for Astro, includi
 ### Create a new Kyro project
 
 ```bash
-pnpm create kyro@latest my-project
+pnpm create @kyro-cms@latest my-project
 cd my-project
 pnpm install
 pnpm dev

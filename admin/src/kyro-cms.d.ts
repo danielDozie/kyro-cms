@@ -204,8 +204,8 @@ declare module '@kyro-cms/core/templates' {
   export const kitchenSinkCollections: Record<string, CollectionConfig>;
   export const mediaCollections: Record<string, CollectionConfig>;
   export const authCollections: Record<string, CollectionConfig>;
-  export const allSettingsGlobals: GlobalConfig[];
-  export const coreSettingsGlobals: GlobalConfig[];
+  export const allGlobalSettings: GlobalConfig[];
+  export const coreGlobalSettings: GlobalConfig[];
 }
 
 // Ambient module for the Astro virtual import

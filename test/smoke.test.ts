@@ -64,8 +64,8 @@ describe("ESM import smoke tests", () => {
     expect(mod.blogCollections).toBeDefined();
     expect(mod.ecommerceCollections).toBeDefined();
     expect(mod.kitchenSinkCollections).toBeDefined();
-    expect(mod.allSettingsGlobals).toBeDefined();
-    expect(mod.coreSettingsGlobals).toBeDefined();
+    expect(mod.allGlobalSettings).toBeDefined();
+    expect(mod.coreGlobalSettings).toBeDefined();
   });
 
   it("@kyro-cms/core/integration loads without errors", async () => {

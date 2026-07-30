@@ -5,6 +5,7 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createGenerateCommand } from "./generate.js";
+import { createDeployCommand } from "./deploy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -55,6 +56,7 @@ program
 
 // Register commands
 program.addCommand(createGenerateCommand());
+program.addCommand(createDeployCommand());
 
 // DB command group
 const dbCommand = program

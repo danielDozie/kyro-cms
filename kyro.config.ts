@@ -1,6 +1,6 @@
 import {
   templateCollections,
-  allSettingsGlobals,
+  allGlobalSettings,
 } from "./src/templates/index.js";
 import { AiAssistantPlugin, AiAutoSeoPlugin } from "@kyro-cms/ai";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -82,7 +82,7 @@ if (typeof window === "undefined") {
 
 export default {
   collections: templateCollections["kitchen-sink"],
-  globals: allSettingsGlobals,
+  globals: allGlobalSettings,
   adapter,
   auth: {
     secret: getAppSecret(),

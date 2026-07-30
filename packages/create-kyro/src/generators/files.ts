@@ -2,7 +2,6 @@ import type { Answers } from "../prompts.js";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { randomBytes } from "crypto";
-import { generateCloudflareScripts } from "./cloudflare.js";
 
 function generateAppSecret(): string {
   return randomBytes(32).toString("hex");
@@ -94,7 +93,7 @@ For CI/CD pipelines (non-interactive):
 \`\`\`bash
 npm run deploy:cloudflare:ci
 # or pass flags directly:
-bash scripts/deploy-cloudflare.sh -y -d d1 -n my-project -e admin@example.com
+npx kyro deploy cloudflare -y -d d1 -n my-project -e admin@example.com
 \`\`\`
 
 ## Documentation
@@ -253,5 +252,4 @@ const title = "${answers.projectName}";
   writeFileSync(join(pagesDir, "index.astro"), indexPage);
 
   // Deployment scripts
-  generateCloudflareScripts(projectDir);
 }

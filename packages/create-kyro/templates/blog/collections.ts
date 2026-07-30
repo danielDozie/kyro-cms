@@ -166,7 +166,7 @@ export const blogCollections: Record<string, CollectionConfig> = {
   }
 };
 
-export const coreSettingsGlobals = {
+export const coreGlobalSettings = {
   'site-settings': {
     name: 'site-settings',
     label: 'Site Settings',

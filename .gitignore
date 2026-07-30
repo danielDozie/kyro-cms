@@ -103,6 +103,6 @@ kyro-story/
 # Internal Operations & Publishing Scripts
 # ============================================================================
 scripts/*
-!scripts/deployments/
+# !scripts/deployments/
 .kyro-admin-config.json
 kyro.config.ts

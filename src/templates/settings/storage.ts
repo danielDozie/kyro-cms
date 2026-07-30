@@ -79,7 +79,7 @@ const builtInProviders: ProviderDef[] = [
 // ============================================================================
 // Static Storage Settings Global
 // ============================================================================
-// This global is included in allSettingsGlobals so it's available at build time.
+// This global is included in allGlobalSettings so it's available at build time.
 // It uses DeclarativeCondition instead of function conditions so the
 // conditions survive JSON serialization in the admin config.
 

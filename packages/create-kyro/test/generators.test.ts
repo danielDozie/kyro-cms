@@ -84,20 +84,20 @@ describe("generators", () => {
       const minimal = generateKyroConfig({ ...baseAnswers, template: "minimal" });
       expect(minimal).toContain("siteSettingsGlobal");
       expect(minimal).toContain("seoSettingsGlobal");
-      expect(minimal).not.toContain("coreSettingsGlobals");
+      expect(minimal).not.toContain("coreGlobalSettings");
 
       const starter = generateKyroConfig({ ...baseAnswers, template: "starter" });
-      expect(starter).toContain("coreSettingsGlobals");
+      expect(starter).toContain("coreGlobalSettings");
 
       const blog = generateKyroConfig({ ...baseAnswers, template: "blog" });
-      expect(blog).toContain("allSettingsGlobals");
+      expect(blog).toContain("allGlobalSettings");
 
       const ecommerce = generateKyroConfig({ ...baseAnswers, template: "ecommerce" });
-      expect(ecommerce).toContain("allSettingsGlobals");
+      expect(ecommerce).toContain("allGlobalSettings");
       expect(ecommerce).not.toContain("ecommerceSettingsGlobals");
 
       const kitchen = generateKyroConfig({ ...baseAnswers, template: "kitchen-sink" });
-      expect(kitchen).toContain("allSettingsGlobals");
+      expect(kitchen).toContain("allGlobalSettings");
     });
 
     it("uses project name in config", () => {

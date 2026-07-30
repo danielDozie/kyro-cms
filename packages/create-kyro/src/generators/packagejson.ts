@@ -60,8 +60,8 @@ export function generatePackageJson(
     "preview": "astro preview",
     "kyro:dev": "kyro dev",
     "kyro:generate": "kyro generate",
-    "deploy:cloudflare": "bash scripts/deploy-cloudflare.sh",
-    "deploy:cloudflare:ci": "bash scripts/deploy-cloudflare.sh --non-interactive",
+    "deploy:cloudflare": "kyro deploy cloudflare",
+    "deploy:cloudflare:ci": "kyro deploy cloudflare --non-interactive",
   };
 
   if (answers.database === "sqlite") {
