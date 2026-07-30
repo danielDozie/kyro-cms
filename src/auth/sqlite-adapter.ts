@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
-import { randomBytes } from "crypto";
-import { mkdirSync } from "fs";
-import { dirname } from "path";
-import { createRequire } from "module";
+import { randomBytes } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { createRequire } from "node:module";
 const _require = createRequire(import.meta.url);
 const modPath = "node:" + "sqlite";
 const { DatabaseSync } = _require(modPath) as typeof import("node:sqlite");

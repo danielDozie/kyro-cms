@@ -1,8 +1,8 @@
-import { createRequire } from "module";
+import { createRequire } from "node:module";
 const _require = createRequire(import.meta.url);
 const modPath = "node:" + "sqlite";
 const { DatabaseSync } = _require(modPath) as typeof import("node:sqlite");
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { AbstractBaseAdapter } from "../base.js";
 import type {
   CollectionConfig,

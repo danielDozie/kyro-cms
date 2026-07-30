@@ -1,8 +1,8 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { Hono } from "hono";
 import { sign, verify } from "hono/jwt";
-import { resolve, join } from "path";
-import { existsSync, readFileSync } from "fs";
+import { resolve, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 // sharp is imported dynamically at usage sites to prevent browser bundling
 import type {
   BaseAdapter,

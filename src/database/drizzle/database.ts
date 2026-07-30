@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { randomBytes } from "crypto";
-import { mkdir } from "fs/promises";
-import { dirname, resolve } from "path";
-import { createRequire } from "module";
+import { randomBytes } from "node:crypto";
+import { mkdir } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { createRequire } from "node:module";
 const _require = createRequire(import.meta.url);
 const modPath = "node:" + "sqlite";
 const { DatabaseSync } = _require(modPath) as typeof import("node:sqlite");
