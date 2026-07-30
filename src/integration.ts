@@ -114,7 +114,7 @@ export default function kyro(options: KyroIntegrationOptions = {}): AstroIntegra
             },
             server: {
               watch: {
-                ignored: ["**/*.db", "**/*.db-journal", "**/data/**"],
+                ignored: ["**/*.db", "**/*.db-*", "**/data/**", "**/public/uploads/**", "**/.kyro/**"],
               },
             },
             plugins: [

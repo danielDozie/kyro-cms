@@ -102,7 +102,7 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
             },
             server: {
               watch: {
-                ignored: ["**/*.db", "**/*.db-journal", "**/data/**"],
+                ignored: ["**/*.db", "**/*.db-*", "**/data/**", "**/public/uploads/**", "**/.kyro/**"],
               },
             },
             resolve: {
