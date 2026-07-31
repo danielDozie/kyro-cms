@@ -46,6 +46,11 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
           vite: {
             ssr: {
               external: [
+                "@kyro-cms/core",
+                "@kyro-cms/admin",
+                "@kyro-cms/astro",
+                "@kyro-cms/ai",
+                "@kyro-cms/connect",
                 "crypto",
                 "node:crypto",
                 "module",
@@ -97,6 +102,11 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
             build: {
               rollupOptions: {
                 external: [
+                  "@kyro-cms/core",
+                  "@kyro-cms/admin",
+                  "@kyro-cms/astro",
+                  "@kyro-cms/ai",
+                  "@kyro-cms/connect",
                   "better-sqlite3",
                   "pg",
                   "mongodb",
@@ -116,6 +126,11 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
             },
             optimizeDeps: {
               exclude: [
+                "@kyro-cms/core",
+                "@kyro-cms/admin",
+                "@kyro-cms/astro",
+                "@kyro-cms/ai",
+                "@kyro-cms/connect",
                 "better-sqlite3",
                 "pg",
                 "mongodb",
@@ -140,22 +155,6 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
             resolve: {
               alias: {
                 "kyro:config": resolvedConfigPath,
-                crypto: "node:crypto",
-                module: "node:module",
-                fs: "node:fs",
-                "fs/promises": "node:fs/promises",
-                path: "node:path",
-                util: "node:util",
-                stream: "node:stream",
-                events: "node:events",
-                url: "node:url",
-                http: "node:http",
-                https: "node:https",
-                os: "node:os",
-                child_process: "node:child_process",
-                assert: "node:assert",
-                zlib: "node:zlib",
-                buffer: "node:buffer",
               },
             },
             define: {
