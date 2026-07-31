@@ -59,8 +59,6 @@ export function generateKyroConfig(answers: Answers): string {
   return `${imports.join("\n")}
 
 export default defineKyroConfig({
-  // name: '${answers.projectName}',
-  // prefix: '/api',
 ${adapterLines.join("\n")}
 ${collectionsConfig}
 ${globalsConfig}
