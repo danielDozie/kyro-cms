@@ -45,7 +45,7 @@ export function createDeployCommand() {
 
       if (!nonInteractive && process.stdout.isTTY) {
         console.log(chalk.yellow.bold("📋 Setup Configuration"));
-        console.log(chalk.dim("Answer the prompts below to configure your deployment.\\n"));
+        console.log(chalk.dim("Answer the prompts below to configure your deployment.\n"));
 
         const questions: prompts.PromptObject[] = [];
 
@@ -53,7 +53,7 @@ export function createDeployCommand() {
           questions.push({
             type: "select",
             name: "database",
-            message: chalk.cyan("┌─ ") + chalk.bold("Select Database Infrastructure") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › "),
+            message: chalk.cyan("┌─ ") + chalk.bold("Select Database Infrastructure") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › "),
             choices: [
               { title: "Native Cloudflare D1 (serverless SQLite, auto-provisioned)", value: "d1" },
               { title: "PostgreSQL (via Cloudflare Hyperdrive)", value: "postgres" }
@@ -66,7 +66,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "databaseUrl",
-            message: chalk.cyan("\\n┌─ ") + chalk.bold("PostgreSQL Connection URL") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › "),
+            message: chalk.cyan("\n┌─ ") + chalk.bold("PostgreSQL Connection URL") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › "),
           });
         }
 
@@ -74,7 +74,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "name",
-            message: chalk.cyan("\\n┌─ ") + chalk.bold("Cloudflare Project Name") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-app-${randomSuffix})`),
+            message: chalk.cyan("\n┌─ ") + chalk.bold("Cloudflare Project Name") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-app-${randomSuffix})`),
             initial: `kyro-app-${randomSuffix}`
           });
         }
@@ -83,7 +83,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "r2Bucket",
-            message: chalk.cyan("\\n┌─ ") + chalk.bold("Cloudflare R2 Bucket Name") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-media-${randomSuffix})`),
+            message: chalk.cyan("\n┌─ ") + chalk.bold("Cloudflare R2 Bucket Name") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-media-${randomSuffix})`),
             initial: `kyro-media-${randomSuffix}`
           });
         }
@@ -92,7 +92,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "email",
-            message: chalk.cyan("\\n┌─ ") + chalk.bold("Initial Super Admin Email") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim("(default: admin@kyro-cms.com)"),
+            message: chalk.cyan("\n┌─ ") + chalk.bold("Initial Super Admin Email") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim("(default: admin@kyro-cms.com)"),
             initial: "admin@kyro-cms.com"
           });
         }
@@ -101,7 +101,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "password",
-            message: chalk.cyan("\\n┌─ ") + chalk.bold("Initial Super Admin Password") + "\\n" + chalk.cyan("└──────────────────────────────────────────") + "\\n" + chalk.magenta("  › ") + chalk.dim("(default: auto-generate secure password)"),
+            message: chalk.cyan("\n┌─ ") + chalk.bold("Initial Super Admin Password") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim("(default: auto-generate secure password)"),
           });
         }
 
@@ -192,7 +192,7 @@ export function createDeployCommand() {
 
       console.log("\n⚙️ Generating wrangler.toml...");
       
-      let toml = `name = "${name}"\ncompatibility_date = "2026-01-01"\ncompatibility_flags = ["nodejs_compat"]\n`;
+      let toml = `name = "${name}"\ncompatibility_date = "2026-01-01"\ncompatibility_flags = ["nodejs_compat"]\n\n[assets]\ndirectory = "dist/client"\nbinding = "ASSETS"\n`;
       
       if (database === "postgres") {
         toml += `\n[[hyperdrive]]\nbinding = "HYPERDRIVE"\nid = "${hyperId}"\n`;
