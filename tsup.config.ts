@@ -84,5 +84,6 @@ export default defineConfig({
     "kyro:config",
     "virtual:kyro-plugins",
     "astro:transitions/client",
+    "cloudflare:workers"
   ],
 });

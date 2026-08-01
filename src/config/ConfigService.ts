@@ -381,8 +381,13 @@ export class ConfigService {
    * Get storage configuration
    */
   getStorageConfig(): StorageConfig {
+    let defaultType = "local";
+    if (typeof (globalThis as any).STORAGE_BUCKET !== "undefined") {
+      defaultType = "cloudflare_r2";
+    }
+
     return {
-      type: this.get("storage.type", "STORAGE_TYPE", "local")!,
+      type: this.get("storage.type", "STORAGE_TYPE", defaultType)!,
       s3: {
         bucket: this.get("storage.s3.bucket", "STORAGE_BUCKET"),
         region: this.get("storage.s3.region", "STORAGE_REGION", "us-east-1"),

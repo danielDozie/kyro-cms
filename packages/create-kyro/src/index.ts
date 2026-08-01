@@ -6,7 +6,7 @@ import { generateKyroConfig } from './generators/config.js';
 import { generateAstroConfig } from './generators/astro.js';
 import { generateProjectFiles } from './generators/files.js';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { randomBytes } from 'crypto';
@@ -23,13 +23,13 @@ function generatePassword(length = 24): string {
   return password;
 }
 
-const VERSION = '0.4.0';
+const VERSION = '0.12.42';
 
 async function main() {
   logger.intro('create-kyro', VERSION);
 
   const answers = await promptUser();
-  const projectDir = join(process.cwd(), answers.projectName);
+  const projectDir = answers.targetDir ? resolve(answers.targetDir) : resolve(process.cwd(), answers.projectName);
 
   if (existsSync(projectDir)) {
     logger.error(`Directory "${answers.projectName}" already exists.`);

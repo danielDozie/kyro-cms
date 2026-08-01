@@ -29,7 +29,7 @@ async function checkTRPCEnabled(): Promise<boolean> {
 }
 
 export const ALL: APIRoute = async (context) => {
-  await warmKyroInstance();
+  await warmKyroInstance(context);
   if (!(await checkTRPCEnabled())) return disabledResponse();
   const app = kyroInstance!.getTRPC();
   return app.fetch(context.request, context.locals);

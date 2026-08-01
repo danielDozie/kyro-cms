@@ -277,7 +277,7 @@ module.exports = debug;
                 '@kyro-cms/admin > use-sync-external-store',
                 '@kyro-cms/admin > use-sync-external-store/with-selector.js',
               ],
-              exclude: ['debug', 'react/compiler-runtime', '@kyro-cms/admin'],
+              exclude: ['debug', 'react/compiler-runtime', '@kyro-cms/admin', 'void-elements'],
             },
             define: {
               __KYRO_ADMIN_PATH__: JSON.stringify(basePath),

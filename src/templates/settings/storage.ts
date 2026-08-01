@@ -68,10 +68,21 @@ interface ProviderDef {
   configFields: Field[];
 }
 
+const cloudflareR2Fields: Field[] = [
+  {
+    name: "note",
+    type: "text",
+    label: "Storage Status",
+    defaultValue: "Cloudflare R2 Native Binding ('STORAGE_BUCKET') active.",
+    admin: { readOnly: true }
+  }
+];
+
 const builtInProviders: ProviderDef[] = [
   { type: "local", displayName: "Local Server", configFields: localFields },
+  { type: "cloudflare_r2", displayName: "Cloudflare Native Assets (R2 Binding)", configFields: cloudflareR2Fields },
   { type: "aws", displayName: "S3 Compatible (AWS, Backblaze, Wasabi, etc.)", configFields: awsFields },
-  { type: "r2", displayName: "Cloudflare R2", configFields: r2Fields },
+  { type: "r2", displayName: "Cloudflare R2 (S3 API)", configFields: r2Fields },
   { type: "cloudinary", displayName: "Cloudinary", configFields: cloudinaryFields },
   { type: "ftp", displayName: "FTP", configFields: ftpFields },
 ];

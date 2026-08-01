@@ -1296,6 +1296,22 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
     }
   });
 
+  // Serve raw files for Cloudflare R2 native adapter
+  app.get("/api/media/file/:key{.+$}", async (c) => {
+    const key = c.req.param("key");
+    const bucket = (globalThis as any).STORAGE_BUCKET;
+    if (bucket) {
+      const object = await bucket.get(key);
+      if (!object) return c.notFound();
+      
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      headers.set("etag", object.httpEtag);
+      return new Response(object.body as any, { headers });
+    }
+    return c.notFound();
+  });
+
   app.get("/api/media/resize", async (c) => {
     try {
       const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
@@ -1441,8 +1457,9 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
     try {
       const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
       if (!ctxUser) return c.json({ error: "Authentication required" }, 401);
-      let configured = false;
-      let provider = "local";
+      const hasR2Binding = typeof (globalThis as any).STORAGE_BUCKET !== "undefined" || typeof (c.env as any)?.STORAGE_BUCKET !== "undefined";
+      let configured = hasR2Binding;
+      let provider = hasR2Binding ? "cloudflare_r2" : "local";
 
       if (db) {
         try {
@@ -3822,6 +3839,17 @@ for (const globalConfig of registry.getGlobals()) {
 
       if (doc && depth > 0) {
         await populateRelationships([doc], globalConfig.fields, db as BaseAdapter, registry, 1, depth);
+      }
+
+      if (slug === "storage-settings") {
+        const hasR2Binding = typeof (globalThis as any).STORAGE_BUCKET !== "undefined" || typeof (c.env as any)?.STORAGE_BUCKET !== "undefined";
+        if (hasR2Binding) {
+          if (!doc) {
+            doc = { id: slug, provider: "cloudflare_r2" };
+          } else if (!doc.provider) {
+            doc.provider = "cloudflare_r2";
+          }
+        }
       }
 
       if (slug === "system") {

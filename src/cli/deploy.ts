@@ -1,10 +1,11 @@
 import { Command } from "commander";
-import { execSync, exec } from "child_process";
+import { execSync } from "child_process";
 import prompts from "prompts";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import chalk from "chalk";
+import ora from "ora";
 
 function generateRandomHex(bytes = 3) {
   return crypto.randomBytes(bytes).toString("hex");
@@ -27,15 +28,17 @@ export function createDeployCommand() {
     .option("-e, --email <email>", "Initial Super Admin email")
     .option("-p, --password <password>", "Initial Super Admin password")
     .option("-y, --non-interactive", "Skip all prompts and use defaults")
+    .option("-q, --quiet", "Run without prompts or spinners")
+    .option("-j, --json", "Emit a final JSON line with deploy results (for programmatic consumers)")
     .action(async (options) => {
-      console.log(chalk.cyan("=============================================================================="));
-      console.log(chalk.bold("🚀 Kyro CMS Cloudflare Deployment (Workers)"));
-      console.log(chalk.cyan("==============================================================================\n"));
+      console.log(`\n  ${chalk.cyan.bold("✦ Kyro CMS")} ${chalk.dim("— Cloudflare Deployment")}\n`);
 
       const randomSuffix = generateRandomHex();
       const randomPass = generateRandomPassword();
 
-      let { database, databaseUrl, name, r2Bucket, email, password, nonInteractive } = options;
+      let { database, databaseUrl, name, r2Bucket, email, password, nonInteractive, quiet, json: jsonOutput } = options;
+      // Quiet mode suppresses prompts and spinners
+      if (quiet) nonInteractive = true;
       
       let hyperdriveName = `kyro-postgres-hd-${randomSuffix}`;
 
@@ -44,19 +47,16 @@ export function createDeployCommand() {
       }
 
       if (!nonInteractive && process.stdout.isTTY) {
-        console.log(chalk.yellow.bold("📋 Setup Configuration"));
-        console.log(chalk.dim("Answer the prompts below to configure your deployment.\n"));
-
         const questions: prompts.PromptObject[] = [];
 
         if (!database) {
           questions.push({
             type: "select",
             name: "database",
-            message: chalk.cyan("┌─ ") + chalk.bold("Select Database Infrastructure") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › "),
+            message: "Select database infrastructure:",
             choices: [
-              { title: "Native Cloudflare D1 (serverless SQLite, auto-provisioned)", value: "d1" },
-              { title: "PostgreSQL (via Cloudflare Hyperdrive)", value: "postgres" }
+              { title: "Cloudflare D1 (Native Serverless SQLite, auto-provisioned)", value: "d1" },
+              { title: "PostgreSQL (External DB via Cloudflare Hyperdrive)", value: "postgres" }
             ],
             initial: 0
           });
@@ -66,7 +66,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "databaseUrl",
-            message: chalk.cyan("\n┌─ ") + chalk.bold("PostgreSQL Connection URL") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › "),
+            message: "PostgreSQL Connection URL:",
           });
         }
 
@@ -74,7 +74,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "name",
-            message: chalk.cyan("\n┌─ ") + chalk.bold("Cloudflare Project Name") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-app-${randomSuffix})`),
+            message: "Cloudflare Project Name:",
             initial: `kyro-app-${randomSuffix}`
           });
         }
@@ -83,7 +83,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "r2Bucket",
-            message: chalk.cyan("\n┌─ ") + chalk.bold("Cloudflare R2 Bucket Name") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim(`(default: kyro-media-${randomSuffix})`),
+            message: "Cloudflare R2 Bucket Name:",
             initial: `kyro-media-${randomSuffix}`
           });
         }
@@ -92,7 +92,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "email",
-            message: chalk.cyan("\n┌─ ") + chalk.bold("Initial Super Admin Email") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim("(default: admin@kyro-cms.com)"),
+            message: "Initial Super Admin Email:",
             initial: "admin@kyro-cms.com"
           });
         }
@@ -101,7 +101,7 @@ export function createDeployCommand() {
           questions.push({
             type: "text",
             name: "password",
-            message: chalk.cyan("\n┌─ ") + chalk.bold("Initial Super Admin Password") + "\n" + chalk.cyan("└──────────────────────────────────────────") + "\n" + chalk.magenta("  › ") + chalk.dim("(default: auto-generate secure password)"),
+            message: "Initial Super Admin Password (leave blank to auto-generate):",
           });
         }
 
@@ -122,77 +122,91 @@ export function createDeployCommand() {
       password = password || randomPass;
       database = database || "d1";
 
-      console.log(chalk.cyan("\n⚙️ Configuration Summary:"));
-      console.log(`  • Target Hosting: ${chalk.bold("Cloudflare Workers with Assets")}`);
-      console.log(`  • Database Mode : ${chalk.bold(database)}`);
-      console.log(`  • Project Name  : ${chalk.bold(name)}`);
-      console.log(`  • R2 Bucket Name: ${chalk.bold(r2Bucket)}`);
-      console.log(`  • Admin Email   : ${chalk.bold(email)}`);
+      console.log(chalk.bgGray.black.bold('\n Deployment Plan '));
+      console.log(`  ${chalk.dim("├─")} Hosting   : ${chalk.cyan("Cloudflare Workers with Assets")}`);
+      console.log(`  ${chalk.dim("├─")} Database  : ${chalk.cyan(database === "d1" ? "Cloudflare D1 (Native)" : "PostgreSQL (Hyperdrive)")}`);
+      console.log(`  ${chalk.dim("├─")} Project   : ${chalk.cyan(name)}`);
+      console.log(`  ${chalk.dim("├─")} R2 Bucket : ${chalk.cyan(r2Bucket)}`);
+      console.log(`  ${chalk.dim("└─")} Admin     : ${chalk.cyan(email)}\n`);
 
       // 4. Package Manager & Wrangler
       const isPnpm = fs.existsSync(path.join(process.cwd(), "pnpm-lock.yaml"));
       const packager = isPnpm ? "pnpm" : "npm";
-      const wrangler = `${packager} dlx wrangler`;
+      const wrangler = `npx wrangler`;
 
-      console.log("\n🔍 Checking Cloudflare Wrangler authentication...");
       try {
         execSync(`${wrangler} whoami`, { stdio: "ignore" });
-        console.log(chalk.green("✅ Cloudflare Wrangler Authenticated."));
+        console.log(`  ${chalk.green("✔")} Cloudflare Wrangler authenticated`);
       } catch (err) {
-        console.log(chalk.red("❌ Cloudflare Wrangler authentication required."));
-        console.log(`   Run ${chalk.bold(`${wrangler} login`)} or set the ${chalk.bold("CLOUDFLARE_API_TOKEN")} env var.`);
+        console.log(`  ${chalk.red("✖")} Cloudflare Wrangler authentication required.`);
+        console.log(`    Run ${chalk.bold(`${wrangler} login`)} or set the ${chalk.bold("CLOUDFLARE_API_TOKEN")} env var.`);
         process.exit(1);
       }
 
       let d1Id = "";
       let hyperId = "";
+      const spinnerOptions = quiet ? { isSilent: true } : {};
 
       if (database === "postgres") {
         if (!databaseUrl) {
-          console.log(chalk.red("❌ postgres mode requires a database URL."));
+          console.log(`  ${chalk.red("✖")} PostgreSQL mode requires a database URL.`);
           process.exit(1);
         }
-        console.log(`\n⚡ Provisioning Cloudflare Hyperdrive (${hyperdriveName})...`);
+        const hyperSpinner = ora({text: 'Checking existing Hyperdrive resources...', ...spinnerOptions}).start();
         try {
           const listOut = execSync(`${wrangler} hyperdrive list --json`, { stdio: "pipe" }).toString();
           const list = JSON.parse(listOut.slice(listOut.indexOf("[")));
           const hit = list.find((h: any) => h.name === hyperdriveName);
           if (hit) hyperId = hit.id || hit.uuid;
-        } catch(e) {}
+          hyperSpinner.succeed('Hyperdrive check complete');
+        } catch(e) {
+          hyperSpinner.fail('Failed to list Hyperdrive resources');
+        }
         
         if (!hyperId) {
+          const createSpinner = ora({text: 'Creating Hyperdrive...', ...spinnerOptions}).start();
           try {
             const createOut = execSync(`${wrangler} hyperdrive create "${hyperdriveName}" --connection-string="${databaseUrl}" --json`, { stdio: "pipe" }).toString();
             const data = JSON.parse(createOut.slice(createOut.indexOf("{")));
             hyperId = data.id || data.uuid;
-          } catch(e) {}
+            createSpinner.succeed('Hyperdrive created');
+          } catch(e) {
+            createSpinner.fail('Failed to create Hyperdrive');
+          }
         }
-        console.log(chalk.green(`✅ Hyperdrive Provisioned (ID: ${hyperId || "auto"})`));
+        console.log(`  ${chalk.green("✔")} Hyperdrive resource ready (${hyperdriveName})`);
       } else {
         const d1Name = `${name}-d1`;
-        console.log(`\n🗂️ Selecting or creating D1 database (${d1Name})...`);
+        const d1Spinner = ora({text: 'Creating D1 database...', ...spinnerOptions}).start();
         try {
           const out = execSync(`${wrangler} d1 create "${d1Name}"`, { stdio: "pipe" }).toString();
           const match = out.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i);
           if (match) d1Id = match[1];
+          d1Spinner.succeed('D1 database created');
         } catch (e) {
           try {
             const listOut = execSync(`${wrangler} d1 list --json`, { stdio: "pipe" }).toString();
             const list = JSON.parse(listOut);
             const hit = list.find((x: any) => x.name === d1Name);
             if (hit) d1Id = hit.id || hit.uuid;
-          } catch(err) {}
+            d1Spinner.succeed('Existing D1 database found');
+          } catch(err) {
+            d1Spinner.fail('Failed to create/find D1 database');
+          }
         }
-        console.log(chalk.green(`✅ Using D1 database: ${d1Name} (ID: ${d1Id})`));
+
+        if (!d1Id) {
+          console.log(`  ${chalk.red("✖")} Failed to create/find D1 database '${d1Name}'. (D1 database limit may be reached).`);
+          process.exit(1);
+        }
       }
 
-      console.log(`\n🗄️ Provisioning R2 Bucket '${r2Bucket}'...`);
-      try { execSync(`${wrangler} r2 bucket create "${r2Bucket}"`, { stdio: "ignore" }); } catch(e) { console.log(`ℹ️ Bucket '${r2Bucket}' already exists.`); }
+      const r2Spinner = ora({text: 'Creating R2 bucket...', ...spinnerOptions}).start();
+      try { execSync(`${wrangler} r2 bucket create "${r2Bucket}"`, { stdio: "ignore" }); r2Spinner.succeed('R2 bucket created'); } catch(e) { r2Spinner.fail('Failed to create R2 bucket'); }
       try { execSync(`echo "y" | ${wrangler} r2 bucket dev-url enable "${r2Bucket}"`, { stdio: "ignore" }); } catch(e) {}
-
-      console.log("\n⚙️ Generating wrangler.toml...");
       
-      let toml = `name = "${name}"\ncompatibility_date = "2026-01-01"\ncompatibility_flags = ["nodejs_compat"]\n\n[assets]\ndirectory = "dist/client"\nbinding = "ASSETS"\n`;
+      const tomlSpinner = ora({text: 'Generating wrangler.toml...', ...spinnerOptions}).start();
+      let toml = `name = "${name}"\ncompatibility_date = "2026-07-31"\ncompatibility_flags = ["nodejs_compat"]\n\n[assets]\ndirectory = "dist/client"\nbinding = "ASSETS"\n`;
       
       if (database === "postgres") {
         toml += `\n[[hyperdrive]]\nbinding = "HYPERDRIVE"\nid = "${hyperId}"\n`;
@@ -202,11 +216,9 @@ export function createDeployCommand() {
       toml += `\n[[r2_buckets]]\nbinding = "STORAGE_BUCKET"\nbucket_name = "${r2Bucket}"\n`;
       
       fs.writeFileSync(path.join(process.cwd(), "wrangler.toml"), toml, "utf8");
+      tomlSpinner.succeed('wrangler.toml generated');
 
-      console.log("\n🗃️ Running schema migrations & seeding super admin...");
-      
       const hashScript = `import bcrypt from 'bcryptjs'; console.log(bcrypt.hashSync('${password}', 10));`;
-      
       let adminHash = "";
       try {
         adminHash = execSync(`node -e "${hashScript}"`, { stdio: "pipe" }).toString().trim();
@@ -227,15 +239,14 @@ export function createDeployCommand() {
               if (existing.length === 0) {
                 const hash = bcrypt.hashSync('${password}', 10);
                 await sql\`INSERT INTO users (email, password_hash, role, email_verified) VALUES ('${email}', \\\${hash}, 'super_admin', true)\`;
-                console.log('  ✅ PostgreSQL Super Admin Configured');
               }
             } catch (e) {
-              console.warn('  ⚠️ Bootstrap note:', e.message);
             } finally { await sql.end(); }
           }
           bootstrap();
         `;
-        try { execSync(`node -e "${pgScript.replace(/\n/g, " ")}"`, { stdio: "inherit" }); } catch(e) {}
+        try { execSync(`node -e "${pgScript.replace(/\n/g, " ")}"`, { stdio: "pipe" }); } catch(e) {}
+        console.log(`  ${chalk.green("✔")} PostgreSQL schema migrated & Super Admin seeded`);
       } else {
         const schema = `
           CREATE TABLE IF NOT EXISTS users (
@@ -247,57 +258,66 @@ export function createDeployCommand() {
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
           );
-          CREATE TABLE IF NOT EXISTS sessions (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            token TEXT UNIQUE NOT NULL,
-            expires_at TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS audit_logs (
-            id TEXT PRIMARY KEY,
-            user_id TEXT,
-            action TEXT NOT NULL,
-            resource TEXT,
-            details TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-          );
           INSERT OR IGNORE INTO users (id, email, password_hash, role, email_verified)
           VALUES ('admin-super-1', '${email}', '${adminHash}', 'super_admin', 1);
         `;
         try {
           execSync(`${wrangler} d1 execute "${name}-d1" --remote --command="${schema.replace(/\n/g, " ")}"`, { stdio: "ignore" });
-          console.log(chalk.green("  ✅ D1 Schema Migrated & Super Admin Configured."));
+          console.log(`  ${chalk.green("✔")} D1 schema migrated & Super Admin seeded`);
         } catch(e) {}
       }
 
-      console.log("\n🛠️ Building for Cloudflare...");
+      const buildSpinner = ora({text: 'Building Astro project...', ...spinnerOptions}).start();
       try {
         execSync(`${packager} run build`, { stdio: "inherit" });
+        const tomlPath = path.join(process.cwd(), "wrangler.toml");
+        const tomlContent = fs.readFileSync(tomlPath, "utf8");
+        if (!tomlContent.includes('main = "dist/server/entry.mjs"')) {
+          fs.writeFileSync(tomlPath, 'main = "dist/server/entry.mjs"\n' + tomlContent, "utf8");
+        }
+        buildSpinner.succeed('Build complete');
       } catch (err) {
-        console.log(chalk.red("\n❌ Build Failed. Check the output above."));
+        buildSpinner.fail('Build failed');
+        console.log(`\n  ${chalk.red("✖")} Build failed. Inspect output above.`);
         process.exit(1);
       }
 
-      console.log("\n☁️ Deploying to Cloudflare Workers...");
+      const deploySpinner = ora({text: 'Deploying to Cloudflare Workers...', ...spinnerOptions}).start();
       if (fs.existsSync(path.join(process.cwd(), ".wrangler"))) {
         fs.rmSync(path.join(process.cwd(), ".wrangler"), { recursive: true, force: true });
       }
 
+      let liveUrl = '';
       try {
-        execSync(`${wrangler} deploy`, { stdio: "inherit" });
-        console.log(chalk.cyan("\n=============================================================================="));
-        console.log(chalk.green.bold("🎉 Kyro CMS Deployment Successful!"));
-        console.log(chalk.cyan("=============================================================================="));
-        console.log(`\n  Super Admin Credentials:`);
-        console.log(`  • Email   : ${chalk.bold(email)}`);
-        console.log(`  • Password: ${chalk.bold(password)}`);
-        console.log(`\n  Save these credentials! This is the only time the password is displayed.\n`);
+        const deployOut = execSync(`${wrangler} deploy`, { stdio: 'pipe' }).toString();
+        // Print wrangler output to inherit-style passthrough
+        process.stdout.write(deployOut);
+        // Extract the live URL from wrangler output (e.g. "Published ... (https://...workers.dev)")
+        const urlMatch = deployOut.match(/https:\/\/[a-zA-Z0-9._-]+\.workers\.dev/);
+        if (urlMatch) liveUrl = urlMatch[0];
+        deploySpinner.succeed('Deployment successful');
+        console.log(`\n  ${chalk.green.bold("🎉 Deployment Successful!")}\n`);
+        console.log(`  ${chalk.bold("Super Admin Credentials")}`);
+        console.log(`  ${chalk.dim("├─")} ${chalk.bold("Email   :")} ${chalk.cyan(email)}`);
+        console.log(`  ${chalk.dim("└─")} ${chalk.bold("Password:")} ${chalk.yellow.bold(password)}`);
+        if (liveUrl) {
+          console.log(`  ${chalk.dim("└─")} ${chalk.bold("Live URL:")} ${chalk.cyan(liveUrl)}`);
+        }
+        console.log(`\n  ${chalk.dim("⚠️  Save these credentials. Password won't be shown again.")}\n`);
+
+        // Emit machine-readable JSON for programmatic consumers (e.g. deploy-kyro server)
+        if (jsonOutput) {
+          process.stdout.write(
+            JSON.stringify({ ok: true, liveUrl, adminEmail: email, adminPassword: password }) + '\n'
+          );
+        }
       } catch (err) {
-        console.log(chalk.cyan("\n=============================================================================="));
-        console.log(chalk.red.bold("❌ Kyro CMS Cloudflare Deployment Failed!"));
-        console.log(chalk.cyan("=============================================================================="));
-        console.log("Inspect the Wrangler output above for error details.");
+        deploySpinner.fail('Deployment failed');
+        console.log(`\n  ${chalk.red.bold("✖ Deployment Failed!")}`);
+        console.log(`  ${chalk.dim("Inspect Wrangler output above for error details.")}\n`);
+        if (jsonOutput) {
+          process.stdout.write(JSON.stringify({ ok: false, error: 'Deployment failed' }) + '\n');
+        }
         process.exit(1);
       }
     });

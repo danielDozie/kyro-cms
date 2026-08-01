@@ -3,12 +3,12 @@ import path from "path";
 import fs from "fs";
 
 const resolveEntrypoint = (fileStem: string) => {
-  const dir = new URL(".", import.meta.url).pathname;
+  // Use a fallback for Cloudflare Workers where import.meta.url is polyfilled improperly by ESBuild
+  const dir = typeof process !== 'undefined' && process.cwd ? path.join(process.cwd(), 'node_modules', '@kyro-cms', 'core', 'dist') : '';
   const tsPath = path.resolve(dir, `${fileStem}.ts`);
   const jsPath = path.resolve(dir, `${fileStem}.js`);
   return fs.existsSync(tsPath) ? tsPath : jsPath;
 };
-
 const API_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler");
 const GRAPHQL_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler-graphql");
 const TRPC_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler-trpc");

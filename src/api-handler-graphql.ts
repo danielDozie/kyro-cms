@@ -33,7 +33,7 @@ async function checkGraphQLEnabled(): Promise<boolean> {
 }
 
 export const POST: APIRoute = async (context) => {
-  await warmKyroInstance();
+  await warmKyroInstance(context);
   if (!(await checkGraphQLEnabled())) return disabledResponse();
   const app = kyroInstance!.getGraphQL();
   const res = await app.fetch(context.request, context.locals);
@@ -41,7 +41,7 @@ export const POST: APIRoute = async (context) => {
 };
 
 export const GET: APIRoute = async (context) => {
-  await warmKyroInstance();
+  await warmKyroInstance(context);
   if (!(await checkGraphQLEnabled())) return disabledResponse();
   const app = kyroInstance!.getGraphQL();
   const res = await app.fetch(context.request, context.locals);

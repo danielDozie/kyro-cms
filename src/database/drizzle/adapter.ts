@@ -12,12 +12,14 @@ import {
   text,
   jsonb,
   decimal,
+  PgDialect,
 } from 'drizzle-orm/pg-core';
 import {
   sqliteTable,
   integer as sqliteInteger,
   text as sqliteText,
   numeric as sqliteNumeric,
+  SQLiteSyncDialect,
 } from 'drizzle-orm/sqlite-core';
 import type {
   CollectionConfig,
@@ -191,10 +193,12 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
   private connectionString?: string;
   private versionsTableReady = false;
   
+  public rawClient: any;
+
   constructor(options: {
     type?: 'postgres' | 'sqlite';
+    schema?: Record<string, any>;
     client?: any;
-    schema?: any;
     connectionString?: string;
   }) {
     super();
@@ -211,6 +215,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         this.dialect = options.type || 'postgres';
       }
     } else {
+      this.rawClient = options.client;
       this.client = options.client;
       this.dialect = options.type || 'sqlite';
     }
@@ -313,6 +318,12 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         this.client = drizzle(db, { schema: this.schema });
       }
     }
+
+    if (this.rawClient && typeof this.rawClient.prepare === 'function' && typeof this.client?.select !== 'function') {
+      const { drizzle: drizzleD1 } = await import('drizzle-orm/d1');
+      this.client = drizzleD1(this.rawClient, { schema: this.schema });
+    }
+
     this.connected = true;
 
   }
@@ -320,7 +331,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
   async init(collections: CollectionConfig[], globals: GlobalConfig[] = []): Promise<void> {
     await super.init(collections, globals);
 
-    if (this.connectionString && !this.client) {
+    if ((this.connectionString && !this.client) || (this.rawClient && typeof this.client?.select !== 'function')) {
       await this.connect();
     }
 
@@ -472,10 +483,10 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
     if (statements.length > 0) {
       if (this.dialect === 'postgres') {
-        await this.client.execute(sql.raw(statements.join(";\n")));
+        await this.executeRaw(sql.raw(statements.join(";\n")));
       } else {
         for (const stmt of statements) {
-          await this.client.execute(sql.raw(stmt));
+          await this.executeRaw(sql.raw(stmt));
         }
       }
     }
@@ -562,12 +573,12 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     let existingCols: Map<string, { type: string; maxLen: number | null }>;
     try {
       if (this.dialect === 'postgres') {
-        const result = await this.client.execute(
+        const result = await this.executeRaw(
           sql`SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = ${tableName}`
         );
         existingCols = new Map(result.map((r: any) => [r.column_name, { type: r.data_type, maxLen: r.character_maximum_length }]));
       } else {
-        const result = await this.client.execute(
+        const result = await this.executeRaw(
           sql`PRAGMA table_info("${sql.raw(tableName)}")`
         );
         existingCols = new Map(result.map((r: any) => [r.name, { type: r.type, maxLen: null }]));
@@ -1343,16 +1354,53 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     this.versionsTableReady = true;
   }
 
+  public async execute<T = any>(query: any): Promise<T[]> {
+    return this.executeRaw<T>(query);
+  }
+
   private async executeRaw<T = any>(query: any): Promise<T[]> {
-    const result = await this.client.execute(query);
-    if (Array.isArray(result)) {
-      return result as T[];
+    let sqlString = '';
+    let params: any[] = [];
+
+    if (typeof query === 'string') {
+      sqlString = query;
+    } else if (query && (query.queryChunks || query.decoder)) {
+      if (this.dialect === 'postgres') {
+        const compiled = new PgDialect().sqlToQuery(query);
+        sqlString = compiled.sql;
+        params = compiled.params;
+      } else {
+        const compiled = new SQLiteSyncDialect().sqlToQuery(query);
+        sqlString = compiled.sql;
+        params = compiled.params;
+      }
+    } else if (query && typeof query.toSQL === 'function') {
+      const compiled = query.toSQL();
+      sqlString = compiled.sql;
+      params = compiled.params || [];
+    } else {
+      sqlString = String(query);
     }
-    if (Array.isArray(result?.rows)) {
-      return result.rows as T[];
+
+    const targetClient = this.rawClient || this.client;
+    if (targetClient?.prepare && typeof targetClient.prepare === 'function') {
+      const stmt = targetClient.prepare(sqlString);
+      const res = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
+      return (res.results || []) as T[];
     }
-    if (Array.isArray(result?.[0])) {
-      return result[0] as T[];
+
+    if (typeof this.client?.execute === 'function') {
+      const result = await this.client.execute(query);
+      if (Array.isArray(result)) {
+        return result as T[];
+      }
+      if (Array.isArray(result?.rows)) {
+        return result.rows as T[];
+      }
+      if (Array.isArray(result?.[0])) {
+        return result[0] as T[];
+      }
+      return [];
     }
     return [];
   }

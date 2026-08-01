@@ -1,7 +1,12 @@
 import { createRequire } from "node:module";
-const _require = createRequire(import.meta.url);
-const modPath = "node:" + "sqlite";
-const { DatabaseSync } = _require(modPath) as typeof import("node:sqlite");
+let DatabaseSync: typeof import("node:sqlite").DatabaseSync;
+function getDatabaseSync() {
+  if (DatabaseSync) return DatabaseSync;
+  // Fallback for environments like Cloudflare Workers where import.meta.url is undefined
+  const _require = createRequire("file:///");
+  DatabaseSync = _require("node:sqlite").DatabaseSync;
+  return DatabaseSync;
+}
 import { randomBytes } from 'node:crypto';
 import { AbstractBaseAdapter } from "../base.js";
 import type {
@@ -212,7 +217,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
 
   async connect(): Promise<void> {
     if (!this.db) {
-      this.db = new DatabaseSync(this.path || ":memory:");
+      this.db = new (getDatabaseSync())(this.path || ":memory:");
     }
 
     // Wrap prepare to serialize parameter bindings for Node.js node:sqlite DatabaseSync compatibility

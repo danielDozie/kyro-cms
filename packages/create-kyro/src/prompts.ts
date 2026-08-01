@@ -1,4 +1,5 @@
 import prompts from "prompts";
+import { parseArgs } from "node:util";
 import { validateProjectName } from "./validators.js";
 
 export interface Answers {
@@ -6,9 +7,55 @@ export interface Answers {
   database: "sqlite" | "postgres" | "mongodb";
   template: "minimal" | "starter" | "blog" | "ecommerce" | "kitchen-sink";
   adminEmail: string;
+  targetDir?: string;
+}
+
+export function parseCliArgs(): Partial<Answers> & { nonInteractive?: boolean; targetDir?: string } {
+  try {
+    const { values, positionals } = parseArgs({
+      args: process.argv.slice(2),
+      options: {
+        template: { type: "string" },
+        database: { type: "string" },
+        "admin-email": { type: "string" },
+        yes: { type: "boolean", short: "y" },
+        "non-interactive": { type: "boolean" },
+      },
+      allowPositionals: true,
+      strict: false,
+    });
+
+    const targetDir = positionals[0];
+    const rawName = targetDir ? targetDir.split(/[/\\]/).filter(Boolean).pop() : undefined;
+    const projectName = rawName || "my-kyro-app";
+
+    return {
+      projectName,
+      targetDir,
+      ...(values.template ? { template: values.template as Answers["template"] } : {}),
+      ...(values.database ? { database: values.database as Answers["database"] } : {}),
+      ...(values["admin-email"] ? { adminEmail: values["admin-email"] as string } : {}),
+      nonInteractive: Boolean(values.yes || values["non-interactive"]),
+    };
+  } catch {
+    return {};
+  }
 }
 
 export async function promptUser(): Promise<Answers> {
+  const cliArgs = parseCliArgs();
+
+  // If non-interactive flag passed or required options supplied via CLI
+  if (cliArgs.nonInteractive || (cliArgs.targetDir && cliArgs.template && cliArgs.database)) {
+    const projectName = cliArgs.projectName || "my-kyro-app";
+    return {
+      projectName,
+      targetDir: cliArgs.targetDir,
+      template: cliArgs.template || "minimal",
+      database: cliArgs.database || "sqlite",
+      adminEmail: cliArgs.adminEmail || `admin@${projectName}.local`,
+    };
+  }
   const response = await prompts(
     [
       {

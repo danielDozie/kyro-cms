@@ -4,9 +4,14 @@ import { randomBytes } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { createRequire } from "node:module";
-const _require = createRequire(import.meta.url);
-const modPath = "node:" + "sqlite";
-const { DatabaseSync } = _require(modPath) as typeof import("node:sqlite");
+let DatabaseSync: typeof import("node:sqlite").DatabaseSync;
+function getDatabaseSync() {
+  if (DatabaseSync) return DatabaseSync;
+  // Fallback for environments like Cloudflare Workers where import.meta.url is undefined
+  const _require = createRequire("file:///");
+  DatabaseSync = _require("node:sqlite").DatabaseSync;
+  return DatabaseSync;
+}
 
 export type Dialect = "sqlite" | "postgres";
 
@@ -32,7 +37,7 @@ export async function createDatabase(): Promise<DatabaseResult> {
   if (dialect === "sqlite") {
     const dbPath = resolve(process.cwd(), "data", "kyro.db");
     await mkdir(dirname(dbPath), { recursive: true });
-    const db = new DatabaseSync(dbPath);
+    const db = new (getDatabaseSync())(dbPath);
     db.exec("PRAGMA journal_mode = WAL");
     return { db, dialect, genId };
   }

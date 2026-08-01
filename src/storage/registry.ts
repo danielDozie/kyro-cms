@@ -4,6 +4,7 @@ import type { StorageConfig } from "../config/ConfigService.js";
 import { createLocalStorage } from "./local.js";
 import { createImgixStorage } from "./imgix.js";
 import { createBunnyStorage } from "./bunny.js";
+import { createCloudflareR2Storage } from "./cloudflare-r2.js";
 import path from "path";
 
 export interface StorageProviderRegistration {
@@ -26,6 +27,9 @@ export class StorageProviderRegistry {
     this.registerLocal();
     this.registerImgix();
     this.registerBunny();
+    this.registerCloudflareR2();
+    // Backwards compatibility for legacy S3-compatible Cloudflare storage settings
+    this.registerCloudflareS3();
   }
 
   private registerLocal(): void {
@@ -115,6 +119,35 @@ export class StorageProviderRegistry {
       extractConfig: (sc, key) => (sc as any)[key] || {},
       extractRawConfig: (c) => c?.bunny || c,
       factory: (c) => createBunnyStorage(c),
+    });
+  }
+
+  private registerCloudflareR2(): void {
+    this.register({
+      type: "cloudflare_r2",
+      displayName: "Cloudflare R2 (Native)",
+      configKey: "cloudflareR2",
+      configFields: [], // No UI config fields needed, it's automatic
+      extractConfig: () => ({}),
+      extractRawConfig: () => ({}),
+      factory: () => createCloudflareR2Storage(),
+    });
+  }
+
+  // Deprecated alias for legacy S3-compatible config (maps to native R2)
+  private registerCloudflareS3(): void {
+    this.register({
+      type: "cloudflare_s3",
+      displayName: "Cloudflare R2 (S3 Compat)",
+      configKey: "cloudflareR2",
+      configFields: [], // No UI config fields needed, using same R2 binding
+      // Emit a console warning when used to inform about deprecation
+      extractConfig: () => {
+        console.warn('[StorageRegistry] "cloudflare_s3" is deprecated; use "cloudflare_r2" instead.');
+        return {};
+      },
+      extractRawConfig: () => ({}),
+      factory: () => createCloudflareR2Storage(),
     });
   }
 

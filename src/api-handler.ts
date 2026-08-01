@@ -30,40 +30,50 @@ async function doInit(): Promise<void> {
 
   try {
     const config = projectConfig.default || projectConfig;
-    kyroInstance = createKyro(config);
-    await kyroInstance.init();
-    await kyroInstance.loadSettings();
-
-    const db = kyroInstance.db;
-    let bootstrapAuthAdapter: any = undefined;
     
-    if (db instanceof DrizzleAdapter) {
-      if (db.dialect === "postgres") {
-        bootstrapAuthAdapter = new PostgresAuthAdapter({ db: db.client });
-      } else if (db.dialect === "sqlite") {
-        bootstrapAuthAdapter = new D1AuthAdapter({ db: db.client });
+    // Check adapter types robustly against minification
+    const dbAdapter = config.adapter;
+    const isLocalAdapter = dbAdapter && !dbAdapter.dialect && typeof dbAdapter.connect === 'function';
+    
+    // Hot-swap LocalAdapter to D1 on Cloudflare BEFORE initialization
+    if (isLocalAdapter && (globalThis as any).DB) {
+      const d1Client = (globalThis as any).DB;
+      
+      // Override adapter to DrizzleAdapter with D1
+      config.adapter = new DrizzleAdapter({ type: 'sqlite', client: d1Client });
+      
+      console.log("[Kyro API] Hot-swapped LocalAdapter for D1 DrizzleAdapter");
+    }
+    
+    kyroInstance = createKyro(config);
+    
+    // Check if we need to hot-swap the auth adapter as well
+    const activeDb = config.adapter;
+    const isDrizzleAdapter = activeDb && activeDb.dialect && (activeDb.dialect === "postgres" || activeDb.dialect === "sqlite");
+    const isMongoAdapter = activeDb && activeDb.dialect === "mongodb";
+    
+    let bootstrapAuthAdapter;
+    
+    if (isDrizzleAdapter) {
+      if ((activeDb as any).dialect === "postgres") {
+        bootstrapAuthAdapter = new PostgresAuthAdapter({ db: (activeDb as any).client });
+      } else if ((activeDb as any).dialect === "sqlite") {
+        bootstrapAuthAdapter = new D1AuthAdapter({ db: (activeDb as any).rawClient || (activeDb as any).client });
       }
-    } else if (db instanceof LocalAdapter) {
+    } else if (isLocalAdapter && !(globalThis as any).DB) {
       const authDbPath = process.env.KYRO_AUTH_DB_PATH || "./data/auth.db";
       bootstrapAuthAdapter = new SQLiteAuthAdapter({ path: authDbPath });
-    } else if (db instanceof MongoDBAdapter) {
-      bootstrapAuthAdapter = new MongoDBAuthAdapter({ db: db.db });
+    } else if (isMongoAdapter) {
+      bootstrapAuthAdapter = new MongoDBAuthAdapter({ db: (activeDb as any).client });
     }
 
     if (bootstrapAuthAdapter?.connect) {
-      await bootstrapAuthAdapter.connect();
+      try { await bootstrapAuthAdapter.connect(); } catch (e) { console.warn("[Kyro API] Auth connect warning:", e); }
     }
 
-    const result = await autoBootstrap(bootstrapAuthAdapter);
-    if (result?.success) {
-    }
-
-    // Auto-start WebSocket (checks settings.access.apiAccess.wsEnabled internally)
-    if (typeof kyroInstance.startWebSocket === "function") {
-      kyroInstance.startWebSocket().catch((err: any) => {
-        console.error("[Kyro] WebSocket auto-start failed:", err);
-      });
-    }
+    await kyroInstance.init();
+    try { await kyroInstance.loadSettings(); } catch (e) { console.warn("[Kyro API] loadSettings warning:", e); }
+    try { await autoBootstrap(bootstrapAuthAdapter); } catch (e) { console.warn("[Kyro API] autoBootstrap warning:", e); }
 
     // Expose instance globally so admin SSR can read DB directly
     (globalThis as any).__KYRO_INSTANCE__ = kyroInstance;
@@ -76,7 +86,31 @@ async function doInit(): Promise<void> {
   }
 }
 
-export async function warmKyroInstance(): Promise<void> {
+export async function warmKyroInstance(context?: any) {
+  let runtimeEnv: any = (globalThis as any).DB ? globalThis : null;
+  
+  if (context) {
+    try {
+      runtimeEnv = (context.locals as any)?.runtime?.env || (context.locals as any)?.cfContext?.env || (context as any)?.env || runtimeEnv;
+    } catch (err: any) {
+      // Ignore Astro v6 error: Astro.locals.runtime.env has been removed
+    }
+  }
+
+  if (!runtimeEnv) {
+    try {
+      runtimeEnv = process.env;
+    } catch {}
+  }
+
+  if (runtimeEnv?.DB) {
+    (globalThis as any).DB = runtimeEnv.DB;
+  }
+  
+  if (runtimeEnv?.STORAGE_BUCKET) {
+    (globalThis as any).STORAGE_BUCKET = runtimeEnv.STORAGE_BUCKET;
+  }
+
   if (!initPromise) {
     initPromise = doInit();
   }
@@ -90,9 +124,10 @@ const ACCESS_DEFAULTS: Record<string, boolean> = {
   requireAuth: false,
 };
 
-async function checkAccessEnabled(key: string): Promise<boolean> {
+async function checkAccessEnabled(key: keyof typeof ACCESS_DEFAULTS): Promise<boolean> {
+  if (!kyroInstance) return ACCESS_DEFAULTS[key] ?? true;
   try {
-    const doc = await kyroInstance!.db.findOne({
+    const doc = await kyroInstance.db.findOne({
       collection: "_globals_access-settings",
       where: {},
       draft: true,
@@ -104,33 +139,16 @@ async function checkAccessEnabled(key: string): Promise<boolean> {
 }
 
 export const ALL: APIRoute = async (context) => {
-  let runtimeEnv: any = null;
-  try {
-    runtimeEnv = (context.locals as any)?.cfContext?.env || (process.env as any);
-  } catch {
-    runtimeEnv = process.env;
-  }
-
-  if (runtimeEnv?.DB) {
-    (globalThis as any).DB = runtimeEnv.DB;
-  }
-  if (runtimeEnv?.STORAGE_BUCKET) {
-    (globalThis as any).STORAGE_BUCKET = runtimeEnv.STORAGE_BUCKET;
-  }
-
   if (!kyroInstance) {
-    if (!initPromise) {
-      initPromise = doInit();
-    }
-
     try {
       await Promise.race([
-        initPromise,
+        warmKyroInstance(context),
         new Promise<void>((_, reject) =>
           setTimeout(() => reject(new Error("Initialization timeout")), 30000)
         ),
       ]);
-    } catch {
+    } catch (err: any) {
+      console.error("[Kyro API] Warm error:", err?.stack || err?.message || err);
       return new Response(JSON.stringify({
         error: "Service Unavailable",
         message: "Kyro CMS is still starting up. Please try again in a moment.",

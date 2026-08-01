@@ -1,7 +1,12 @@
 import { createRequire } from "module";
-const _require = createRequire(import.meta.url);
-const modPath = "node:" + "sqlite";
-const { DatabaseSync } = _require(modPath) as typeof import("node:sqlite");
+let DatabaseSync: typeof import("node:sqlite").DatabaseSync;
+function getDatabaseSync() {
+  if (DatabaseSync) return DatabaseSync;
+  // Fallback for environments like Cloudflare Workers where import.meta.url is undefined
+  const _require = createRequire("file:///");
+  DatabaseSync = _require("node:sqlite").DatabaseSync;
+  return DatabaseSync;
+}
 import { randomBytes } from "crypto";
 import { RateLimitConfig, RateLimitResult } from "./rate-limit.js";
 
@@ -37,7 +42,7 @@ export class SQLiteRateLimiter {
     if (this.db) return;
 
     const path = (this.options as { path?: string }).path || "./data.db";
-    this.db = new DatabaseSync(path);
+    this.db = new (getDatabaseSync())(path);
     this.db.exec("PRAGMA journal_mode = WAL");
     this.db.exec("PRAGMA foreign_keys = ON");
 
