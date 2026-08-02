@@ -120,7 +120,8 @@ export async function createProject(
       // Default: npm with offline-first flags
       onProgress('install', 'Installing npm dependencies (this may take a minute)…');
       await new Promise<void>((resolve, reject) => {
-        const child = spawn('npm', [
+        const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+        const child = spawn(npmCmd, [
           'install',
           '--prefer-offline',       // use local cache before hitting registry
           '--no-audit',             // skip security audit network call
@@ -129,7 +130,7 @@ export async function createProject(
           '--legacy-peer-deps',     // already present — relax peer dep resolution
         ], {
           cwd: projectDir,
-          shell: true,
+          shell: false,
           env: { ...process.env, npm_config_loglevel: 'error' },
         });
         child.stdout?.on('data', (d) => onProgress('install', d.toString().trim()));
