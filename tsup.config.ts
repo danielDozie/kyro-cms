@@ -27,47 +27,11 @@ export default defineConfig({
   minify: true,
   target: "es2022",
   noExternal: [
-    "recharts",
-    "react-i18next",
-    "i18next",
-    "i18next-browser-languagedetector",
-    "eventemitter3"
+    /^(?!(kyro:config|virtual:kyro-plugins|astro:transitions\/client|cloudflare:workers)$).*/
   ],
   platform: "node",
   external: [
-    // Database clients
-    "pg",
-    "mongodb",
-    "better-sqlite3",
-    // ORMs / query builders
-    "drizzle-orm",
-    // API / transport
-    "@trpc/server",
-    "@trpc/client",
-    "hono",
-    "ws",
-    // Auth / crypto
-    "ioredis",
-    "bcrypt",
-    "bcryptjs",
-    "jsonwebtoken",
-    // Email
-    "nodemailer",
-    // Storage
-    "sharp",
-    "ssh2",
-    "ssh2-sftp-client",
-    "basic-ftp",
-    "@aws-sdk/client-s3",
-    "@aws-sdk/s3-request-presigner",
-    // CLI
-    "commander",
-    "ora",
-    "chalk",
-    // Misc
-    "glob",
-    "esbuild",
-    // Node built-ins (shouldn't be bundled)
+    // Node built-ins (provided by Cloudflare Workers nodejs_compat)
     "crypto",
     "fs",
     "path",
@@ -79,7 +43,20 @@ export default defineConfig({
     "tls",
     "url",
     "module",
+    "buffer",
+    "events",
+    "util",
+    "process",
     "node:sqlite",
+    "node:crypto",
+    "node:fs",
+    "node:path",
+    "node:stream",
+    "node:buffer",
+    // Native binary C++ Node addons (optional runtime fallbacks)
+    "pg-native",
+    "better-sqlite3",
+    "sharp",
     // Virtual modules
     "kyro:config",
     "virtual:kyro-plugins",
