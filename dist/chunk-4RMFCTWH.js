@@ -1,0 +1,1 @@
+function a(e){if(e==null)return e;if(Array.isArray(e))return e.map(n=>a(n));if(typeof e=="object"&&!(e instanceof Date)&&!(e instanceof RegExp)){let n={};for(let r of Object.keys(e))/^\d+$/.test(r)||(n[r]=a(e[r]));return n}return e}export{a};

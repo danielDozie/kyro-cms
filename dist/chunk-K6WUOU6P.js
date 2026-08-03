@@ -1,0 +1,1 @@
+import {pgTable,timestamp,text,varchar}from'drizzle-orm/pg-core';var r=pgTable("settings",{key:varchar("key",{length:255}).primaryKey(),value:text("value").notNull(),description:text("description"),updatedAt:timestamp("updated_at").defaultNow()});export{r as a};

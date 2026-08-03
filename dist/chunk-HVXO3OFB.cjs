@@ -1,0 +1,1 @@
+'use strict';function t(e){return {ipAddress:e.headers.get("x-forwarded-for")?.split(",")[0]?.trim()||e.headers.get("x-real-ip")||"unknown",userAgent:e.headers.get("user-agent")||"unknown"}}exports.a=t;

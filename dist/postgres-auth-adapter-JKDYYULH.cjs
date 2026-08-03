@@ -1,0 +1,1 @@
+'use strict';var chunkGYQMNXXW_cjs=require('./chunk-GYQMNXXW.cjs');require('./chunk-MIOMMB23.cjs'),require('./chunk-AHSFSERC.cjs');Object.defineProperty(exports,"PostgresAuthAdapter",{enumerable:true,get:function(){return chunkGYQMNXXW_cjs.a}});

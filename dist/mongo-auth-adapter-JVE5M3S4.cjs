@@ -1,0 +1,1 @@
+'use strict';var chunkQCA3AP3M_cjs=require('./chunk-QCA3AP3M.cjs');require('./chunk-AHSFSERC.cjs');Object.defineProperty(exports,"MongoDBAuthAdapter",{enumerable:true,get:function(){return chunkQCA3AP3M_cjs.a}});
