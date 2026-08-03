@@ -37,6 +37,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dist/
+          git add -f dist/
           git commit -m "build: update compiled worker bundle [skip ci]" || exit 0
           git push
