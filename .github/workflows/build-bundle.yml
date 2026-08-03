@@ -33,10 +33,10 @@ jobs:
       - name: Build Kyro Core Bundle
         run: pnpm run build
 
-      - name: Auto-commit compiled dist/worker.mjs
+      - name: Auto-commit compiled dist/
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dist/worker.mjs
+          git add dist/
           git commit -m "build: update compiled worker bundle [skip ci]" || exit 0
           git push
