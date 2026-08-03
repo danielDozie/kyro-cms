@@ -26,6 +26,47 @@ export default defineConfig({
   treeshake: true,
   minify: true,
   target: "es2022",
+  esbuildPlugins: [
+    {
+      name: "stub-node-modules",
+      setup(build) {
+        const filter = /^(fs|node:fs|fs\/promises|node:fs\/promises|child_process|node:child_process|net|node:net|tls|node:tls)$/;
+        build.onResolve({ filter }, (args) => ({ path: args.path, namespace: "stub-node" }));
+        build.onLoad({ filter: /.*/, namespace: "stub-node" }, (args) => {
+          if (args.path.includes("child_process")) {
+            return { contents: 'export default {}; export const execSync = () => ""; export const exec = () => {}; export const spawn = () => {};', loader: "js" };
+          }
+          if (args.path.includes("net") || args.path.includes("tls")) {
+            return { contents: 'export default {}; export const isIP = () => 0; export const isIPv4 = () => false; export const isIPv6 = () => false; export const connect = () => {}; export const Socket = class {};', loader: "js" };
+          }
+          return {
+            contents: `
+              export default {};
+              export const readFileSync = () => "";
+              export const writeFileSync = () => {};
+              export const existsSync = () => false;
+              export const mkdirSync = () => {};
+              export const readdirSync = () => [];
+              export const statSync = () => ({ isDirectory: () => false });
+              export const lstatSync = () => ({ isDirectory: () => false });
+              export const readlinkSync = () => "";
+              export const realpathSync = () => "";
+              export const mkdir = async () => {};
+              export const readdir = async () => [];
+              export const stat = async () => ({ isDirectory: () => false });
+              export const lstat = async () => ({ isDirectory: () => false });
+              export const rename = async () => {};
+              export const unlink = async () => {};
+              export const writeFile = async () => {};
+              export const readFile = async () => "";
+              export const promises = { mkdir: async () => {}, readdir: async () => [], stat: async () => ({ isDirectory: () => false }), rename: async () => {}, unlink: async () => {}, writeFile: async () => {}, readFile: async () => "" };
+            `,
+            loader: "js"
+          };
+        });
+      }
+    }
+  ],
   esbuildOptions(options) {
     options.conditions = ["style", "import", "module", "default"];
   },
@@ -36,14 +77,11 @@ export default defineConfig({
   external: [
     // Node built-ins (provided by Cloudflare Workers nodejs_compat)
     "crypto",
-    "fs",
     "path",
     "os",
     "stream",
     "http",
     "https",
-    "net",
-    "tls",
     "url",
     "module",
     "buffer",
@@ -52,7 +90,6 @@ export default defineConfig({
     "process",
     "node:sqlite",
     "node:crypto",
-    "node:fs",
     "node:path",
     "node:stream",
     "node:buffer",
