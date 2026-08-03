@@ -11,9 +11,16 @@ export interface Answers {
 }
 
 export function parseCliArgs(): Partial<Answers> & { nonInteractive?: boolean; targetDir?: string } {
+  const rawArgs = process.argv.slice(2);
+  const hasNonInteractiveFlag = rawArgs.some(a => a === '--non-interactive' || a === '-y' || a === '--yes');
+  const isNonTTY = typeof process.stdout !== 'undefined' && typeof process.stdout.isTTY !== 'undefined' && !process.stdout.isTTY;
+
+  let parsedValues: Record<string, any> = {};
+  let targetDir: string | undefined = undefined;
+
   try {
     const { values, positionals } = parseArgs({
-      args: process.argv.slice(2),
+      args: rawArgs,
       options: {
         template: { type: "string" },
         database: { type: "string" },
@@ -24,22 +31,28 @@ export function parseCliArgs(): Partial<Answers> & { nonInteractive?: boolean; t
       allowPositionals: true,
       strict: false,
     });
-
-    const targetDir = positionals[0];
-    const rawName = targetDir ? targetDir.split(/[/\\]/).filter(Boolean).pop() : undefined;
-    const projectName = rawName || "my-kyro-app";
-
-    return {
-      projectName,
-      targetDir,
-      ...(values.template ? { template: values.template as Answers["template"] } : {}),
-      ...(values.database ? { database: values.database as Answers["database"] } : {}),
-      ...(values["admin-email"] ? { adminEmail: values["admin-email"] as string } : {}),
-      nonInteractive: Boolean(values.yes || values["non-interactive"]),
-    };
+    parsedValues = values || {};
+    targetDir = positionals[0];
   } catch {
-    return {};
+    for (const arg of rawArgs) {
+      if (arg.startsWith('--template=')) parsedValues.template = arg.split('=')[1];
+      if (arg.startsWith('--database=')) parsedValues.database = arg.split('=')[1];
+      if (arg.startsWith('--admin-email=')) parsedValues['admin-email'] = arg.split('=')[1];
+      if (!arg.startsWith('-') && !targetDir) targetDir = arg;
+    }
   }
+
+  const rawName = targetDir ? targetDir.split(/[/\\]/).filter(Boolean).pop() : undefined;
+  const projectName = rawName || "my-kyro-app";
+
+  return {
+    projectName,
+    targetDir,
+    ...(parsedValues.template ? { template: parsedValues.template as Answers["template"] } : {}),
+    ...(parsedValues.database ? { database: parsedValues.database as Answers["database"] } : {}),
+    ...(parsedValues["admin-email"] ? { adminEmail: parsedValues["admin-email"] as string } : {}),
+    nonInteractive: Boolean(hasNonInteractiveFlag || isNonTTY || parsedValues.yes || parsedValues["non-interactive"]),
+  };
 }
 
 export async function promptUser(): Promise<Answers> {

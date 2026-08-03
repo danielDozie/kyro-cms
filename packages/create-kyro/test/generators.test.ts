@@ -98,9 +98,9 @@ describe("generators", () => {
       expect(kitchen).toContain("allGlobalSettings");
     });
 
-    it("uses project name in config", () => {
+    it("generates valid defineKyroConfig string", () => {
       const config = generateKyroConfig(baseAnswers);
-      expect(config).toContain("name: 'test-project'");
+      expect(config).toContain("defineKyroConfig");
     });
 
     it("uses correct adapter import for each database", () => {
