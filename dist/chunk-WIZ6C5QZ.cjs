@@ -1,1 +1,0 @@
-'use strict';var pgCore=require('drizzle-orm/pg-core');var r=pgCore.pgTable("settings",{key:pgCore.varchar("key",{length:255}).primaryKey(),value:pgCore.text("value").notNull(),description:pgCore.text("description"),updatedAt:pgCore.timestamp("updated_at").defaultNow()});exports.a=r;

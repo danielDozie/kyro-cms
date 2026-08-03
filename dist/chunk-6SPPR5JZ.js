@@ -1,3 +1,0 @@
-import {execSync}from'child_process';import {existsSync}from'fs';import {join}from'path';function e(){let n=process.cwd();return existsSync(join(n,"pnpm-lock.yaml"))?"pnpm":existsSync(join(n,"yarn.lock"))?"yarn":existsSync(join(n,"bun.lockb"))||existsSync(join(n,"bun.lock"))?"bun":"npm"}function m(n){let o=e();console.log(`
-\u{1F4E6} [Kyro CMS] Auto-installing missing database drivers: ${n.join(", ")}...`);try{let i=o==="npm"?"npm install":`${o} add`;execSync(`${i} ${n.join(" ")}`,{stdio:"inherit"}),console.log(`\u2705 [Kyro CMS] Successfully installed drivers!
-`);}catch(i){throw console.error(`\u274C [Kyro CMS] Failed to auto-install drivers. Please run manually: ${o==="npm"?"npm install":`${o} add`} ${n.join(" ")}`),i}}export{m as a};
