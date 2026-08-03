@@ -26,6 +26,9 @@ export default defineConfig({
   treeshake: true,
   minify: true,
   target: "es2022",
+  esbuildOptions(options) {
+    options.conditions = ["style", "import", "module", "default"];
+  },
   noExternal: [
     /^(?!(kyro:config|virtual:kyro-plugins|astro:transitions\/client|cloudflare:workers)$).*/
   ],
