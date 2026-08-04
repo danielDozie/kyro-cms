@@ -53,23 +53,131 @@ export interface UserSessionInfo {
 
 let storage: any = null;
 
+function getD1Binding(): any {
+  return (globalThis as any).DB;
+}
+
+// Unstorage driver backed by D1 so sessions survive worker isolate recycling.
+// The previous in-memory driver died with the isolate, which caused instant
+// auto-logout on Cloudflare (session record vanished between requests).
+function d1Driver() {
+  let ready: Promise<void> | null = null;
+
+  const ensureTable = (): Promise<void> => {
+    if (!ready) {
+      ready = (async () => {
+        const db = getD1Binding();
+        if (!db?.prepare) return;
+        await db
+          .prepare(
+            `CREATE TABLE IF NOT EXISTS kyro_session_store (
+               key TEXT PRIMARY KEY,
+               value TEXT,
+               expires_at INTEGER
+             )`
+          )
+          .run();
+      })();
+    }
+    return ready;
+  };
+
+  const now = () => Date.now();
+
+  const query = async (sql: string, params: any[] = []): Promise<any> => {
+    const db = getD1Binding();
+    if (!db?.prepare) return null;
+    const stmt = db.prepare(sql);
+    return params.length > 0 ? stmt.bind(...params) : stmt;
+  };
+
+  const run = async (sql: string, params: any[] = []): Promise<void> => {
+    await ensureTable();
+    const stmt = await query(sql, params);
+    if (stmt) await stmt.run();
+  };
+
+  return {
+    name: "kyro-d1",
+    options: {},
+    getInstance: () => null,
+    async hasItem(key: string) {
+      await ensureTable();
+      const res = await query("SELECT expires_at FROM kyro_session_store WHERE key = ?", [key]);
+      if (!res) return false;
+      const row = await res.first();
+      if (!row) return false;
+      return !(row.expires_at && row.expires_at < now());
+    },
+    async getItem(key: string) {
+      await ensureTable();
+      const res = await query("SELECT value, expires_at FROM kyro_session_store WHERE key = ?", [key]);
+      if (!res) return null;
+      const row = await res.first();
+      if (!row) return null;
+      if (row.expires_at && row.expires_at < now()) {
+        await query("DELETE FROM kyro_session_store WHERE key = ?", [key]);
+        return null;
+      }
+      return row.value;
+    },
+    async setItem(key: string, value: any, opts: any = {}) {
+      const ttl = opts?.ttl ? Number(opts.ttl) : null;
+      const expiresAt = ttl ? now() + ttl * 1000 : null;
+      const val = typeof value === "string" ? value : JSON.stringify(value);
+      await run(
+        `INSERT INTO kyro_session_store (key, value, expires_at) VALUES (?, ?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, expires_at = excluded.expires_at`,
+        [key, val, expiresAt]
+      );
+    },
+    async removeItem(key: string) {
+      await run("DELETE FROM kyro_session_store WHERE key = ?", [key]);
+    },
+    async getKeys(base = "") {
+      await ensureTable();
+      const res = await query("SELECT key FROM kyro_session_store WHERE key LIKE ?", [base + "%"]);
+      if (!res) return [];
+      const rows = await res.all();
+      return (rows.results || []).map((r: any) => r.key);
+    },
+    async clear() {
+      await run("DELETE FROM kyro_session_store");
+    },
+    async dispose() {},
+    async getMeta() {
+      return {};
+    },
+    async setMeta() {},
+    async removeMeta() {},
+  };
+}
+
 async function getStorage() {
   if (storage) return storage;
 
-  try {
-    const isEdge = typeof window === "undefined" && (
-      (typeof process !== "undefined" && (process.env?.CLOUDFLARE || process.env?.CF_PAGES)) ||
-      (globalThis as any).DB
-    );
-    if (!isEdge) {
+  const isEdge =
+    typeof window === "undefined" &&
+    ((typeof process !== "undefined" && (process.env?.CLOUDFLARE || process.env?.CF_PAGES)) ||
+      getD1Binding());
+
+  if (!isEdge) {
+    try {
       const { default: fsDriver } = await import("unstorage/drivers/fs");
       storage = createStorage({
         driver: fsDriver({ base: ".astro/sessions" }),
       });
       return storage;
+    } catch {
+      // Fall back to memory driver for edge/Cloudflare Workers
     }
-  } catch {
-    // Fall back to memory driver for edge/Cloudflare Workers
+  }
+
+  // Cloudflare Workers with a D1 binding: persist sessions in D1 so they survive
+  // isolate recycling. In-memory storage caused instant auto-logout between requests.
+  if (getD1Binding()?.prepare) {
+    storage = createStorage({ driver: d1Driver() });
+    return storage;
   }
 
   storage = createStorage({
