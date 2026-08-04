@@ -12,10 +12,10 @@
  * Usage (standalone):
  *   node --import tsx/esm src/server.ts
  *   # or build first:
- *   npx create-kyro serve --port 3099
+ *   npx @kyro-cms/create serve --port 3099
  *
  * Usage (embedded in Astro / Express):
- *   import { createKyroHandler, deployCloudflareHandler } from 'create-kyro/server';
+ *   import { createKyroHandler, deployCloudflareHandler } from '@kyro-cms/create/server';
  *   app.post('/api/deploy/cloudflare', deployCloudflareHandler);
  * ─────────────────────────────────────────────────────────────────────────────
  */

@@ -44,7 +44,7 @@ npx @kyro-cms/create
 ## Programmatic Usage
 
 ```typescript
-import { promptUser } from 'create-kyro';
+import { promptUser } from '@kyro-cms/create';
 
 const answers = await promptUser();
 // { projectName, database, template }

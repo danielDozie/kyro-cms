@@ -6,7 +6,7 @@
  * structured progress events so callers can stream them to the browser.
  *
  * Usage:
- *   import { deployCloudflare } from 'create-kyro/deployers/cloudflare';
+ *   import { deployCloudflare } from '@kyro-cms/create/deployers/cloudflare';
  *   for await (const event of deployCloudflare({ projectDir, projectName, ... })) {
  *     console.log(event);
  *   }

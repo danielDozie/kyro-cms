@@ -6,7 +6,7 @@
  * CI pipelines, or any automated workflow.
  *
  * Usage:
- *   import { createProject } from 'create-kyro/headless';
+ *   import { createProject } from '@kyro-cms/create/headless';
  *   const result = await createProject({ projectName: 'my-app', ... });
  */
 
