@@ -318,7 +318,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
 
     if (this.rawClient && typeof this.rawClient.prepare === 'function' && typeof this.client?.select !== 'function') {
-      const { drizzle: drizzleD1 } = await import(/* @vite-ignore */ 'drizzle-orm/d1');
+      const { drizzle: drizzleD1 } = await import('drizzle-orm/d1');
       this.client = drizzleD1(this.rawClient, { schema: this.schema });
     }
 

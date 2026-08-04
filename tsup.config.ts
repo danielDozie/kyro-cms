@@ -13,6 +13,7 @@ const NATIVE_AND_VIRTUAL_EXTERNALS = [
   "pg-native",
   "better-sqlite3",
   "sharp",
+  "basic-ftp",
   "kyro:config",
   "virtual:kyro-plugins",
   "astro:transitions/client",

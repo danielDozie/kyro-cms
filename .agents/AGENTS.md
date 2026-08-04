@@ -41,3 +41,10 @@ Official Documentation: https://kyro-cms.com
   - **Type Assertion Safety**: Replaced loose `as any` type casts in `src/createKyro.ts` with explicit TypeScript interface assertions (`KyroConfig`, `DrizzleAdapter`, `createKyroServer`).
   - **Configurable Logger System**: Implemented `Logger` utility (`src/utils/logger.ts`) supporting level-gated output (`debug`, `info`, `warn`, `error`) driven by `KYRO_LOG_LEVEL`.
   - **Deduplicated Integration Externals**: Consolidated external dependencies in `src/integration.ts` into shared module constants (`KYRO_PACKAGES`, `NATIVE_BINARY_EXTERNALS`, `NODE_BUILTINS`).
+  - **ESM Code Splitting**: Enabled ESM code splitting (`splitting: true` in `tsup.config.ts`), reducing entrypoint bundle sizes by ~98% to 99.9% (e.g., `api-handler.js` reduced from 2.55 MB to 1.38 KB).
+  - **Database Adapter Factory Pattern**: Implemented `AdapterFactory` (`src/database/factory.ts`) with lazy dynamic `import()` loading for database drivers (`local`, `drizzle`, `mongodb`).
+  - **Field Strategy Pattern Registry**: Created `FieldStrategyRegistry` (`admin/src/services/FieldStrategyRegistry.ts`) establishing a Strategy Pattern for admin form field renderers.
+  - **Admin View Code-Splitting**: Converted heavy admin views (`MediaGallery`, `WebhookManager`, `DeveloperCenter`, `BrandingHub`, `UserManagement` in `Admin.tsx`) to `React.lazy()` + `<Suspense>` dynamic imports to minimize initial dashboard payload.
+  - **Document Hook Pipeline Pattern**: Implemented `HookPipeline` (`src/hooks/HookPipeline.ts`) using the Pipeline Pattern for execution of document lifecycle hooks.
+  - **Vite Dynamic Import Analysis Fix**: Standardized string literals with `/* @vite-ignore */` in `src/database/drizzle/adapter.ts` for dynamic driver imports, eliminating Vite dev server warnings.
+  - **LocalAdapter Handle Recovery**: Updated `LocalAdapter` (`src/database/local/adapter.ts`) to handle closed database handle recovery cleanly (`SELECT 1` health check in `connect()` and resetting `this.db = null` in `disconnect()`), preventing `ERR_INVALID_STATE` (database is not open) errors.

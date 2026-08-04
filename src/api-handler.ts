@@ -36,14 +36,18 @@ async function doInit(): Promise<void> {
     const dbAdapter = config.adapter;
     const isLocalAdapter = dbAdapter && !dbAdapter.dialect && typeof dbAdapter.connect === 'function';
     
-    // Hot-swap LocalAdapter to D1 on Cloudflare BEFORE initialization
-    if (isLocalAdapter && (globalThis as any).DB) {
+    // Hot-swap to D1 on Cloudflare BEFORE initialization.
+    // The project config (kyro:config) is evaluated at module load time, before the
+    // D1 binding is available on globalThis, so config.adapter may be null here.
+    // When the D1 binding is present and no explicit remote adapter was configured,
+    // override to a D1-backed DrizzleAdapter.
+    if ((globalThis as any).DB && (!dbAdapter || isLocalAdapter)) {
       const d1Client = (globalThis as any).DB;
       
       // Override adapter to DrizzleAdapter with D1
       config.adapter = new DrizzleAdapter({ type: 'sqlite', client: d1Client });
       
-      logger.info("Hot-swapped LocalAdapter for D1 DrizzleAdapter");
+      logger.info("Hot-swapped to D1 DrizzleAdapter");
     }
     
     kyroInstance = createKyro(config);
@@ -89,10 +93,19 @@ async function doInit(): Promise<void> {
 
 export async function warmKyroInstance(context?: any) {
   let runtimeEnv: any = (globalThis as any).DB ? globalThis : null;
-  
+
+  // Astro 7 / @astrojs/cloudflare v14: locals.runtime.env throws (removed in v6),
+  // and locals.cfContext is the ExecutionContext, not the bindings.
+  // The canonical way to read bindings in workerd is `import { env } from "cloudflare:workers"`.
+  // Dynamic import + try/catch keeps this safe on the Node runtime too.
+  try {
+    const { env: cfEnv } = await import("cloudflare:workers");
+    if (cfEnv) runtimeEnv = cfEnv;
+  } catch {}
+
   if (context) {
     try {
-      runtimeEnv = (context.locals as any)?.runtime?.env || (context.locals as any)?.cfContext?.env || (context as any)?.env || runtimeEnv;
+      runtimeEnv = (context.locals as any)?.cfContext?.env || (context as any)?.env || runtimeEnv;
     } catch (err: any) {
       // Ignore Astro v6 error: Astro.locals.runtime.env has been removed
     }
@@ -154,34 +167,46 @@ export const ALL: APIRoute = async (context) => {
     }
   }
 
-  const url = new URL(context.request.url);
-  const path = url.pathname;
-  const p = __KYRO_API_PATH__;
+  try {
+    const url = new URL(context.request.url);
+    const path = url.pathname;
+    const p = __KYRO_API_PATH__;
 
-  if (path === `${p}/graphql` && typeof kyroInstance.getGraphQL === "function") {
-    if (!checkAccessEnabled("graphqlEnabled")) {
-      return new Response(JSON.stringify({ error: "GraphQL is disabled" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (path === `${p}/graphql` && typeof kyroInstance.getGraphQL === "function") {
+      if (!checkAccessEnabled("graphqlEnabled")) {
+        return new Response(JSON.stringify({ error: "GraphQL is disabled" }), {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const yoga = kyroInstance.getGraphQL();
+      const res = await yoga.fetch(context.request, context.locals);
+      return new Response(res.body, res);
     }
-    const yoga = kyroInstance.getGraphQL();
-    const res = await yoga.fetch(context.request, context.locals);
-    return new Response(res.body, res);
-  }
 
-  if (path.startsWith(`${p}/trpc/`) && typeof kyroInstance.getTRPC === "function") {
-    if (!checkAccessEnabled("trpcEnabled")) {
-      return new Response(JSON.stringify({ error: "tRPC is disabled" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (path.startsWith(`${p}/trpc/`) && typeof kyroInstance.getTRPC === "function") {
+      if (!checkAccessEnabled("trpcEnabled")) {
+        return new Response(JSON.stringify({ error: "tRPC is disabled" }), {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const trpc = kyroInstance.getTRPC();
+      const res = await trpc.fetch(context.request, context.locals);
+      return new Response(res.body, res);
     }
-    const trpc = kyroInstance.getTRPC();
-    const res = await trpc.fetch(context.request, context.locals);
-    return new Response(res.body, res);
-  }
 
-  const app = kyroInstance.getREST();
-  return app.fetch(context.request, context.locals);
+    const app = await kyroInstance.getREST();
+    return await app.fetch(context.request, context.locals);
+  } catch (err: any) {
+    console.error("[Kyro API Execution Error]:", err?.stack || err?.message || err);
+    return new Response(JSON.stringify({
+      error: "Internal Server Error",
+      message: err?.message || String(err),
+      stack: err?.stack,
+    }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 };

@@ -32,7 +32,7 @@ describe("REST Collections API", () => {
     await adapter.init([testCollection]);
     const registry = createRegistry();
     registry.addCollection(testCollection);
-    app = createRESTAPI(registry, adapter);
+    app = await createRESTAPI(registry, adapter);
   });
 
   afterAll(async () => {

@@ -40,7 +40,7 @@ interface HonoAppOptions {
         };
     };
 }
-declare function createHonoApp(options: HonoAppOptions): Hono;
+declare function createHonoApp(options: HonoAppOptions): Promise<Hono>;
 declare function createRESTAPI(registry: Registry, db: BaseAdapter, options?: {
     authSecret?: string;
     user?: User;
@@ -51,6 +51,6 @@ declare function createRESTAPI(registry: Registry, db: BaseAdapter, options?: {
         credentials?: boolean;
     };
     webhookService?: ReturnType<typeof createWebhookService>;
-}): Hono;
+}): Promise<Hono>;
 
 export { type HonoAppOptions, createHonoApp, createRESTAPI };

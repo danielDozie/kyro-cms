@@ -264,10 +264,10 @@ async function resolveAuthContext(
 // Auth Adapter Factory (auto-detect dialect)
 // ============================================================================
 
-function createDefaultAuthAdapter(
+async function createDefaultAuthAdapter(
   db: BaseAdapter,
   rootDir: string,
-): any {
+): Promise<any> {
   if ('dialect' in db && db.dialect === "postgres" && db instanceof DrizzleAdapter) {
     return new PostgresAuthAdapter({ db: db.client });
   }
@@ -289,7 +289,7 @@ function createDefaultAuthAdapter(
 // Hono App Factory
 // ============================================================================
 
-export function createHonoApp(options: HonoAppOptions): Hono {
+export async function createHonoApp(options: HonoAppOptions): Promise<Hono> {
   const {
     registry,
     db,
@@ -361,7 +361,7 @@ export function createHonoApp(options: HonoAppOptions): Hono {
   const rootDir = cwd.endsWith("admin") ? resolve(cwd, "..") : cwd;
 
   // Create auth adapter early for session checking
-  const sessionAuthAdapter = authAdapter || createDefaultAuthAdapter(db, rootDir);
+  const sessionAuthAdapter = authAdapter || (await createDefaultAuthAdapter(db, rootDir));
 
   // Always create auth middleware if authSecret is provided
   // This enables auth-based access for collection routes
@@ -4385,7 +4385,7 @@ for (const globalConfig of registry.getGlobals()) {
 // Factory
 // ============================================================================
 
-export function createRESTAPI(
+export async function createRESTAPI(
   registry: Registry,
   db: BaseAdapter,
   options?: {
@@ -4399,7 +4399,7 @@ export function createRESTAPI(
     };
     webhookService?: ReturnType<typeof createWebhookService>;
   },
-): Hono {
+): Promise<Hono> {
   return createHonoApp({
     registry,
     db,

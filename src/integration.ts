@@ -3,11 +3,15 @@ import path from "node:path";
 import fs from "node:fs";
 
 const resolveEntrypoint = (fileStem: string) => {
-  // Use a fallback for Cloudflare Workers where import.meta.url is polyfilled improperly by ESBuild
-  const dir = typeof process !== 'undefined' && process.cwd ? path.join(process.cwd(), 'node_modules', '@kyro-cms', 'core', 'dist') : '';
-  const tsPath = path.resolve(dir, `${fileStem}.ts`);
-  const jsPath = path.resolve(dir, `${fileStem}.js`);
-  return fs.existsSync(tsPath) ? tsPath : jsPath;
+  const pkgRoot = path.join(process.cwd(), 'node_modules', '@kyro-cms', 'core');
+  // In a pnpm/yarn workspace, node_modules/@kyro-cms/core is a symlink to the repo root.
+  // Prefer the TypeScript source so Vite processes it directly (with @vite-ignore dynamic
+  // imports), rather than following the tsup code-split dist/ chunks which have static
+  // `import d from 'better-sqlite3'` that Rolldown can't resolve for Cloudflare Workers.
+  const tsPath = path.resolve(pkgRoot, 'src', `${fileStem}.ts`);
+  if (fs.existsSync(tsPath)) return tsPath;
+  // Fallback: installed from npm — only dist/ is present.
+  return path.resolve(pkgRoot, 'dist', `${fileStem}.js`);
 };
 const API_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler");
 const GRAPHQL_HANDLER_ENTRYPOINT = resolveEntrypoint("api-handler-graphql");

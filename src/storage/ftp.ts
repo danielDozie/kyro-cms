@@ -1,5 +1,5 @@
-import { Readable } from "stream";
-import { Client, FileInfo } from "basic-ftp";
+import { Readable } from "node:stream";
+import type { Client, FileInfo } from "basic-ftp";
 import {
   type StorageProvider,
   type UploadedFile,
@@ -19,11 +19,21 @@ export interface FtpStorageConfig {
   type: "ftp" | "sftp";
 }
 
-export function createFtpStorage(config: FtpStorageConfig): StorageProvider {
-  let client: InstanceType<typeof Client> | null = null;
+let ftpModule: typeof import("basic-ftp") | null = null;
 
-  async function getClient(): Promise<InstanceType<typeof Client>> {
+async function getFtpModule(): Promise<typeof import("basic-ftp")> {
+  if (!ftpModule) {
+    ftpModule = await import("basic-ftp");
+  }
+  return ftpModule;
+}
+
+export function createFtpStorage(config: FtpStorageConfig): StorageProvider {
+  let client: import("basic-ftp").Client | null = null;
+
+  async function getClient(): Promise<import("basic-ftp").Client> {
     if (!client) {
+      const { Client } = await getFtpModule();
       client = new Client(60000, { allowSeparateTransferHost: true });
       client.ftp.verbose = false;
 

@@ -33,7 +33,7 @@ describe("REST API Integration", () => {
     const registry = createRegistry();
     registry.addCollection(testCollection);
 
-    app = createRESTAPI(registry, adapter);
+    app = await createRESTAPI(registry, adapter);
   });
 
   afterAll(async () => {

@@ -1,7 +1,6 @@
 import crypto from "crypto";
 import { getSessionConfig } from "../../lib/secret.js";
 import { createStorage } from "unstorage";
-import fsDriver from "unstorage/drivers/fs";
 import memoryDriver from "unstorage/drivers/memory";
 
 // Get session config from DB or defaults
@@ -63,6 +62,7 @@ async function getStorage() {
       (globalThis as any).DB
     );
     if (!isEdge) {
+      const { default: fsDriver } = await import("unstorage/drivers/fs");
       storage = createStorage({
         driver: fsDriver({ base: ".astro/sessions" }),
       });

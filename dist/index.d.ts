@@ -96,7 +96,7 @@ declare class Kyro {
         user?: User;
         req?: Request$1;
         tenantId?: string;
-    }): hono.Hono<hono_types.BlankEnv, hono_types.BlankSchema, "/">;
+    }): Promise<hono.Hono<hono_types.BlankEnv, hono_types.BlankSchema, "/">>;
     getGraphQL(options?: {
         user?: User;
         req?: Request$1;

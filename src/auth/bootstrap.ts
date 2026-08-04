@@ -112,44 +112,66 @@ export async function checkBootstrapRequired(
   return !existingUser;
 }
 
-export function getBootstrapFromEnv(): BootstrapConfig | null {
-  const email = process.env.KYRO_ADMIN_EMAIL;
-  const password = process.env.KYRO_ADMIN_PASSWORD;
+export function buildBootstrapConfig(
+  envVars: Record<string, string | undefined>,
+): BootstrapConfig | null {
+  const email = envVars.KYRO_ADMIN_EMAIL;
+  const password = envVars.KYRO_ADMIN_PASSWORD;
 
   if (!email || !password) {
     return null;
   }
 
   return {
-    authDbPath: process.env.KYRO_AUTH_DB_PATH || "./data/auth.db",
+    authDbPath: envVars.KYRO_AUTH_DB_PATH || "./data/auth.db",
     adminEmail: email,
     adminPassword: password,
-    adminRole: process.env.KYRO_ADMIN_ROLE || "super_admin",
-    tenantId: process.env.KYRO_ADMIN_TENANT_ID,
-    emailConfig: process.env.SMTP_HOST
+    adminRole: envVars.KYRO_ADMIN_ROLE || "super_admin",
+    tenantId: envVars.KYRO_ADMIN_TENANT_ID,
+    emailConfig: envVars.SMTP_HOST
       ? {
           provider: "smtp",
           smtp: {
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || "587", 10),
-            secure: process.env.SMTP_SECURE === "true",
+            host: envVars.SMTP_HOST,
+            port: parseInt(envVars.SMTP_PORT || "587", 10),
+            secure: envVars.SMTP_SECURE === "true",
             auth: {
-              user: process.env.SMTP_USER || "",
-              pass: process.env.SMTP_PASS || "",
+              user: envVars.SMTP_USER || "",
+              pass: envVars.SMTP_PASS || "",
             },
           },
-          from: process.env.SMTP_FROM || "noreply@example.com",
-          fromName: process.env.SMTP_FROM_NAME,
+          from: envVars.SMTP_FROM || "noreply@example.com",
+          fromName: envVars.SMTP_FROM_NAME,
         }
       : undefined,
-    sendWelcomeEmail: process.env.KYRO_ADMIN_SEND_WELCOME === "true",
+    sendWelcomeEmail: envVars.KYRO_ADMIN_SEND_WELCOME === "true",
   };
+}
+
+export function getBootstrapFromEnv(): BootstrapConfig | null {
+  return buildBootstrapConfig(process.env as Record<string, string | undefined>);
+}
+
+/**
+ * Read bootstrap credentials from the Cloudflare `cloudflare:workers` env binding.
+ * On Workers, secrets/vars live on the env binding; they are NOT guaranteed to be
+ * present on `process.env`. Dynamic import + try/catch keeps this safe on Node too.
+ */
+async function getBootstrapFromCloudflareEnv(): Promise<BootstrapConfig | null> {
+  try {
+    const { env: cfEnv } = await import("cloudflare:workers");
+    if (cfEnv) {
+      const config = buildBootstrapConfig(cfEnv);
+      if (config) return config;
+    }
+  } catch {}
+  return null;
 }
 
 export async function autoBootstrap(
   authAdapter?: AuthAdapter,
 ): Promise<BootstrapResult | null> {
-  const config = getBootstrapFromEnv();
+  const config = getBootstrapFromEnv() || (await getBootstrapFromCloudflareEnv());
   if (!config) {
     return null;
   }

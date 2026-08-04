@@ -15,6 +15,64 @@ function generateRandomPassword() {
   return crypto.randomBytes(12).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 16);
 }
 
+const ALIAS_BLOCK = `\n[alias]\n"better-sqlite3" = "./cf-noop.js"\n"./redis-adapter.js" = "./cf-noop.js"\n"pg" = "./cf-noop.js"\n"pg-native" = "./cf-noop.js"\n"mongodb" = "./cf-noop.js"\n"ioredis" = "./cf-noop.js"\n"sharp" = "./cf-noop.js"\n"ssh2" = "./cf-noop.js"\n"cpu-features" = "./cf-noop.js"\n"nodemailer" = "./cf-noop.js"\n"node:sqlite" = "./cf-noop.js"\n"basic-ftp" = "./cf-noop.js"\n`;
+const CF_NOOP_CONTENT = `// No-op stub for Node.js-only modules that cannot run in Cloudflare Workers.\nexport default {};\n`;
+
+function sliceSection(content: string, header: string): string {
+  const start = content.indexOf(header);
+  if (start === -1) return "";
+  const rest = content.slice(start + header.length);
+  const next = rest.search(/\n\s*(\[\[|\[)/);
+  return rest.slice(0, next === -1 ? undefined : next);
+}
+
+function getTomlValue(block: string, key: string): string {
+  const m = block.match(new RegExp(`^\\s*${key}\\s*=\\s*"([^"]*)"`, "m"));
+  return m ? m[1] : "";
+}
+
+function findBindingBlock(content: string, blockHeader: string, binding: string): string {
+  let rest = content;
+  let idx = rest.indexOf(blockHeader);
+  while (idx !== -1) {
+    const block = sliceSection(rest, blockHeader);
+    if (getTomlValue(block, "binding") === binding) return block;
+    rest = rest.slice(idx + blockHeader.length + block.length);
+    idx = rest.indexOf(blockHeader);
+  }
+  return "";
+}
+
+function parseExistingToml(tomlPath: string) {
+  const content = fs.readFileSync(tomlPath, "utf8");
+  const result: Record<string, string> = {
+    name: "",
+    database: "",
+    d1Id: "",
+    hyperId: "",
+    r2Bucket: "",
+  };
+  const nameM = content.match(/^name\s*=\s*"([^"]*)"/m);
+  if (nameM) result.name = nameM[1];
+
+  const d1Block = findBindingBlock(content, "[[d1_databases]]", "DB");
+  if (d1Block) {
+    result.database = "d1";
+    result.d1Id = getTomlValue(d1Block, "database_id");
+  }
+
+  const hyperBlock = findBindingBlock(content, "[[hyperdrive]]", "HYPERDRIVE");
+  if (hyperBlock) {
+    result.database = "postgres";
+    result.hyperId = getTomlValue(hyperBlock, "id");
+  }
+
+  const r2Block = findBindingBlock(content, "[[r2_buckets]]", "STORAGE_BUCKET");
+  if (r2Block) result.r2Bucket = getTomlValue(r2Block, "bucket_name");
+
+  return result;
+}
+
 export function createDeployCommand() {
   const deploy = new Command("deploy").description("Deploy Kyro CMS");
 
@@ -42,11 +100,20 @@ export function createDeployCommand() {
       
       let hyperdriveName = `kyro-postgres-hd-${randomSuffix}`;
 
+      // If a wrangler.toml already exists, treat this as a redeploy: reuse the
+      // configured project name, database bindings and storage instead of
+      // regenerating the file from scratch.
+      const tomlPath = path.join(process.cwd(), "wrangler.toml");
+      const existingToml = fs.existsSync(tomlPath) ? parseExistingToml(tomlPath) : null;
+      const isRedeploy = !!(existingToml && existingToml.name);
+
       if (databaseUrl && !database) {
         database = "postgres";
       }
 
-      if (!nonInteractive && process.stdout.isTTY) {
+      if (isRedeploy) {
+        console.log(`\n  ${chalk.cyan("♻")} Existing wrangler.toml found — redeploying "${existingToml.name}"\n`);
+      } else if (!nonInteractive && process.stdout.isTTY) {
         const questions: prompts.PromptObject[] = [];
 
         if (!database) {
@@ -116,11 +183,13 @@ export function createDeployCommand() {
       }
 
       // Fallbacks
-      name = name || `kyro-app-${randomSuffix}`;
-      r2Bucket = r2Bucket || `kyro-media-${randomSuffix}`;
+      const emailExplicit = !!email;
+      const passwordExplicit = !!password;
+      name = name || (isRedeploy ? existingToml.name : `kyro-app-${randomSuffix}`);
+      r2Bucket = r2Bucket || (isRedeploy ? existingToml.r2Bucket : "") || `kyro-media-${randomSuffix}`;
       email = email || "admin@kyro-cms.com";
       password = password || randomPass;
-      database = database || "d1";
+      database = database || (isRedeploy ? existingToml.database : "d1") || "d1";
 
       console.log(chalk.bgGray.black.bold('\n Deployment Plan '));
       console.log(`  ${chalk.dim("├─")} Hosting   : ${chalk.cyan("Cloudflare Workers with Assets")}`);
@@ -147,7 +216,10 @@ export function createDeployCommand() {
       let hyperId = "";
       const spinnerOptions = quiet ? { isSilent: true } : {};
 
-      if (database === "postgres") {
+      if (isRedeploy) {
+        d1Id = existingToml.d1Id;
+        hyperId = existingToml.hyperId;
+      } else if (database === "postgres") {
         if (!databaseUrl) {
           console.log(`  ${chalk.red("✖")} PostgreSQL mode requires a database URL.`);
           process.exit(1);
@@ -201,83 +273,75 @@ export function createDeployCommand() {
         }
       }
 
-      const r2Spinner = ora({text: 'Creating R2 bucket...', ...spinnerOptions}).start();
-      try { execSync(`${wrangler} r2 bucket create "${r2Bucket}"`, { stdio: "ignore" }); r2Spinner.succeed('R2 bucket created'); } catch(e) { r2Spinner.fail('Failed to create R2 bucket'); }
-      try { execSync(`echo "y" | ${wrangler} r2 bucket dev-url enable "${r2Bucket}"`, { stdio: "ignore" }); } catch(e) {}
-      
-      const tomlSpinner = ora({text: 'Generating wrangler.toml...', ...spinnerOptions}).start();
-      let toml = `name = "${name}"\ncompatibility_date = "2026-07-31"\ncompatibility_flags = ["nodejs_compat"]\n\n[assets]\ndirectory = "dist/client"\nbinding = "ASSETS"\n`;
-      
-      if (database === "postgres") {
-        toml += `\n[[hyperdrive]]\nbinding = "HYPERDRIVE"\nid = "${hyperId}"\n`;
-      } else {
-        toml += `\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "${name}-d1"\ndatabase_id = "${d1Id}"\n`;
-      }
-      toml += `\n[[r2_buckets]]\nbinding = "STORAGE_BUCKET"\nbucket_name = "${r2Bucket}"\n`;
-      
-      fs.writeFileSync(path.join(process.cwd(), "wrangler.toml"), toml, "utf8");
-      tomlSpinner.succeed('wrangler.toml generated');
+      if (isRedeploy) {
+        // Redeploy: patch an existing wrangler.toml in place — never regenerate it.
+        let tomlContent = fs.readFileSync(tomlPath, "utf8");
+        let changed = false;
 
-      const hashScript = `import bcrypt from 'bcryptjs'; console.log(bcrypt.hashSync('${password}', 10));`;
-      let adminHash = "";
-      try {
-        adminHash = execSync(`node -e "${hashScript}"`, { stdio: "pipe" }).toString().trim();
-      } catch(e) {}
-      
-      if (database === "postgres") {
-        try { execSync(`DATABASE_URL="${databaseUrl}" npx drizzle-kit push --force`, { stdio: "ignore" }); } catch(e) {}
-        
-        const pgScript = `
-          import postgres from 'postgres';
-          import bcrypt from 'bcryptjs';
-          const sql = postgres(process.env.DATABASE_URL || '${databaseUrl}');
-          async function bootstrap() {
-            try {
-              await sql\`CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email VARCHAR(255) NOT NULL, password_hash VARCHAR(255), role VARCHAR(50) DEFAULT 'customer', email_verified BOOLEAN DEFAULT true, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW())\`;
-              await sql\`CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email)\`;
-              const existing = await sql\`SELECT id FROM users WHERE email = '${email}'\`;
-              if (existing.length === 0) {
-                const hash = bcrypt.hashSync('${password}', 10);
-                await sql\`INSERT INTO users (email, password_hash, role, email_verified) VALUES ('${email}', \\\${hash}, 'super_admin', true)\`;
-              }
-            } catch (e) {
-            } finally { await sql.end(); }
-          }
-          bootstrap();
-        `;
-        try { execSync(`node -e "${pgScript.replace(/\n/g, " ")}"`, { stdio: "pipe" }); } catch(e) {}
-        console.log(`  ${chalk.green("✔")} PostgreSQL schema migrated & Super Admin seeded`);
+        if (tomlContent.includes('main = "admin/dist/server/index.mjs"')) {
+          // already correct
+        } else if (/^main\s*=.*$/m.test(tomlContent)) {
+          tomlContent = tomlContent.replace(/^main\s*=.*$/m, 'main = "admin/dist/server/index.mjs"');
+          changed = true;
+        } else {
+          tomlContent = 'main = "admin/dist/server/index.mjs"\n' + tomlContent;
+          changed = true;
+        }
+
+        if (!tomlContent.includes("[alias]")) {
+          tomlContent += ALIAS_BLOCK;
+          changed = true;
+        }
+
+        if (changed) fs.writeFileSync(tomlPath, tomlContent, "utf8");
+        if (!fs.existsSync(path.join(process.cwd(), "cf-noop.js"))) {
+          fs.writeFileSync(path.join(process.cwd(), "cf-noop.js"), CF_NOOP_CONTENT, "utf8");
+        }
       } else {
-        const schema = `
-          CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT,
-            role TEXT DEFAULT 'customer',
-            email_verified INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-          );
-          INSERT OR IGNORE INTO users (id, email, password_hash, role, email_verified)
-          VALUES ('admin-super-1', '${email}', '${adminHash}', 'super_admin', 1);
-        `;
-        try {
-          execSync(`${wrangler} d1 execute "${name}-d1" --remote --command="${schema.replace(/\n/g, " ")}"`, { stdio: "ignore" });
-          console.log(`  ${chalk.green("✔")} D1 schema migrated & Super Admin seeded`);
-        } catch(e) {}
+        const r2Spinner = ora({text: 'Creating R2 bucket...', ...spinnerOptions}).start();
+        try { execSync(`${wrangler} r2 bucket create "${r2Bucket}"`, { stdio: "ignore" }); r2Spinner.succeed('R2 bucket created'); } catch(e) { r2Spinner.fail('Failed to create R2 bucket'); }
+        try { execSync(`echo "y" | ${wrangler} r2 bucket dev-url enable "${r2Bucket}"`, { stdio: "ignore" }); } catch(e) {}
+        
+        const tomlSpinner = ora({text: 'Generating wrangler.toml...', ...spinnerOptions}).start();
+        let toml = `name = "${name}"\ncompatibility_date = "2026-07-31"\ncompatibility_flags = ["nodejs_compat"]\n\n[assets]\ndirectory = "admin/dist/client"\nbinding = "ASSETS"\n`;
+        
+        if (database === "postgres") {
+          toml += `\n[[hyperdrive]]\nbinding = "HYPERDRIVE"\nid = "${hyperId}"\n`;
+        } else {
+          toml += `\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "${name}-d1"\ndatabase_id = "${d1Id}"\n`;
+        }
+        toml += `\n[[r2_buckets]]\nbinding = "STORAGE_BUCKET"\nbucket_name = "${r2Bucket}"\n`;
+        toml += ALIAS_BLOCK;
+        fs.writeFileSync(path.join(process.cwd(), "wrangler.toml"), toml, "utf8");
+        fs.writeFileSync(path.join(process.cwd(), "cf-noop.js"), CF_NOOP_CONTENT, "utf8");
+        tomlSpinner.succeed('wrangler.toml generated');
       }
+
+      // Schema for remote databases is created by Kyro itself on first init.
+      // For PostgreSQL, push the drizzle schema so tables exist before the first request.
+      if (!isRedeploy && database === "postgres") {
+        try { execSync(`DATABASE_URL="${databaseUrl}" npx drizzle-kit push --force`, { stdio: "ignore" }); } catch(e) {}
+        console.log(`  ${chalk.green("✔")} PostgreSQL schema pushed`);
+      }
+
+      // NOTE: The Super Admin user is NOT seeded here. Admin credentials are stored as
+      // worker secrets after deploy, and the admin is created by Kyro's autoBootstrap on
+      // first init — using the real auth schema and idempotent "create if missing" logic.
 
       const buildSpinner = ora({text: 'Building Astro project...', ...spinnerOptions}).start();
+      let buildOutput = "";
       try {
-        execSync(`${packager} run build`, { stdio: "inherit" });
-        const tomlPath = path.join(process.cwd(), "wrangler.toml");
+        // Capture build output so warnings are hidden on success but shown on failure.
+        buildOutput = execSync(`${packager} run build:pages 2>&1`, { stdio: "pipe", maxBuffer: 64 * 1024 * 1024 }).toString();
         const tomlContent = fs.readFileSync(tomlPath, "utf8");
-        if (!tomlContent.includes('main = "dist/server/entry.mjs"')) {
-          fs.writeFileSync(tomlPath, 'main = "dist/server/entry.mjs"\n' + tomlContent, "utf8");
+        if (!tomlContent.includes('main = "admin/dist/server/index.mjs"')) {
+          fs.writeFileSync(tomlPath, 'main = "admin/dist/server/index.mjs"\n' + tomlContent, "utf8");
         }
         buildSpinner.succeed('Build complete');
       } catch (err) {
+        const captured = (err as any)?.stdout?.toString?.() || buildOutput || "";
         buildSpinner.fail('Build failed');
+        if (captured) process.stdout.write(captured);
         console.log(`\n  ${chalk.red("✖")} Build failed. Inspect output above.`);
         process.exit(1);
       }
@@ -289,7 +353,7 @@ export function createDeployCommand() {
 
       let liveUrl = '';
       try {
-        const deployOut = execSync(`${wrangler} deploy`, { stdio: 'pipe' }).toString();
+        const deployOut = execSync(`${wrangler} deploy`, { stdio: 'pipe', maxBuffer: 64 * 1024 * 1024 }).toString();
         // Print wrangler output to inherit-style passthrough
         process.stdout.write(deployOut);
         // Extract the live URL from wrangler output (e.g. "Published ... (https://...workers.dev)")
@@ -297,24 +361,70 @@ export function createDeployCommand() {
         if (urlMatch) liveUrl = urlMatch[0];
         deploySpinner.succeed('Deployment successful');
         console.log(`\n  ${chalk.green.bold("🎉 Deployment Successful!")}\n`);
-        console.log(`  ${chalk.bold("Super Admin Credentials")}`);
-        console.log(`  ${chalk.dim("├─")} ${chalk.bold("Email   :")} ${chalk.cyan(email)}`);
-        console.log(`  ${chalk.dim("└─")} ${chalk.bold("Password:")} ${chalk.yellow.bold(password)}`);
+
+        // Store admin credentials as worker secrets so Kyro's autoBootstrap can create
+        // the Super Admin on first init (real schema, idempotent, no shell interpolation).
+        // Fresh installs always store them; redeploys only re-store when -e/-p were passed.
+        const shouldSetSecrets = !isRedeploy || emailExplicit || passwordExplicit;
+        let credentialsUpdated = false;
+        if (shouldSetSecrets) {
+          const secretSpinner = ora({ text: 'Storing admin credentials as worker secrets...', ...spinnerOptions }).start();
+          let secretsOk = true;
+          const setSecret = (key: string, value: string) => {
+            try {
+              // Use execSync's `input` option so the value goes to stdin with NO shell
+              // interpolation (avoids the `$` escaping bug that corrupted bcrypt hashes).
+              execSync(`${wrangler} secret put ${key}`, { input: value, stdio: ["pipe", "ignore", "pipe"] });
+            } catch (e) {
+              secretsOk = false;
+            }
+          };
+          setSecret("KYRO_ADMIN_EMAIL", email);
+          setSecret("KYRO_ADMIN_PASSWORD", password);
+          if (secretsOk) {
+            credentialsUpdated = true;
+            secretSpinner.succeed('Admin credentials stored as worker secrets');
+          } else {
+            secretSpinner.warn('Could not store admin credentials — set KYRO_ADMIN_EMAIL / KYRO_ADMIN_PASSWORD manually');
+          }
+        }
+
+        // Only show a password we actually applied. On a redeploy without -e/-p the
+        // stored secret is unknown (secrets can't be read back), so don't print a fresh one.
+        const adminPasswordToShow = !isRedeploy || credentialsUpdated ? password : null;
+        if (isRedeploy) {
+          if (credentialsUpdated) {
+            console.log(`  ${chalk.dim("Redeployed")} ${chalk.cyan(name)} — admin credentials updated.`);
+          } else {
+            console.log(`  ${chalk.dim("Redeployed")} ${chalk.cyan(name)} — existing resources and admin credentials are unchanged.`);
+          }
+        }
+        if (adminPasswordToShow) {
+          console.log(`  ${chalk.bold("Super Admin Credentials")}`);
+          console.log(`  ${chalk.dim("├─")} ${chalk.bold("Email   :")} ${chalk.cyan(email)}`);
+          console.log(`  ${chalk.dim("└─")} ${chalk.bold("Password:")} ${chalk.yellow.bold(password)}`);
+        }
         if (liveUrl) {
           console.log(`  ${chalk.dim("└─")} ${chalk.bold("Live URL:")} ${chalk.cyan(liveUrl)}`);
         }
-        console.log(`\n  ${chalk.dim("⚠️  Save these credentials. Password won't be shown again.")}\n`);
+        if (!isRedeploy) {
+          console.log(`\n  ${chalk.dim("⚠️  Save these credentials. Password won't be shown again.")}\n`);
+        }
 
         // Emit machine-readable JSON for programmatic consumers (e.g. deploy-kyro server)
         if (jsonOutput) {
           process.stdout.write(
-            JSON.stringify({ ok: true, liveUrl, adminEmail: email, adminPassword: password }) + '\n'
+            JSON.stringify({ ok: true, liveUrl, adminEmail: email, adminPassword: adminPasswordToShow, redeploy: isRedeploy, credentialsUpdated }) + '\n'
           );
         }
       } catch (err) {
+        const out = (err as any)?.stdout?.toString?.() || "";
+        const errOut = (err as any)?.stderr?.toString?.() || "";
         deploySpinner.fail('Deployment failed');
+        if (out) process.stdout.write(out);
+        if (errOut) process.stdout.write(errOut);
         console.log(`\n  ${chalk.red.bold("✖ Deployment Failed!")}`);
-        console.log(`  ${chalk.dim("Inspect Wrangler output above for error details.")}\n`);
+        console.log(`  ${chalk.dim("See the Wrangler error above.")}\n`);
         if (jsonOutput) {
           process.stdout.write(JSON.stringify({ ok: false, error: 'Deployment failed' }) + '\n');
         }

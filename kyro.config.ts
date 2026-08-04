@@ -17,6 +17,7 @@ const groq = createGroq({
 let adapter = null;
 
 if (typeof window === "undefined") {
+  const isCloudflare = typeof (globalThis as any).WebSocketPair !== "undefined" || process.env.CLOUDFLARE === "true";
   const envDB = (globalThis as any).DB || (process.env as any).DB;
   if (envDB) {
     try {
@@ -42,7 +43,7 @@ if (typeof window === "undefined") {
     } catch (error) {
       console.warn("[kyro.config] Drizzle adapter failed to load:", (error as Error).message);
     }
-  } else {
+  } else if (!isCloudflare) {
     // Reliably determine the project root regardless of where the command is run from
     const cwd = process.cwd();
     const rootDir = cwd.endsWith("admin") ? path.join(cwd, "..") : cwd;

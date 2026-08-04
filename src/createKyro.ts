@@ -32,13 +32,11 @@ import {
 } from "./webhooks/index.js";
 import { s3StoragePlugin } from "./plugins/storage-s3.js";
 import { cloudinaryStoragePlugin } from "./plugins/storage-cloudinary.js";
-import { ftpStoragePlugin } from "./plugins/storage-ftp.js";
 import { storageSettingsGlobal } from "./templates/settings/storage.js";
 
 const builtinStoragePlugins: KyroPlugin[] = [
   s3StoragePlugin,
   cloudinaryStoragePlugin,
-  ftpStoragePlugin,
 ];
 
 // ============================================================================
@@ -361,7 +359,7 @@ export class Kyro {
     }
   }
 
-  getREST(options?: { user?: User; req?: Request; tenantId?: string }) {
+  async getREST(options?: { user?: User; req?: Request; tenantId?: string }) {
     const authObj =
       typeof this.config.auth === "object" ? this.config.auth : null;
     const authSecret = authObj?.secret;
