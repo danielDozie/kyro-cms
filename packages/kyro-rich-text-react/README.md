@@ -1,4 +1,4 @@
-# kyro-rich-text-react
+# @kyro-cms/kyro-rich-text-react
 
 A lightweight, headless React renderer for [Kyro CMS](https://kyro.dev) rich text content.
 
@@ -11,11 +11,11 @@ By default, it is **completely headless and unstyled**, outputting clean semanti
 ## Installation
 
 ```bash
-npm install kyro-rich-text-react
+npm install @kyro-cms/kyro-rich-text-react
 # or
-pnpm add kyro-rich-text-react
+pnpm add @kyro-cms/kyro-rich-text-react
 # or
-yarn add kyro-rich-text-react
+yarn add @kyro-cms/kyro-rich-text-react
 ```
 
 ---
@@ -26,7 +26,7 @@ Import the `KyroRichTextRenderer` component and pass the JSON array from your Ky
 
 ```tsx
 import React from 'react';
-import { KyroRichTextRenderer } from 'kyro-rich-text-react';
+import { KyroRichTextRenderer } from '@kyro-cms/kyro-rich-text-react';
 
 export default function BlogPost({ post }) {
   // post.content is the JSON array from Kyro
@@ -52,7 +52,7 @@ The `components` prop accepts an object with two keys:
 
 ```tsx
 import React from 'react';
-import { KyroRichTextRenderer, KyroRichTextComponents } from 'kyro-rich-text-react';
+import { KyroRichTextRenderer, KyroRichTextComponents } from '@kyro-cms/kyro-rich-text-react';
 import Link from 'next/link';
 
 const customComponents: KyroRichTextComponents = {
@@ -125,7 +125,7 @@ export default function BlogPost({ post }) {
 If you use the Tailwind `@tailwindcss/typography` plugin, you don't even need to write custom overrides. You can simply wrap the default headless output in a `.prose` class, and Tailwind will style all the semantic HTML automatically:
 
 ```tsx
-import { KyroRichTextRenderer } from 'kyro-rich-text-react';
+import { KyroRichTextRenderer } from '@kyro-cms/kyro-rich-text-react';
 
 export default function BlogPost({ post }) {
   return (

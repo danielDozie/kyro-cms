@@ -117,6 +117,7 @@ Kyro is designed as a modular ecosystem:
 - `@kyro-cms/connect` — Universal, type-safe API client and codegen for any framework.
 - `@kyro-cms/ai` — Vercel AI SDK integration for automated content generation and AI admin assistance.
 - `@kyro-cms/rich-text-react` — Headless React renderer for Kyro RichText content schemas.
+- `@kyro-cms/field-locations` — Pre-built geographic SelectFields for Kyro CMS.
 ---
 
 ## Example usage
