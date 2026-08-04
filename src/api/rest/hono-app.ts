@@ -1555,7 +1555,7 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
   app.get("/api/health", (c) => {
     return c.json({
       status: "ok",
-      version: "0.11.0",
+      version: "0.12.45",
       collections: registry.getCollectionSlugs(),
       timestamp: new Date().toISOString(),
     });
