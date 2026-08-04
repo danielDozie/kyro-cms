@@ -1,9 +1,9 @@
-# kyro-connect
+# @kyro-cms/connect
 
 Universal SDK for [Kyro CMS](https://kyro.dev). Type-safe client for any platform — Node.js, browser, Deno, Bun.
 
 ```bash
-npm install kyro-connect
+pnpm add @kyro-cms/connect
 ```
 
 ---
@@ -21,7 +21,7 @@ Fetches your CMS schema and generates `kyro.generated.d.ts` with full type defin
 ### 2. Use the client
 
 ```ts
-import { createClient } from "kyro-connect";
+import { createClient } from "@kyro-cms/connect";
 import type { KyroAppRouter } from "./kyro.generated";
 
 const api = createClient<KyroAppRouter>({
@@ -210,7 +210,7 @@ API key is sent as the `x-api-key` header on every request. If the server sessio
 Thrown when the server responds with a non-2xx status code.
 
 ```ts
-import { createClient, KyroConnectError } from "kyro-connect";
+import { createClient, KyroConnectError } from "@kyro-cms/connect";
 
 try {
   await api["posts"].find({ page: 1 });
@@ -279,7 +279,7 @@ pnpm build
 pnpm link --global
 
 # In your consumer project
-pnpm link kyro-connect
+pnpm link @kyro-cms/connect
 npx kyro-codegen --url http://localhost:4321/api --api-key kyro_xxx
 ```
 

@@ -152,6 +152,26 @@ query {
 const response = await client.posts.find.query({ page: 1, limit: 10 });
 ```
 
+### Kyro Connect SDK
+
+Type-safe client + codegen for any platform (Node.js, browser, Deno, Bun):
+
+```bash
+pnpm add @kyro-cms/connect
+```
+
+```typescript
+import { createClient } from "@kyro-cms/connect";
+import type { KyroAppRouter } from "./kyro.generated";
+
+const api = createClient<KyroAppRouter>({
+  url: "http://localhost:4321/api/trpc",
+  apiKey: "kyro_xxx",
+});
+
+const posts = await api["posts"].find.query({ page: 1, limit: 10 });
+```
+
 ---
 
 ## Learn more
