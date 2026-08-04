@@ -218,6 +218,12 @@ export class LocalAdapter extends AbstractBaseAdapter {
   async connect(): Promise<void> {
     if (!this.db) {
       this.db = new (getDatabaseSync())(this.path || ":memory:");
+    } else {
+      try {
+        this.db.exec("SELECT 1");
+      } catch {
+        this.db = new (getDatabaseSync())(this.path || ":memory:");
+      }
     }
 
     // Wrap prepare to serialize parameter bindings for Node.js node:sqlite DatabaseSync compatibility
@@ -258,7 +264,12 @@ export class LocalAdapter extends AbstractBaseAdapter {
 
   async disconnect(): Promise<void> {
     if (this.db) {
-      this.db.close();
+      try {
+        this.db.close();
+      } catch {
+        // ignore error if connection was already closed
+      }
+      this.db = null;
     }
     this.connected = false;
 
@@ -647,8 +658,9 @@ export class LocalAdapter extends AbstractBaseAdapter {
 
     const insertData = this.prepareData(data, config);
     insertData.id = id;
-    insertData.created_at = new Date().toISOString();
-    insertData.updated_at = new Date().toISOString();
+    const now = new Date().toISOString();
+    insertData.created_at = now;
+    insertData.updated_at = now;
 
     if (tenantId && (config as CollectionConfig).tenantScoped) {
       insertData.tenant_id = tenantId;

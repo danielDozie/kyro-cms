@@ -304,15 +304,13 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         this.client = drizzle(sql, { schema: this.schema });
       } else if (this.dialect === 'sqlite') {
         let betterSqlite3, drizzle;
-        const bs3Pkg = 'better-sqlite3';
-        const drzBs3Pkg = 'drizzle-orm/better-sqlite3';
         try {
-          betterSqlite3 = (await import(/* @vite-ignore */ bs3Pkg)).default;
-          drizzle = (await import(/* @vite-ignore */ drzBs3Pkg)).drizzle;
+          betterSqlite3 = (await import(/* @vite-ignore */ 'better-sqlite3')).default;
+          drizzle = (await import(/* @vite-ignore */ 'drizzle-orm/better-sqlite3')).drizzle;
         } catch (e) {
           autoInstall(["better-sqlite3", "drizzle-orm"]);
-          betterSqlite3 = (await import(/* @vite-ignore */ bs3Pkg)).default;
-          drizzle = (await import(/* @vite-ignore */ drzBs3Pkg)).drizzle;
+          betterSqlite3 = (await import(/* @vite-ignore */ 'better-sqlite3')).default;
+          drizzle = (await import(/* @vite-ignore */ 'drizzle-orm/better-sqlite3')).drizzle;
         }
         const db = new betterSqlite3(this.connectionString.replace('file:', ''));
         this.client = drizzle(db, { schema: this.schema });
@@ -320,7 +318,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
 
     if (this.rawClient && typeof this.rawClient.prepare === 'function' && typeof this.client?.select !== 'function') {
-      const { drizzle: drizzleD1 } = await import('drizzle-orm/d1');
+      const { drizzle: drizzleD1 } = await import(/* @vite-ignore */ 'drizzle-orm/d1');
       this.client = drizzleD1(this.rawClient, { schema: this.schema });
     }
 

@@ -94,7 +94,7 @@ export function CustomerDashboard({ collections, userName, userAvatar }: Custome
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="surface-tile rounded-xl border border-[var(--kyro-border)] flex items-center justify-between gap-4 p-6">
+      <div className="surface-tile rounded-lg border border-[var(--kyro-border)] flex items-center justify-between gap-4 p-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] flex items-center justify-center overflow-hidden flex-shrink-0">
             {userAvatar ? (

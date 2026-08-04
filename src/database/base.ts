@@ -113,9 +113,10 @@ export abstract class AbstractBaseAdapter implements BaseAdapter {
     const prepared: Record<string, any> = { ...data };
     
     if (collection.timestamps) {
-      prepared.updatedAt = new Date().toISOString();
+      const now = new Date().toISOString();
+      prepared.updatedAt = now;
       if (!prepared.createdAt) {
-        prepared.createdAt = new Date().toISOString();
+        prepared.createdAt = now;
       }
     }
 

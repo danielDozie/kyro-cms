@@ -8,6 +8,7 @@ import { LocalAdapter } from "./database/local/adapter.js";
 import { SQLiteAuthAdapter } from "./auth/sqlite-adapter.js";
 import { MongoDBAdapter } from "./database/mongodb/adapter.js";
 import { MongoDBAuthAdapter } from "./database/mongodb/mongo-auth-adapter.js";
+import { logger } from "./utils/logger.js";
 // @ts-ignore - handled by vite alias
 import projectConfig from "kyro:config";
 
@@ -42,7 +43,7 @@ async function doInit(): Promise<void> {
       // Override adapter to DrizzleAdapter with D1
       config.adapter = new DrizzleAdapter({ type: 'sqlite', client: d1Client });
       
-      console.log("[Kyro API] Hot-swapped LocalAdapter for D1 DrizzleAdapter");
+      logger.info("Hot-swapped LocalAdapter for D1 DrizzleAdapter");
     }
     
     kyroInstance = createKyro(config);
@@ -68,12 +69,12 @@ async function doInit(): Promise<void> {
     }
 
     if (bootstrapAuthAdapter?.connect) {
-      try { await bootstrapAuthAdapter.connect(); } catch (e) { console.warn("[Kyro API] Auth connect warning:", e); }
+      try { await bootstrapAuthAdapter.connect(); } catch (e) { logger.warn("Auth connect warning:", e); }
     }
 
     await kyroInstance.init();
-    try { await kyroInstance.loadSettings(); } catch (e) { console.warn("[Kyro API] loadSettings warning:", e); }
-    try { await autoBootstrap(bootstrapAuthAdapter); } catch (e) { console.warn("[Kyro API] autoBootstrap warning:", e); }
+    try { await kyroInstance.loadSettings(); } catch (e) { logger.warn("loadSettings warning:", e); }
+    try { await autoBootstrap(bootstrapAuthAdapter); } catch (e) { logger.warn("autoBootstrap warning:", e); }
 
     // Expose instance globally so admin SSR can read DB directly
     (globalThis as any).__KYRO_INSTANCE__ = kyroInstance;
@@ -81,7 +82,7 @@ async function doInit(): Promise<void> {
   } catch (err) {
     kyroInstance = null;
     initPromise = null;
-    console.error("[Kyro API] Init failed, will retry:", err);
+    logger.error("Init failed, will retry:", err);
     throw err;
   }
 }
@@ -124,18 +125,9 @@ const ACCESS_DEFAULTS: Record<string, boolean> = {
   requireAuth: false,
 };
 
-async function checkAccessEnabled(key: keyof typeof ACCESS_DEFAULTS): Promise<boolean> {
+function checkAccessEnabled(key: keyof typeof ACCESS_DEFAULTS): boolean {
   if (!kyroInstance) return ACCESS_DEFAULTS[key] ?? true;
-  try {
-    const doc = await kyroInstance.db.findOne({
-      collection: "_globals_access-settings",
-      where: {},
-      draft: true,
-    });
-    return doc?.apiAccess?.[key] ?? ACCESS_DEFAULTS[key] ?? true;
-  } catch {
-    return true;
-  }
+  return kyroInstance.settings?.access?.apiAccess?.[key] ?? ACCESS_DEFAULTS[key] ?? true;
 }
 
 export const ALL: APIRoute = async (context) => {
@@ -167,7 +159,7 @@ export const ALL: APIRoute = async (context) => {
   const p = __KYRO_API_PATH__;
 
   if (path === `${p}/graphql` && typeof kyroInstance.getGraphQL === "function") {
-    if (!(await checkAccessEnabled("graphqlEnabled"))) {
+    if (!checkAccessEnabled("graphqlEnabled")) {
       return new Response(JSON.stringify({ error: "GraphQL is disabled" }), {
         status: 503,
         headers: { "Content-Type": "application/json" },
@@ -179,7 +171,7 @@ export const ALL: APIRoute = async (context) => {
   }
 
   if (path.startsWith(`${p}/trpc/`) && typeof kyroInstance.getTRPC === "function") {
-    if (!(await checkAccessEnabled("trpcEnabled"))) {
+    if (!checkAccessEnabled("trpcEnabled")) {
       return new Response(JSON.stringify({ error: "tRPC is disabled" }), {
         status: 503,
         headers: { "Content-Type": "application/json" },

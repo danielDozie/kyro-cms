@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { apiPost } from "../lib/api";
 import { toast, useAuthStore, type AuthUser } from "../lib/stores";
 import type { CollectionConfig, GlobalConfig } from "@kyro-cms/core/client";
@@ -7,17 +7,24 @@ import { DetailView } from "./DetailView";
 import { CreateView } from "./CreateView";
 import { LoginPage } from "./LoginPage";
 import { Dashboard } from "./Dashboard";
-import { UserManagement } from "./UserManagement";
-import { BrandingHub } from "./BrandingHub";
-import { DeveloperCenter } from "./DeveloperCenter";
-import { WebhookManager } from "./WebhookManager";
-import { MediaGallery } from "./MediaGallery";
 import { CommandPalette } from "./ui/CommandPalette";
 import { GlobalModal } from "./ui/GlobalModal";
 import { Toaster } from "./ui/Toaster";
 import { ThemeProvider, type ThemeMode } from "./ThemeProvider";
 import { toArray, toCollectionMap, toGlobalMap } from "../lib/config";
 import "../styles/main.css";
+
+const UserManagement = lazy(() => import("./UserManagement").then(m => ({ default: m.UserManagement })));
+const BrandingHub = lazy(() => import("./BrandingHub").then(m => ({ default: m.BrandingHub })));
+const DeveloperCenter = lazy(() => import("./DeveloperCenter").then(m => ({ default: m.DeveloperCenter })));
+const WebhookManager = lazy(() => import("./WebhookManager").then(m => ({ default: m.WebhookManager })));
+const MediaGallery = lazy(() => import("./MediaGallery").then(m => ({ default: m.MediaGallery })));
+
+const ViewFallback = () => (
+  <div className="flex items-center justify-center p-12 text-[var(--kyro-text-muted)] animate-pulse">
+    <span>Loading view...</span>
+  </div>
+);
 
 type View =
   | "list"
@@ -167,19 +174,19 @@ export function Admin({ config, theme = "light", onThemeChange }: AdminProps) {
         ) : null;
 
       case "users":
-        return <UserManagement />;
+        return <Suspense fallback={<ViewFallback />}><UserManagement /></Suspense>;
 
       case "media":
-        return <MediaGallery />;
+        return <Suspense fallback={<ViewFallback />}><MediaGallery /></Suspense>;
 
       case "branding":
-        return <BrandingHub />;
+        return <Suspense fallback={<ViewFallback />}><BrandingHub /></Suspense>;
 
       case "developer":
-        return <DeveloperCenter collections={collections as any} />;
+        return <Suspense fallback={<ViewFallback />}><DeveloperCenter collections={collections as any} /></Suspense>;
 
       case "webhooks":
-        return <WebhookManager />;
+        return <Suspense fallback={<ViewFallback />}><WebhookManager /></Suspense>;
 
       case "list":
       default:

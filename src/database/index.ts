@@ -5,3 +5,4 @@ export { MongoDBAdapter, createMongoDBAdapter } from './mongodb/index.js';
 export { LocalAdapter, createLocalAdapter } from './local/index.js';
 export { NeonAdapter, createNeonAdapter } from './neon.js';
 export { TursoAdapter, createTursoAdapter, type TursoAdapterOptions } from './turso.js';
+export { AdapterFactory } from './factory.js';

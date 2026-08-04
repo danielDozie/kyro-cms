@@ -1,4 +1,4 @@
-import { G as GlobalConfig, C as CollectionConfig } from '../types-BjivdGbU.cjs';
+import { G as GlobalConfig, C as CollectionConfig } from '../types-DOKMyC3y.cjs';
 import '../types-euTszc-1.cjs';
 
 declare const minimalCollections: Record<string, any>;

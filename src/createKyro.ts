@@ -56,7 +56,6 @@ function updateFieldByPath(
   const currentPart = parts[0];
   const remainingPath = parts.slice(1).join(".");
 
-  // 1. First search for exact name match in current array
   for (const field of fields) {
     if (field.name === currentPart) {
       if (remainingPath) {
@@ -98,10 +97,8 @@ function updateFieldByPath(
         return true;
       }
     }
-  }
 
-  // 2. Next check flat structural wrappers (unnamed tabs, rows, collapsibles)
-  for (const field of fields) {
+    // Check flat structural wrappers (unnamed tabs, rows, collapsibles) in the same pass
     const isFlatStructuralField =
       !field.name ||
       field.type === "tabs" ||
@@ -122,8 +119,7 @@ function updateFieldByPath(
     }
   }
 
-  // 3. Field was not found anywhere in this container.
-  // If there is no remaining path, this is the terminal target container — append the new field here!
+  // Target was not found in existing fields; if terminal, append it
   if (!remainingPath) {
     fields.push({
       name: currentPart,
@@ -169,7 +165,7 @@ export class Kyro {
   constructor(config: KyroConfig) {
     this.config = config;
     this.registry = createRegistry();
-    this.db = config.adapter || (config as any).db;
+    this.db = config.adapter || (config as KyroConfig & { db?: BaseAdapter }).db!;
     this.pubsub = new KyroPubSub(this.registry);
     this.webhookService = createWebhookService(this.db);
 
@@ -287,9 +283,9 @@ export class Kyro {
     // the real table instead of creating one from the collection config.
     // Only for Postgres — SQLite uses the auto-generated table.
     if (this.db instanceof DrizzleAdapter && this.db.dialect === 'postgres') {
-      const drizzle = this.db as any;
+      const drizzle = this.db as unknown as { schema?: Record<string, unknown> };
       const tableName = API_KEY_COLLECTION.replace(/-/g, '_');
-      if (!drizzle.schema[tableName]) {
+      if (drizzle.schema && !drizzle.schema[tableName]) {
         drizzle.schema[tableName] = apiKeys;
       }
     }
@@ -462,7 +458,7 @@ export class Kyro {
 
         const kyroRouter = createKyroServer(ctx);
 
-        const collectionRouter = (kyroRouter as any)[slug];
+        const collectionRouter = (kyroRouter as Record<string, Record<string, Function>>)[slug];
         if (!collectionRouter) {
           return new Response(
             JSON.stringify({
@@ -533,7 +529,7 @@ export class Kyro {
           );
         }
       },
-      router: null as any,
+      router: null as unknown as any,
     };
   }
 
@@ -563,9 +559,10 @@ export class Kyro {
     const port = options?.port || 8080;
 
     // Clean up any existing instance (e.g. from Vite HMR)
-    if ((globalThis as any).__KYRO_WS_SERVER__) {
+    const globalWsContainer = globalThis as typeof globalThis & { __KYRO_WS_SERVER__?: KyroWSServer };
+    if (globalWsContainer.__KYRO_WS_SERVER__) {
       try {
-        await (globalThis as any).__KYRO_WS_SERVER__.close();
+        await globalWsContainer.__KYRO_WS_SERVER__.close();
       } catch (e) {
         // Ignore errors during close
       }
@@ -578,7 +575,7 @@ export class Kyro {
       verifyToken: options?.verifyToken || defaultVerifyToken,
     });
 
-    (globalThis as any).__KYRO_WS_SERVER__ = this.wsServer;
+    globalWsContainer.__KYRO_WS_SERVER__ = this.wsServer;
 
     return this.wsServer;
   }

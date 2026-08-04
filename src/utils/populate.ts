@@ -24,114 +24,96 @@ function extractRelValue(value: any): { id: string; relationTo?: string }[] {
   return [];
 }
 
-function collectReferences(data: any, fields: Field[], refsToFetch: Map<string, Set<string>>) {
+function traverseFieldTree(
+  data: any,
+  fields: Field[],
+  onRelField: (field: Field, containerData: any) => void
+): void {
   if (!data || typeof data !== "object") return;
   for (const field of fields) {
     if (!field.name && field.type !== "row" && field.type !== "collapsible" && field.type !== "tabs") continue;
 
     if (field.type === "relationship" || field.type === "upload") {
-      const raw = data[field.name!];
-      if (!raw) continue;
-      const targetSlugs = Array.isArray(field.relationTo) ? field.relationTo : [field.relationTo];
-      const items = extractRelValue(raw);
-      for (const item of items) {
-        if (!item.id) continue;
-        const slugs = item.relationTo ? [item.relationTo] : targetSlugs;
-        for (const slug of slugs) {
-           if (slug === "*") continue;
-           if (!refsToFetch.has(slug)) refsToFetch.set(slug, new Set());
-           refsToFetch.get(slug)!.add(item.id);
+      onRelField(field, data);
+    } else if (field.type === "group" || field.type === "collapsible" || field.type === "row") {
+      const targetData = field.name ? data[field.name] : data;
+      traverseFieldTree(targetData, (field as any).fields || [], onRelField);
+    } else if (field.type === "tabs" && (field as any).tabs) {
+      const targetData = field.name ? data[field.name] : data;
+      for (const tab of (field as any).tabs) {
+        traverseFieldTree(targetData, tab.fields || [], onRelField);
+      }
+    } else if (field.type === "array" && field.name && Array.isArray(data[field.name])) {
+      for (const item of data[field.name]) {
+        traverseFieldTree(item, (field as any).fields || [], onRelField);
+      }
+    } else if (field.type === "blocks" && field.name && Array.isArray(data[field.name])) {
+      for (const item of data[field.name]) {
+        if (!item || typeof item !== "object") continue;
+        const blockTypeStr = item.type || item.blockType;
+        if (!blockTypeStr) continue;
+        const blockDef = (field as any).blocks?.find((b: any) => b.slug === blockTypeStr);
+        if (blockDef && Array.isArray(blockDef.fields)) {
+          const targetData = item.data && typeof item.data === "object" ? item.data : item;
+          traverseFieldTree(targetData, blockDef.fields, onRelField);
         }
       }
-    } else if (field.type === "group" || field.type === "collapsible" || field.type === "row") {
-       const targetData = field.name ? data[field.name] : data;
-       collectReferences(targetData, (field as any).fields || [], refsToFetch);
-    } else if (field.type === "tabs" && (field as any).tabs) {
-       const targetData = field.name ? data[field.name] : data;
-       for (const tab of (field as any).tabs) {
-         collectReferences(targetData, tab.fields || [], refsToFetch);
-       }
-    } else if (field.type === "array" && field.name && Array.isArray(data[field.name])) {
-       for (const item of data[field.name]) {
-         collectReferences(item, (field as any).fields || [], refsToFetch);
-       }
-    } else if (field.type === "blocks" && field.name && Array.isArray(data[field.name])) {
-       for (const item of data[field.name]) {
-          if (!item || typeof item !== "object") continue;
-          const blockTypeStr = item.type || item.blockType;
-          if (!blockTypeStr) continue;
-          const blockDef = (field as any).blocks?.find((b: any) => b.slug === blockTypeStr);
-          if (blockDef && Array.isArray(blockDef.fields)) {
-            const targetData = item.data && typeof item.data === "object" ? item.data : item;
-            collectReferences(targetData, blockDef.fields, refsToFetch);
-          }
-       }
     }
   }
 }
 
-function injectReferences(data: any, fields: Field[], fetchedDocs: Map<string, Map<string, any>>) {
-  if (!data || typeof data !== "object") return;
-  for (const field of fields) {
-    if (!field.name && field.type !== "row" && field.type !== "collapsible" && field.type !== "tabs") continue;
-
-    if (field.type === "relationship" || field.type === "upload") {
-      const raw = data[field.name!];
-      if (!raw) continue;
-      
-      const targetSlugs = Array.isArray(field.relationTo) ? field.relationTo : [field.relationTo];
-      const setValue = (val: any) => { data[field.name!] = val; };
-      
-      const findDoc = (id: string, relTo?: string) => {
-         const slugs = relTo ? [relTo] : targetSlugs;
-         for (const slug of slugs) {
-            const docMap = fetchedDocs.get(slug);
-            if (docMap && docMap.has(id)) return docMap.get(id);
-         }
-         return null;
-      };
-
-      if (typeof raw === "string") {
-        const doc = findDoc(raw);
-        setValue(doc ? doc : { id: raw });
-      } else if (Array.isArray(raw)) {
-        setValue(raw.map((v: any) => {
-          const id = typeof v === "object" ? (v.value ?? v.id) : v;
-          const relTo = typeof v === "object" ? v.relationTo : undefined;
-          const doc = findDoc(id, relTo);
-          return doc ? doc : { id: id };
-        }));
-      } else if (typeof raw === "object") {
-        const id = raw.value ?? raw.id;
-        const relTo = raw.relationTo;
-        const doc = findDoc(id, relTo);
-        setValue(doc ? doc : { id });
+function collectReferences(data: any, fields: Field[], refsToFetch: Map<string, Set<string>>) {
+  traverseFieldTree(data, fields, (field, containerData) => {
+    const raw = containerData[field.name!];
+    if (!raw) return;
+    const targetSlugs = Array.isArray((field as any).relationTo) ? (field as any).relationTo : [(field as any).relationTo];
+    const items = extractRelValue(raw);
+    for (const item of items) {
+      if (!item.id) continue;
+      const slugs = item.relationTo ? [item.relationTo] : targetSlugs;
+      for (const slug of slugs) {
+        if (slug === "*") continue;
+        if (!refsToFetch.has(slug)) refsToFetch.set(slug, new Set());
+        refsToFetch.get(slug)!.add(item.id);
       }
-    } else if (field.type === "group" || field.type === "collapsible" || field.type === "row") {
-       const targetData = field.name ? data[field.name] : data;
-       injectReferences(targetData, (field as any).fields || [], fetchedDocs);
-    } else if (field.type === "tabs" && (field as any).tabs) {
-       const targetData = field.name ? data[field.name] : data;
-       for (const tab of (field as any).tabs) {
-         injectReferences(targetData, tab.fields || [], fetchedDocs);
-       }
-    } else if (field.type === "array" && field.name && Array.isArray(data[field.name])) {
-       for (const item of data[field.name]) {
-         injectReferences(item, (field as any).fields || [], fetchedDocs);
-       }
-    } else if (field.type === "blocks" && field.name && Array.isArray(data[field.name])) {
-       for (const item of data[field.name]) {
-          if (!item || typeof item !== "object") continue;
-          const blockTypeStr = item.type || item.blockType;
-          if (!blockTypeStr) continue;
-          const blockDef = (field as any).blocks?.find((b: any) => b.slug === blockTypeStr);
-          if (blockDef && Array.isArray(blockDef.fields)) {
-            const targetData = item.data && typeof item.data === "object" ? item.data : item;
-            injectReferences(targetData, blockDef.fields, fetchedDocs);
-          }
-       }
     }
-  }
+  });
+}
+
+function injectReferences(data: any, fields: Field[], fetchedDocs: Map<string, Map<string, any>>) {
+  traverseFieldTree(data, fields, (field, containerData) => {
+    const raw = containerData[field.name!];
+    if (!raw) return;
+    
+    const targetSlugs = Array.isArray((field as any).relationTo) ? (field as any).relationTo : [(field as any).relationTo];
+    const setValue = (val: any) => { containerData[field.name!] = val; };
+    
+    const findDoc = (id: string, relTo?: string) => {
+      const slugs = relTo ? [relTo] : targetSlugs;
+      for (const slug of slugs) {
+        const docMap = fetchedDocs.get(slug);
+        if (docMap && docMap.has(id)) return docMap.get(id);
+      }
+      return null;
+    };
+
+    if (typeof raw === "string") {
+      const doc = findDoc(raw);
+      setValue(doc ? doc : { id: raw });
+    } else if (Array.isArray(raw)) {
+      setValue(raw.map((v: any) => {
+        const id = typeof v === "object" ? (v.value ?? v.id) : v;
+        const relTo = typeof v === "object" ? v.relationTo : undefined;
+        const doc = findDoc(id, relTo);
+        return doc ? doc : { id: id };
+      }));
+    } else if (typeof raw === "object") {
+      const id = raw.value ?? raw.id;
+      const relTo = raw.relationTo;
+      const doc = findDoc(id, relTo);
+      setValue(doc ? doc : { id });
+    }
+  });
 }
 
 export async function populateRelationships(
@@ -168,14 +150,34 @@ export async function populateRelationships(
     
     for (const id of idArr) {
       try {
-        const relDoc = await db.findByID({ collection: slug, id, draft: true });
-        if (relDoc) {
-          docMap.set(id, relDoc);
-          newDocs.push(relDoc);
+        const batchResult = await db.find<Record<string, any>>({
+          collection: slug,
+          where: { id: { in: idArr } },
+          limit: idArr.length,
+          draft: true,
+        });
+        const docsList = batchResult?.docs || [];
+        for (const relDoc of docsList) {
+          if (relDoc && relDoc.id) {
+            docMap.set(String(relDoc.id), relDoc);
+            newDocs.push(relDoc);
+          }
         }
       } catch {
-        // ignore
+        // Fallback to per-id fetching if batch query fails
+        for (const id of idArr) {
+          try {
+            const relDoc = await db.findByID({ collection: slug, id, draft: true });
+            if (relDoc) {
+              docMap.set(id, relDoc);
+              newDocs.push(relDoc);
+            }
+          } catch {
+            // ignore
+          }
+        }
       }
+      break;
     }
     
     fetchedDocs.set(slug, docMap);

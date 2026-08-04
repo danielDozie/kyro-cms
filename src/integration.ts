@@ -1,6 +1,6 @@
 import type { AstroIntegration } from "astro";
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs";
 
 const resolveEntrypoint = (fileStem: string) => {
   // Use a fallback for Cloudflare Workers where import.meta.url is polyfilled improperly by ESBuild
@@ -22,6 +22,43 @@ export interface KyroIntegrationOptions {
   enableTRPC?: boolean;
   enableWebSocket?: boolean;
 }
+
+const KYRO_PACKAGES = [
+  "@kyro-cms/core",
+  "@kyro-cms/admin",
+  "@kyro-cms/astro",
+  "@kyro-cms/ai",
+  "@kyro-cms/connect",
+];
+
+const NATIVE_BINARY_EXTERNALS = [
+  "better-sqlite3",
+  "pg",
+  "mongodb",
+  "ioredis",
+  "sharp",
+  "ssh2",
+  "cpu-features",
+  "ssh2-sftp-client",
+  "nodemailer",
+  "jsonwebtoken",
+  "@mapbox/node-pre-gyp",
+  "mock-aws-s3",
+  "aws-sdk",
+  "nock",
+];
+
+const NODE_BUILTINS = [
+  "crypto", "node:crypto", "module", "node:module", "fs", "node:fs",
+  "fs/promises", "node:fs/promises", "path", "node:path", "util", "node:util",
+  "stream", "node:stream", "events", "node:events", "url", "node:url",
+  "http", "node:http", "https", "node:https", "os", "node:os",
+  "child_process", "node:child_process", "assert", "node:assert",
+  "zlib", "node:zlib", "buffer", "node:buffer",
+];
+
+const KYRO_EXTERNAL_MODULES = [...KYRO_PACKAGES, ...NATIVE_BINARY_EXTERNALS];
+const KYRO_SSR_EXTERNALS = [...KYRO_PACKAGES, ...NODE_BUILTINS, ...NATIVE_BINARY_EXTERNALS];
 
 export default function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
   const {
@@ -57,107 +94,15 @@ export default function kyro(options: KyroIntegrationOptions = {}): AstroIntegra
           },
           vite: {
             ssr: {
-              external: [
-                "@kyro-cms/core",
-                "@kyro-cms/admin",
-                "@kyro-cms/astro",
-                "@kyro-cms/ai",
-                "@kyro-cms/connect",
-                "crypto",
-                "node:crypto",
-                "module",
-                "node:module",
-                "fs",
-                "node:fs",
-                "fs/promises",
-                "node:fs/promises",
-                "path",
-                "node:path",
-                "util",
-                "node:util",
-                "stream",
-                "node:stream",
-                "events",
-                "node:events",
-                "url",
-                "node:url",
-                "http",
-                "node:http",
-                "https",
-                "node:https",
-                "os",
-                "node:os",
-                "child_process",
-                "node:child_process",
-                "assert",
-                "node:assert",
-                "zlib",
-                "node:zlib",
-                "buffer",
-                "node:buffer",
-                "better-sqlite3",
-                "pg",
-                "mongodb",
-                "ioredis",
-                "sharp",
-                "ssh2",
-                "cpu-features",
-                "ssh2-sftp-client",
-                "nodemailer",
-                "jsonwebtoken",
-                "@mapbox/node-pre-gyp",
-                "mock-aws-s3",
-                "aws-sdk",
-                "nock",
-              ],
+              external: KYRO_SSR_EXTERNALS,
             },
             build: {
               rollupOptions: {
-                external: [
-                  "@kyro-cms/core",
-                  "@kyro-cms/admin",
-                  "@kyro-cms/astro",
-                  "@kyro-cms/ai",
-                  "@kyro-cms/connect",
-                  "better-sqlite3",
-                  "pg",
-                  "mongodb",
-                  "ioredis",
-                  "sharp",
-                  "ssh2",
-                  "cpu-features",
-                  "ssh2-sftp-client",
-                  "nodemailer",
-                  "jsonwebtoken",
-                  "@mapbox/node-pre-gyp",
-                  "mock-aws-s3",
-                  "aws-sdk",
-                  "nock",
-                ],
+                external: KYRO_EXTERNAL_MODULES,
               },
             },
             optimizeDeps: {
-              exclude: [
-                "@kyro-cms/core",
-                "@kyro-cms/admin",
-                "@kyro-cms/astro",
-                "@kyro-cms/ai",
-                "@kyro-cms/connect",
-                "better-sqlite3",
-                "pg",
-                "mongodb",
-                "ioredis",
-                "sharp",
-                "ssh2",
-                "cpu-features",
-                "ssh2-sftp-client",
-                "nodemailer",
-                "jsonwebtoken",
-                "@mapbox/node-pre-gyp",
-                "mock-aws-s3",
-                "aws-sdk",
-                "nock",
-              ],
+              exclude: KYRO_EXTERNAL_MODULES,
             },
             server: {
               watch: {

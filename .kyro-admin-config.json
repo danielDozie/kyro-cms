@@ -1,6 +1,263 @@
 {
   "collections": [
     {
+      "slug": "posts",
+      "label": "Posts",
+      "labelPlural": "Posts",
+      "singularLabel": "Post",
+      "admin": {
+        "useAsTitle": "title",
+        "defaultColumns": [
+          "title",
+          "slug",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "description": "Blog posts and articles"
+      },
+      "seo": true,
+      "fields": [
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "label": "Slug",
+          "admin": {
+            "description": "The URL-friendly identifier for the post.",
+            "position": "sidebar",
+            "autoGenerate": "title"
+          }
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "label": "Content",
+              "fields": [
+                {
+                  "name": "title",
+                  "type": "text",
+                  "required": true,
+                  "label": "Title",
+                  "admin": {
+                    "description": "The main title of the post as it will appear publicly."
+                  }
+                },
+                {
+                  "name": "content",
+                  "type": "richtext",
+                  "label": "Content"
+                },
+                {
+                  "name": "excerpt",
+                  "type": "textarea",
+                  "label": "Excerpt",
+                  "admin": {
+                    "description": "A short summary of the post."
+                  }
+                }
+              ]
+            },
+            {
+              "label": "Meta",
+              "fields": [
+                {
+                  "name": "category",
+                  "type": "relationship",
+                  "label": "Category",
+                  "relationTo": "categories",
+                  "admin": {
+                    "description": "Select the primary category this post belongs to."
+                  }
+                },
+                {
+                  "name": "relatedPosts",
+                  "type": "array",
+                  "label": "Related Posts",
+                  "fields": [
+                    {
+                      "name": "post",
+                      "type": "relationship",
+                      "relationTo": "posts",
+                      "label": "Post"
+                    }
+                  ],
+                  "admin": {
+                    "description": "Select posts related to this one."
+                  }
+                }
+              ]
+            },
+            {
+              "label": "SEO Settings",
+              "fields": [
+                {
+                  "name": "metaTitle",
+                  "type": "text",
+                  "label": "Meta Title",
+                  "admin": {
+                    "description": "The title used for search engines (recommended < 60 chars).",
+                    "autoGenerate": "title"
+                  }
+                },
+                {
+                  "name": "metaDescription",
+                  "type": "textarea",
+                  "label": "Meta Description",
+                  "admin": {
+                    "description": "A brief summary for search engines (recommended < 160 chars).",
+                    "autoGenerate": "content"
+                  }
+                },
+                {
+                  "name": "keywords",
+                  "type": "text",
+                  "label": "Keywords",
+                  "admin": {
+                    "description": "Comma-separated list of keywords for this page."
+                  }
+                },
+                {
+                  "name": "ogImage",
+                  "type": "upload",
+                  "label": "OpenGraph Image",
+                  "relationTo": "media",
+                  "admin": {
+                    "description": "The image shown when shared on social media."
+                  }
+                },
+                {
+                  "name": "twitter",
+                  "type": "group",
+                  "label": "Twitter Card",
+                  "fields": [
+                    {
+                      "name": "title",
+                      "type": "text",
+                      "label": "Twitter Title"
+                    },
+                    {
+                      "name": "description",
+                      "type": "textarea",
+                      "label": "Twitter Description"
+                    },
+                    {
+                      "name": "image",
+                      "type": "upload",
+                      "label": "Twitter Image",
+                      "relationTo": "media"
+                    }
+                  ]
+                },
+                {
+                  "name": "advanced",
+                  "type": "group",
+                  "label": "Advanced Search Settings",
+                  "fields": [
+                    {
+                      "name": "noindex",
+                      "type": "checkbox",
+                      "label": "Hide from search engines (noindex)",
+                      "defaultValue": false
+                    },
+                    {
+                      "name": "nofollow",
+                      "type": "checkbox",
+                      "label": "Do not follow links (nofollow)",
+                      "defaultValue": false
+                    },
+                    {
+                      "name": "canonicalUrl",
+                      "type": "text",
+                      "label": "Canonical URL Override",
+                      "admin": {
+                        "description": "Leave empty to use the default canonical URL."
+                      }
+                    },
+                    {
+                      "name": "structuredData",
+                      "type": "code",
+                      "label": "JSON-LD Structured Data",
+                      "admin": {
+                        "description": "Custom JSON-LD schema for this specific page."
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tags",
+          "type": "list",
+          "label": "Tags",
+          "admin": {
+            "description": "Add keywords to help categorize your post.",
+            "position": "sidebar"
+          }
+        },
+        {
+          "name": "authors",
+          "type": "array",
+          "label": "Authors",
+          "fields": [
+            {
+              "name": "user",
+              "type": "relationship",
+              "label": "User",
+              "relationTo": "users"
+            }
+          ],
+          "admin": {
+            "description": "Select one or more authors for this post.",
+            "position": "sidebar"
+          }
+        },
+        {
+          "name": "featured",
+          "type": "checkbox",
+          "label": "Featured",
+          "defaultValue": false,
+          "admin": {
+            "description": "Highlight this post as a featured article.",
+            "position": "sidebar"
+          }
+        },
+        {
+          "name": "featuredImage",
+          "type": "upload",
+          "label": "Featured Image",
+          "relationTo": "media",
+          "admin": {
+            "description": "The primary visual used to represent this post.",
+            "position": "sidebar"
+          }
+        },
+        {
+          "name": "readTime",
+          "type": "number",
+          "label": "Read Time (mins)",
+          "admin": {
+            "description": "Estimated reading time in minutes.",
+            "position": "sidebar",
+            "readOnly": true
+          }
+        }
+      ],
+      "hooks": {
+        "beforeChange": [
+          null
+        ]
+      },
+      "timestamps": true,
+      "versions": {
+        "drafts": true,
+        "maxPerDoc": 10
+      }
+    },
+    {
       "slug": "products",
       "label": "Products",
       "labelPlural": "Products",
@@ -852,263 +1109,6 @@
         }
       ],
       "timestamps": true
-    },
-    {
-      "slug": "posts",
-      "label": "Posts",
-      "labelPlural": "Posts",
-      "singularLabel": "Post",
-      "admin": {
-        "useAsTitle": "title",
-        "defaultColumns": [
-          "title",
-          "slug",
-          "status",
-          "createdAt",
-          "updatedAt"
-        ],
-        "description": "Blog posts and articles"
-      },
-      "seo": true,
-      "fields": [
-        {
-          "name": "slug",
-          "type": "text",
-          "required": true,
-          "label": "Slug",
-          "admin": {
-            "description": "The URL-friendly identifier for the post.",
-            "position": "sidebar",
-            "autoGenerate": "title"
-          }
-        },
-        {
-          "type": "tabs",
-          "tabs": [
-            {
-              "label": "Content",
-              "fields": [
-                {
-                  "name": "title",
-                  "type": "text",
-                  "required": true,
-                  "label": "Title",
-                  "admin": {
-                    "description": "The main title of the post as it will appear publicly."
-                  }
-                },
-                {
-                  "name": "content",
-                  "type": "richtext",
-                  "label": "Content"
-                },
-                {
-                  "name": "excerpt",
-                  "type": "textarea",
-                  "label": "Excerpt",
-                  "admin": {
-                    "description": "A short summary of the post."
-                  }
-                }
-              ]
-            },
-            {
-              "label": "Meta",
-              "fields": [
-                {
-                  "name": "category",
-                  "type": "relationship",
-                  "label": "Category",
-                  "relationTo": "categories",
-                  "admin": {
-                    "description": "Select the primary category this post belongs to."
-                  }
-                },
-                {
-                  "name": "relatedPosts",
-                  "type": "array",
-                  "label": "Related Posts",
-                  "fields": [
-                    {
-                      "name": "post",
-                      "type": "relationship",
-                      "relationTo": "posts",
-                      "label": "Post"
-                    }
-                  ],
-                  "admin": {
-                    "description": "Select posts related to this one."
-                  }
-                }
-              ]
-            },
-            {
-              "label": "SEO Settings",
-              "fields": [
-                {
-                  "name": "metaTitle",
-                  "type": "text",
-                  "label": "Meta Title",
-                  "admin": {
-                    "description": "The title used for search engines (recommended < 60 chars).",
-                    "autoGenerate": "title"
-                  }
-                },
-                {
-                  "name": "metaDescription",
-                  "type": "textarea",
-                  "label": "Meta Description",
-                  "admin": {
-                    "description": "A brief summary for search engines (recommended < 160 chars).",
-                    "autoGenerate": "content"
-                  }
-                },
-                {
-                  "name": "keywords",
-                  "type": "text",
-                  "label": "Keywords",
-                  "admin": {
-                    "description": "Comma-separated list of keywords for this page."
-                  }
-                },
-                {
-                  "name": "ogImage",
-                  "type": "upload",
-                  "label": "OpenGraph Image",
-                  "relationTo": "media",
-                  "admin": {
-                    "description": "The image shown when shared on social media."
-                  }
-                },
-                {
-                  "name": "twitter",
-                  "type": "group",
-                  "label": "Twitter Card",
-                  "fields": [
-                    {
-                      "name": "title",
-                      "type": "text",
-                      "label": "Twitter Title"
-                    },
-                    {
-                      "name": "description",
-                      "type": "textarea",
-                      "label": "Twitter Description"
-                    },
-                    {
-                      "name": "image",
-                      "type": "upload",
-                      "label": "Twitter Image",
-                      "relationTo": "media"
-                    }
-                  ]
-                },
-                {
-                  "name": "advanced",
-                  "type": "group",
-                  "label": "Advanced Search Settings",
-                  "fields": [
-                    {
-                      "name": "noindex",
-                      "type": "checkbox",
-                      "label": "Hide from search engines (noindex)",
-                      "defaultValue": false
-                    },
-                    {
-                      "name": "nofollow",
-                      "type": "checkbox",
-                      "label": "Do not follow links (nofollow)",
-                      "defaultValue": false
-                    },
-                    {
-                      "name": "canonicalUrl",
-                      "type": "text",
-                      "label": "Canonical URL Override",
-                      "admin": {
-                        "description": "Leave empty to use the default canonical URL."
-                      }
-                    },
-                    {
-                      "name": "structuredData",
-                      "type": "code",
-                      "label": "JSON-LD Structured Data",
-                      "admin": {
-                        "description": "Custom JSON-LD schema for this specific page."
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "name": "tags",
-          "type": "list",
-          "label": "Tags",
-          "admin": {
-            "description": "Add keywords to help categorize your post.",
-            "position": "sidebar"
-          }
-        },
-        {
-          "name": "authors",
-          "type": "array",
-          "label": "Authors",
-          "fields": [
-            {
-              "name": "user",
-              "type": "relationship",
-              "label": "User",
-              "relationTo": "users"
-            }
-          ],
-          "admin": {
-            "description": "Select one or more authors for this post.",
-            "position": "sidebar"
-          }
-        },
-        {
-          "name": "featured",
-          "type": "checkbox",
-          "label": "Featured",
-          "defaultValue": false,
-          "admin": {
-            "description": "Highlight this post as a featured article.",
-            "position": "sidebar"
-          }
-        },
-        {
-          "name": "featuredImage",
-          "type": "upload",
-          "label": "Featured Image",
-          "relationTo": "media",
-          "admin": {
-            "description": "The primary visual used to represent this post.",
-            "position": "sidebar"
-          }
-        },
-        {
-          "name": "readTime",
-          "type": "number",
-          "label": "Read Time (mins)",
-          "admin": {
-            "description": "Estimated reading time in minutes.",
-            "position": "sidebar",
-            "readOnly": true
-          }
-        }
-      ],
-      "hooks": {
-        "beforeChange": [
-          null
-        ]
-      },
-      "timestamps": true,
-      "versions": {
-        "drafts": true,
-        "maxPerDoc": 10
-      }
     },
     {
       "slug": "pages",
@@ -6265,11 +6265,15 @@
               "value": "local"
             },
             {
+              "label": "Cloudflare Native Assets (R2 Binding)",
+              "value": "cloudflare_r2"
+            },
+            {
               "label": "S3 Compatible (AWS, Backblaze, Wasabi, etc.)",
               "value": "aws"
             },
             {
-              "label": "Cloudflare R2",
+              "label": "Cloudflare R2 (S3 API)",
               "value": "r2"
             },
             {
@@ -6304,6 +6308,28 @@
               "type": "text",
               "label": "Base URL",
               "defaultValue": "/uploads"
+            }
+          ]
+        },
+        {
+          "name": "cloudflare_r2",
+          "type": "group",
+          "label": "Cloudflare Native Assets (R2 Binding) Settings",
+          "admin": {
+            "condition": {
+              "field": "provider",
+              "equals": "cloudflare_r2"
+            }
+          },
+          "fields": [
+            {
+              "name": "note",
+              "type": "text",
+              "label": "Storage Status",
+              "defaultValue": "Cloudflare R2 Native Binding ('STORAGE_BUCKET') active.",
+              "admin": {
+                "readOnly": true
+              }
             }
           ]
         },
@@ -6374,7 +6400,7 @@
         {
           "name": "r2",
           "type": "group",
-          "label": "Cloudflare R2 Settings",
+          "label": "Cloudflare R2 (S3 API) Settings",
           "admin": {
             "condition": {
               "field": "provider",

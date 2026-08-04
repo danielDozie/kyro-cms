@@ -1,5 +1,5 @@
-import { B as BaseAdapter, k as User, R as Request, b as FindResult } from '../types-CaXXmV9h.js';
-import { j as createWebhookService } from '../WebhookService-C19xR8qE.js';
+import { B as BaseAdapter, k as User, R as Request, b as FindResult } from '../types-CYGXsNcJ.js';
+import { j as createWebhookService } from '../WebhookService-CZf_na-J.js';
 import '../types-euTszc-1.js';
 
 interface ApiKeyContext {
@@ -39,21 +39,21 @@ declare function createFindProcedure(ctx: KyroContext): (input: {
     depth?: number;
     select?: string[];
     draft?: boolean;
-}) => Promise<FindResult<unknown>>;
+}) => Promise<FindResult<Record<string, any>>>;
 declare function createFindByIDProcedure(ctx: KyroContext): (input: {
     collection: string;
     id: string;
     depth?: number;
     select?: string[];
     draft?: boolean;
-}) => Promise<{}>;
+}) => Promise<Record<string, any>>;
 declare function createCreateProcedure(ctx: KyroContext): (input: {
     collection: string;
     data: Record<string, any>;
     depth?: number;
     select?: string[];
 }) => Promise<{
-    doc: unknown;
+    doc: Record<string, any>;
 }>;
 declare function createUpdateProcedure(ctx: KyroContext): (input: {
     collection: string;
@@ -63,13 +63,13 @@ declare function createUpdateProcedure(ctx: KyroContext): (input: {
     select?: string[];
     baseUpdatedAt?: string;
 }) => Promise<{
-    doc: unknown;
+    doc: Record<string, any> | null;
 }>;
 declare function createDeleteProcedure(ctx: KyroContext): (input: {
     collection: string;
     id: string;
 }) => Promise<{
-    doc: unknown;
+    doc: Record<string, any>;
     message: string;
 }>;
 declare function createCountProcedure(ctx: KyroContext): (input: {

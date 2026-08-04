@@ -295,11 +295,11 @@ export interface PruneVersionsArgs {
 export interface BaseAdapter {
   init(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;
 
-  find<T>(args: FindArgs): Promise<FindResult<T>>;
-  findByID<T>(args: FindByIDArgs): Promise<T | null>;
-  create<T>(args: CreateArgs): Promise<T>;
-  update<T>(args: UpdateArgs): Promise<T>;
-  delete<T>(args: DeleteArgs): Promise<T>;
+  find<T = Record<string, any>>(args: FindArgs): Promise<FindResult<T>>;
+  findByID<T = Record<string, any>>(args: FindByIDArgs): Promise<T | null>;
+  create<T = Record<string, any>>(args: CreateArgs): Promise<T>;
+  update<T = Record<string, any>>(args: UpdateArgs): Promise<T>;
+  delete<T = Record<string, any>>(args: DeleteArgs): Promise<T>;
   count(args: {
     collection: string;
     where?: Record<string, any>;
