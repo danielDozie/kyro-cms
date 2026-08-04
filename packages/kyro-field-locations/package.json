@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/field-locations",
-  "version": "0.12.47",
+  "version": "0.12.48",
   "description": "Pre-built geographic SelectFields for Kyro CMS",
   "type": "module",
   "main": "./dist/index.js",
