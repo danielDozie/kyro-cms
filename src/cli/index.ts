@@ -188,7 +188,8 @@ authCommand
       } else if (isMongo) {
         const { MongoDBAuthAdapter } = await import("../database/mongodb/mongo-auth-adapter.js");
         const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
-        const client = new mongoMod.MongoClient(databaseUrl);
+        const MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
+        const client = new MongoClient(databaseUrl);
         await client.connect();
         const db = client.db();
         adapter = new MongoDBAuthAdapter({ db });
@@ -251,7 +252,8 @@ program
     } else if (isMongo) {
       try {
         const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
-        const client = new mongoMod.MongoClient(databaseUrl);
+        const MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
+        const client = new MongoClient(databaseUrl);
         await client.connect();
         await client.db().admin().ping();
 

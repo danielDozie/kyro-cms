@@ -21,6 +21,12 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false
   },
-  "include": ["src/**/*", "kyro.config.ts"],
+  "include": [
+    "src/**/*",
+    "kyro.config.ts",
+    "tsup.config.ts",
+    "drizzle.config.ts",
+    "vitest.config.ts"
+  ],
   "exclude": ["node_modules", "dist", "test", "examples", "admin"]
 }

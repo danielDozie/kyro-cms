@@ -15,6 +15,8 @@ import { navigate } from "../lib/navigate";
 import { Shimmer } from "./ui/Shimmer";
 import { normalizeUploadFields } from "../lib/normalize-upload-fields";
 import { useAutoFormStore } from "../lib/autoform-store";
+import { ClientOnly } from "./ui/ClientOnly";
+import { useIsMounted } from "../hooks/useIsMounted";
 import { useAutoFormState } from "../hooks/useAutoFormState";
 import { useUIStore, toast } from "../lib/stores";
 
@@ -96,7 +98,18 @@ function evaluateDeclarativeCondition(cond: DeclarativeCondition | undefined, cu
 }
 
 const EMPTY_OBJECT = {};
-export function AutoForm({
+
+function AutoFormSkeleton() {
+  return (
+    <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse">
+      <div className="h-8 bg-[var(--kyro-border)] rounded-xl w-1/3 opacity-50" />
+      <div className="h-32 bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+      <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-28 opacity-50" />
+    </div>
+  );
+}
+
+function AutoFormInner({
   config: propConfig,
   data: initialData = EMPTY_OBJECT,
   errors = EMPTY_OBJECT as Record<string, string>,
@@ -111,6 +124,8 @@ export function AutoForm({
   onActionError,
   justSaved,
 }: AutoFormProps) {
+  const isMounted = useIsMounted();
+
   // Use the serialized config from the Astro page prop (SSR + client match).
   // Only fall back to the live client-side config when no prop was passed.
   const activeConfig = propConfig || (globalSlug
@@ -1059,6 +1074,16 @@ export function AutoForm({
     );
   }
 
+  if (!isMounted) {
+    return (
+      <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse">
+        <div className="h-8 bg-[var(--kyro-border)] rounded-xl w-1/3 opacity-50" />
+        <div className="h-32 bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+        <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-28 opacity-50" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       {layout !== "single" && (
@@ -1190,4 +1215,12 @@ export function AutoForm({
 function stripHtml(html: string) {
   if (typeof html !== "string") return "";
   return html.replace(/<[^>]*>?/gm, "").trim();
+}
+
+export function AutoForm(props: AutoFormProps) {
+  return (
+    <ClientOnly fallback={<AutoFormSkeleton />}>
+      <AutoFormInner {...props} />
+    </ClientOnly>
+  );
 }

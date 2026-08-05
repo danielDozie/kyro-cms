@@ -779,7 +779,8 @@ if (!body.email || !body.password) {
     }
 
     try {
-      const updatedSession = await require('./auth-session.js').refreshSession(sessionId, req);
+      const { refreshSession } = await import('./auth-session.js');
+      const updatedSession = await refreshSession(sessionId, req);
       if (!updatedSession) {
         return this.errorResponse("Session not found", 404);
       }

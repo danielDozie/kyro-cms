@@ -52,11 +52,11 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       let MongoClient;
       try {
         const mongoMod: any = await import(/* @vite-ignore */ 'mongodb' as any);
-        MongoClient = mongoMod.MongoClient;
+        MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
       } catch (e) {
         autoInstall(["mongodb"]);
         const mongoMod: any = await import(/* @vite-ignore */ 'mongodb' as any);
-        MongoClient = mongoMod.MongoClient;
+        MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
       }
       this.client = new MongoClient(this.connectionString);
       await this.client.connect();

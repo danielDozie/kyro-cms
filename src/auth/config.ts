@@ -127,11 +127,11 @@ async function createAuthAdapter(
         let MongoClient;
         try {
           const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
-          MongoClient = mongoMod.MongoClient;
+          MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
         } catch (e) {
           autoInstall(["mongodb"]);
           const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
-          MongoClient = mongoMod.MongoClient;
+          MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
         }
         const client = new MongoClient(mongoUri);
         await client.connect();

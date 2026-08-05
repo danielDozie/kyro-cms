@@ -7,6 +7,7 @@ import React, {
   Suspense,
   lazy,
 } from "react";
+import { useIsMounted } from "../hooks/useIsMounted";
 import {
   Book,
   Trash2,
@@ -416,13 +417,25 @@ interface SchemaInfo {
   types: TypeInfo[];
 }
 
-export function GraphQLPlayground({
+import { ClientOnly } from "./ui/ClientOnly";
+
+function GraphQLPlaygroundSkeleton() {
+  return (
+    <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse h-[calc(100vh-120px)]">
+      <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-1/3 opacity-50" />
+      <div className="h-full bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+    </div>
+  );
+}
+
+function GraphQLPlaygroundInner({
   endpoint = "/api/graphql",
   initialQuery,
   initialVariables,
   initialShowDocs = false,
 }: GraphQLPlaygroundProps) {
-    const { t } = useTranslation();
+
+  const { t } = useTranslation();
   const [token, setToken] = useState<string>("");
   const [showToken, setShowToken] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -444,7 +457,6 @@ export function GraphQLPlayground({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeEditorTab, setActiveEditorTab] = useState<"query" | "variables" | "headers">("query");
-  const [isMounted, setIsMounted] = useState(false);
   const [showDocs, setShowDocs] = useState(initialShowDocs);
   const [schema, setSchema] = useState<SchemaInfo | null>(null);
   const [loadingSchema, setLoadingSchema] = useState(false);
@@ -472,20 +484,12 @@ export function GraphQLPlayground({
   const cursorPos = useRef({ line: 1, col: 1 });
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    localStorage.setItem("kyro_graphql_tab", JSON.stringify(tab));
+  }, [tab]);
 
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem("kyro_graphql_tab", JSON.stringify(tab));
-    }
-  }, [tab, isMounted]);
-
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem("kyro_graphql_history", JSON.stringify(history));
-    }
-  }, [history, isMounted]);
+    localStorage.setItem("kyro_graphql_history", JSON.stringify(history));
+  }, [history]);
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768);
@@ -917,21 +921,19 @@ export function GraphQLPlayground({
           {/* CodeMirror */}
           <div className="flex-1 overflow-hidden relative bg-[var(--kyro-bg)]">
             <Suspense fallback={<div className="p-3 text-[10px] text-[var(--kyro-text-muted)]">Loading editor...</div>}>
-              {isMounted && (
-                <CodeMirrorEditor
-                  value={editorValue}
-                  height="100%"
-                  extensions={extensions}
-                  theme={theme}
-                  onChange={(val) => updateTab(activeEditorTab, val)}
-                  basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: true }}
-                  style={{
-                    height: "100%",
-                    fontSize: "12px",
-                    fontFamily: "'Fira Code', monospace",
-                  }}
-                />
-              )}
+              <CodeMirrorEditor
+                value={editorValue}
+                height="100%"
+                extensions={extensions}
+                theme={theme}
+                onChange={(val) => updateTab(activeEditorTab, val)}
+                basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: true }}
+                style={{
+                  height: "100%",
+                  fontSize: "12px",
+                  fontFamily: "'Fira Code', monospace",
+                }}
+              />
             </Suspense>
           </div>
 
@@ -1287,5 +1289,13 @@ export function GraphQLPlayground({
         </div>
       </div>
     </div>
+  );
+}
+
+export function GraphQLPlayground(props: GraphQLPlaygroundProps) {
+  return (
+    <ClientOnly fallback={<GraphQLPlaygroundSkeleton />}>
+      <GraphQLPlaygroundInner {...props} />
+    </ClientOnly>
   );
 }

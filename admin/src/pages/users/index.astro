@@ -32,7 +32,7 @@ try {
 
 <AdminLayout title={i18next.t("pages." + "Users".replace(/ /g, ""), { defaultValue: "Users" })}> 
   <UsersList
-    client:load
+    client:only="react"
     initialUsers={users}
     initialTotal={totalUsers}
     apiPath={apiPath}

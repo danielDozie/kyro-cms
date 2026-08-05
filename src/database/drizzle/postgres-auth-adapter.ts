@@ -212,6 +212,7 @@ export class PostgresAuthAdapter implements AuthAdapter {
     role?: UserRole;
     avatar?: string;
     tenantId?: string;
+    emailVerified?: boolean;
   }): Promise<AuthUser> {
     const passwordHash = await this.hashPassword(data.password);
     const [user] = await this.db
@@ -223,6 +224,7 @@ export class PostgresAuthAdapter implements AuthAdapter {
         role: (data.role || "customer") as string,
         avatar: data.avatar,
         tenantId: data.tenantId,
+        emailVerified: data.emailVerified ?? true,
       })
       .returning();
 

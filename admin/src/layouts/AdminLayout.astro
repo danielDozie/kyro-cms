@@ -299,7 +299,7 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     </div>
 
     <!-- Auth Bridge: Hydrates Zustand useAuthStore with user + permissions -->
-    <AuthBridge client:load />
+    <AuthBridge client:only="react" />
 
     <!-- Command Palette (React) -->
     <CommandPaletteWrapper client:only="react" collections={collections} globals={globals} />

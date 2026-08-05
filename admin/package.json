@@ -54,7 +54,7 @@
   ],
   "scripts": {
     "dev": "astro dev",
-    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "build": "tsup src/index.ts --format esm --dts --clean",
     "build:pages": "CLOUDFLARE=true astro build",
     "preview": "astro preview",
     "check": "astro check",
@@ -113,8 +113,6 @@
     "idb-keyval": "^6.2.2",
     "lucide-react": "^0.475.0",
     "marked": "^18.0.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "react-i18next": "^17.0.8",
     "react-image-crop": "^11.0.10",
     "recharts": "^3.9.2",

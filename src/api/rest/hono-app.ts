@@ -268,14 +268,13 @@ async function createDefaultAuthAdapter(
   db: BaseAdapter,
   rootDir: string,
 ): Promise<any> {
-  if ('dialect' in db && db.dialect === "postgres" && db instanceof DrizzleAdapter) {
-    return new PostgresAuthAdapter({ db: db.client });
+  if ('dialect' in db && (db as any).dialect === "postgres") {
+    return new PostgresAuthAdapter({ db: (db as any).client });
   }
-  if ('dialect' in db && db.dialect === "sqlite" && db instanceof DrizzleAdapter) {
-    return new D1AuthAdapter({ db: db.client });
+  if ('dialect' in db && (db as any).dialect === "sqlite") {
+    return new D1AuthAdapter({ db: (db as any).client });
   }
-  if ('dialect' in db && db.dialect === "mongodb") {
-    // We safely assert db as MongoDBAdapter
+  if ('dialect' in db && (db as any).dialect === "mongodb") {
     const mongoDb = db as MongoDBAdapter;
     return new MongoDBAuthAdapter({ db: () => mongoDb.db });
   }

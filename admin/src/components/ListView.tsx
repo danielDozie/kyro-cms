@@ -13,6 +13,7 @@ import { PageHeader } from "./ui/PageHeader";
 import { Badge } from "./ui/Badge";
 import { Pagination } from "./ui/Pagination";
 import { useTranslation } from "react-i18next";
+import { useIsMounted } from "../hooks/useIsMounted";
 import "../lib/i18n";
 
 import type { CollectionConfig, Field } from "@kyro-cms/core";
@@ -50,10 +51,18 @@ interface ListViewProps {
   config?: any;
 }
 
-/**
- * Unified ListView component used across both SPA (Admin.tsx) and MPA (Astro pages) modes.
- */
-export function ListView({
+import { ClientOnly } from "./ui/ClientOnly";
+
+function ListViewSkeleton() {
+  return (
+    <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse">
+      <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-1/4 opacity-50" />
+      <div className="h-64 bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+    </div>
+  );
+}
+
+function ListViewInner({
   collection,
   collectionSlug: providedSlug,
   initialDocs = [],
@@ -62,8 +71,9 @@ export function ListView({
   onEdit: providedOnEdit,
   config,
 }: ListViewProps) {
+  const collectionSlug = providedSlug || collection?.slug || "";
+
   const { t } = useTranslation();
-  const collectionSlug = providedSlug || collection.slug;
   const { permissions } = useAuthStore();
   const canCreate = permissions?.collections?.[collectionSlug]?.create !== false;
   const canDelete = permissions?.collections?.[collectionSlug]?.delete !== false;
@@ -790,4 +800,12 @@ function checkTabbedValue(data: any[], type: string): string | undefined {
   if (type !== "tabs") return;
   const label = data[0]?.tabs?.[0]?.fields?.[0]?.label;
   return label;
+}
+
+export function ListView(props: ListViewProps) {
+  return (
+    <ClientOnly fallback={<ListViewSkeleton />}>
+      <ListViewInner {...props} />
+    </ClientOnly>
+  );
 }

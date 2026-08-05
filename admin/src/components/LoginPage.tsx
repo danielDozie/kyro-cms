@@ -28,10 +28,13 @@ export function LoginPage({ onAuth, theme = "light" }: LoginPageProps) {
 
   const checkIfFirstUser = async () => {
     try {
-      await apiGet("/api/users");
+      const res = await apiGet<any>("/api/users");
+      if (res && Array.isArray(res.docs) && res.docs.length === 0) {
+        setIsFirstUser(true);
+        setMode("register");
+      }
     } catch {
-      setIsFirstUser(true);
-      setMode("register");
+      // Default to login mode for unauthenticated users
     }
   };
 

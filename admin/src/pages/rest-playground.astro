@@ -13,6 +13,6 @@ const collections = collectionsData.collections || [];
 
 <AdminLayout title={i18next.t("pages." + "REST Playground".replace(/ /g, ""), { defaultValue: "REST Playground" })}> 
   <div class="flex-1 overflow-hidden h-[calc(100vh-64px)] md:h-[calc(100vh-80px)]">
-    <RestPlayground client:load collections={collections} />
+    <RestPlayground client:only="react" collections={collections} />
   </div>
 </AdminLayout>

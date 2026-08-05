@@ -786,7 +786,7 @@ function isActive(item: NavItem): boolean {
       </div>
 
       <div class="flex items-center gap-2">
-        <UserMenu client:load adminPath={adminPath} />
+        <UserMenu client:only="react" adminPath={adminPath} />
         <button id="logout-btn" class="hidden"></button>
       </div>
     </div>

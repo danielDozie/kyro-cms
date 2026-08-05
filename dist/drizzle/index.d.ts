@@ -91,6 +91,7 @@ declare class PostgresAuthAdapter implements AuthAdapter {
         role?: UserRole;
         avatar?: string;
         tenantId?: string;
+        emailVerified?: boolean;
     }): Promise<AuthUser>;
     findUserByEmail(email: string): Promise<AuthUser | null>;
     findUserById(id: string): Promise<AuthUser | null>;

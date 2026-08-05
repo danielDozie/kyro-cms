@@ -51,7 +51,8 @@ async function doInit(): Promise<void> {
     }
     
     kyroInstance = createKyro(config);
-    
+    await kyroInstance.init();
+
     // Check if we need to hot-swap the auth adapter as well
     const activeDb = config.adapter;
     const isDrizzleAdapter = activeDb && activeDb.dialect && (activeDb.dialect === "postgres" || activeDb.dialect === "sqlite");
@@ -69,14 +70,13 @@ async function doInit(): Promise<void> {
       const authDbPath = process.env.KYRO_AUTH_DB_PATH || "./data/auth.db";
       bootstrapAuthAdapter = new SQLiteAuthAdapter({ path: authDbPath });
     } else if (isMongoAdapter) {
-      bootstrapAuthAdapter = new MongoDBAuthAdapter({ db: (activeDb as any).client });
+      bootstrapAuthAdapter = new MongoDBAuthAdapter({ adapter: activeDb });
     }
 
     if (bootstrapAuthAdapter?.connect) {
       try { await bootstrapAuthAdapter.connect(); } catch (e) { logger.warn("Auth connect warning:", e); }
     }
 
-    await kyroInstance.init();
     try { await kyroInstance.loadSettings(); } catch (e) { logger.warn("loadSettings warning:", e); }
     try { await autoBootstrap(bootstrapAuthAdapter); } catch (e) { logger.warn("autoBootstrap warning:", e); }
 

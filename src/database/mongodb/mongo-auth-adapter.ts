@@ -54,6 +54,9 @@ export class MongoDBAuthAdapter implements AuthAdapter {
   }
 
   async connect(): Promise<void> {
+    if (this.adapter && !this.adapter.connected) {
+      await this.adapter.connect();
+    }
     if (!this.indexesEnsured) {
       await this.ensureIndexes();
     }
@@ -396,8 +399,9 @@ export class MongoDBAuthAdapter implements AuthAdapter {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
+    const ObjectId = mongoMod.ObjectId ?? mongoMod.default?.ObjectId;
     await this.db.collection("email_verifications").insertOne({
-      userId: new mongoMod.ObjectId(userId),
+      userId: new ObjectId(userId),
       token,
       expiresAt,
       createdAt: new Date(),
@@ -437,8 +441,9 @@ export class MongoDBAuthAdapter implements AuthAdapter {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
     const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
+    const ObjectId = mongoMod.ObjectId ?? mongoMod.default?.ObjectId;
     await this.db.collection("password_resets").insertOne({
-      userId: new mongoMod.ObjectId(user.id),
+      userId: new ObjectId(user.id),
       token,
       expiresAt,
       createdAt: new Date(),

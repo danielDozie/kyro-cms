@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useIsMounted } from "../hooks/useIsMounted";
 import { apiGet } from "../lib/api";
 import {
   AreaChart,
@@ -46,6 +47,17 @@ function SkeletonCard() {
       <div className="w-10 h-10 rounded-xl mb-3" style={{ background: "var(--kyro-bg-secondary)" }} />
       <div className="h-7 w-20 rounded mb-2" style={{ background: "var(--kyro-bg-secondary)" }} />
       <div className="h-3 w-28 rounded" style={{ background: "var(--kyro-bg-secondary)" }} />
+    </div>
+  );
+}
+
+function SkeletonSection() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
     </div>
   );
 }
@@ -417,16 +429,16 @@ export interface DashboardMetricsProps {
   isEcommerce?: boolean;
 }
 
-export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce }) => {
+import { ClientOnly } from "./ui/ClientOnly";
+
+const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce }) => {
   const [data, setData] = useState<MetricsData | null>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [auth, setAuth] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     if (typeof window !== "undefined") {
       setAuth((window as any).__kyroAuth || null);
     }
@@ -462,6 +474,10 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
       })
       .finally(() => setLoading(false));
   }, [isEcommerce]);
+
+  if (loading) {
+    return <SkeletonSection />;
+  }
 
   if (error) {
     return (
@@ -633,3 +649,9 @@ export const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ isEcommerce 
     </div>
   );
 };
+
+export const DashboardMetrics: React.FC<DashboardMetricsProps> = (props) => (
+  <ClientOnly fallback={<SkeletonSection />}>
+    <DashboardMetricsInner {...props} />
+  </ClientOnly>
+);

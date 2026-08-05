@@ -51,7 +51,7 @@ export default defineConfig({
   banner({ format }) {
     if (format === "esm") {
       return {
-        js: `import { createRequire as __createRequire } from "module"; var require = __createRequire(import.meta.url);`,
+        js: `var require; if (typeof window === "undefined") { const { createRequire } = await import(/* @vite-ignore */ "module"); require = createRequire(import.meta.url); }`,
       };
     }
   },

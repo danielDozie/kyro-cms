@@ -45,7 +45,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
     {/* ── Role-Based Dashboard Fork ── */}
     {isServerCustomer ? (
       <CustomerDashboard
-          client:load
+          client:only="react"
           collections={serializedCollections}
           userName={serverUser?.name || serverUser?.email || ""}
           userAvatar={serverUser?.avatar || ""}
@@ -53,7 +53,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
         />
     ) : isServerAuthor ? (
      <AuthorDashboard
-          client:load
+          client:only="react"
           collections={serializedCollections}
           userName={serverUser?.name || serverUser?.email || ""}
           userAvatar={serverUser?.avatar || ""}
@@ -97,7 +97,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
     </div>
 
     <!-- CMS Metrics -->
-    <DashboardMetrics client:only="react" isEcommerce={!!collections["orders"] || !!collections["products"]} />
+    <DashboardMetrics client:load isEcommerce={!!collections["orders"] || !!collections["products"]} />
     {(!!collections["orders"] || !!collections["products"]) && <RevenueChart client:only="react" />}
 
 

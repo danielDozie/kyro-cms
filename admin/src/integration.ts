@@ -255,11 +255,25 @@ module.exports = debug;
                 },
               },
             ],
+            server: {
+              fs: {
+                strict: false,
+                allow: [
+                  path.resolve(config.root.pathname, ".."),
+                  path.resolve(config.root.pathname, "../.."),
+                  path.resolve(new URL(".", import.meta.url).pathname, ".."),
+                  path.resolve(new URL(".", import.meta.url).pathname, "../.."),
+                  path.resolve(new URL(".", import.meta.url).pathname, "../../.."),
+                  path.resolve(process.cwd(), ".."),
+                  path.resolve(process.cwd(), "../.."),
+                ],
+              },
+            },
             resolve: {
               alias: {
                 "kyro:config": resolvedConfig,
               },
-              dedupe: ["react", "react-dom"],
+              dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
             },
             optimizeDeps: {
               include: [
@@ -277,7 +291,7 @@ module.exports = debug;
                 '@kyro-cms/admin > use-sync-external-store',
                 '@kyro-cms/admin > use-sync-external-store/with-selector.js',
               ],
-              exclude: ['debug', 'react/compiler-runtime', '@kyro-cms/admin', 'void-elements'],
+              exclude: ['debug', 'react/compiler-runtime', '@kyro-cms/admin'],
             },
             define: {
               __KYRO_ADMIN_PATH__: JSON.stringify(basePath),
@@ -286,7 +300,7 @@ module.exports = debug;
             },
             ssr: {
               noExternal: [
-                '@kyro-cms/admin', '@kyro-cms/core',
+                '@kyro-cms/admin', '@kyro-cms/core', 'zustand', 'react-i18next', 'i18next',
                 '@tiptap/core', '@tiptap/react', '@tiptap/pm', '@tiptap/starter-kit',
                 '@tiptap/extension-link', '@tiptap/extension-image', '@tiptap/extension-text-align',
                 '@tiptap/extension-underline', '@tiptap/extension-highlight',
