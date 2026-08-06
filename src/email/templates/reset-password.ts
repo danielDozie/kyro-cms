@@ -2,9 +2,10 @@
 // Password Reset Template
 // ============================================================================
 
+import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderResetPassword(link: string, userName = "User") {
+export function renderResetPassword(link: string, userName = "User", brandConfig?: BrandConfig) {
   const subject = "Reset your password — Kyro CMS";
   const bodyHtml = `
     <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
@@ -30,6 +31,7 @@ export function renderResetPassword(link: string, userName = "User") {
   `;
 
   const html = renderBaseLayout({
+    brand: brandConfig,
     title: "Reset Your Password",
     previewText: "Use this secure link to reset your Kyro CMS password.",
     badgeText: "Security Action",
@@ -39,7 +41,14 @@ export function renderResetPassword(link: string, userName = "User") {
     ctaUrl: link,
   });
 
-  const text = `Hello ${userName},\n\nReset your password using the following link:\n${link}\n\nThis link will expire in 1 hour.\n\nKyro CMS — https://kyro-cms.com`;
+  const text = `Hello ${userName},
+
+Reset your password using the following link:
+${link}
+
+This link will expire in 1 hour.
+
+Kyro CMS — https://kyro-cms.com`;
 
   return { subject, html, text };
 }

@@ -555,6 +555,9 @@ export async function createHonoApp(options: HonoAppOptions): Promise<Hono> {
   app.post("/api/auth/verify-email", async (c) => authRoutes.verifyEmail(c.req.raw));
   app.get("/api/auth/verify", async (c) => authRoutes.verifyEmail(c.req.raw));
   app.post("/api/auth/verify", async (c) => authRoutes.verifyEmail(c.req.raw));
+  app.post("/api/auth/magic-link", async (c) => authRoutes.requestMagicLink(c.req.raw));
+  app.get("/api/auth/magic-link", async (c) => authRoutes.verifyMagicLink(c.req.raw));
+  app.post("/api/auth/invite", async (c) => authRoutes.inviteUser(c.req.raw));
 
   // Session management
   app.get("/api/auth/sessions", async (c) => authRoutes.listSessions(c.req.raw));

@@ -2,9 +2,10 @@
 // Email Verification Template
 // ============================================================================
 
+import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderVerifyEmail(link: string, userName = "User") {
+export function renderVerifyEmail(link: string, userName = "User", brandConfig?: BrandConfig) {
   const subject = "Confirm your email address — Kyro CMS";
   const bodyHtml = `
     <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
@@ -30,6 +31,7 @@ export function renderVerifyEmail(link: string, userName = "User") {
   `;
 
   const html = renderBaseLayout({
+    brand: brandConfig,
     title: "Confirm Your Email Address",
     previewText: "Please confirm your email address to activate your Kyro CMS account.",
     badgeText: "Action Required",
@@ -41,7 +43,14 @@ export function renderVerifyEmail(link: string, userName = "User") {
     secondaryCtaUrl: "https://kyro-cms.com/docs",
   });
 
-  const text = `Welcome, ${userName}!\n\nPlease verify your email address by visiting:\n${link}\n\nThis link expires in 24 hours.\n\nKyro CMS — https://kyro-cms.com`;
+  const text = `Welcome, ${userName}!
+
+Please verify your email address by visiting:
+${link}
+
+This link expires in 24 hours.
+
+Kyro CMS — https://kyro-cms.com`;
 
   return { subject, html, text };
 }

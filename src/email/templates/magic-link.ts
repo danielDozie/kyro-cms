@@ -2,9 +2,10 @@
 // Magic Link / Passwordless Authentication Template
 // ============================================================================
 
+import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderMagicLink(link: string, code?: string, userName = "User") {
+export function renderMagicLink(link: string, code?: string, userName = "User", brandConfig?: BrandConfig) {
   const subject = "Your one-time login link — Kyro CMS";
   const bodyHtml = `
     <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
@@ -39,6 +40,7 @@ export function renderMagicLink(link: string, code?: string, userName = "User") 
   `;
 
   const html = renderBaseLayout({
+    brand: brandConfig,
     title: "Sign in to Kyro CMS",
     previewText: "Your secure magic login link for Kyro CMS.",
     badgeText: "Instant Login",
@@ -48,7 +50,20 @@ export function renderMagicLink(link: string, code?: string, userName = "User") 
     ctaUrl: link,
   });
 
-  const text = `Hello ${userName},\n\nSign in to Kyro CMS using the link below:\n${link}${code ? `\n\nOr enter code: ${code}` : ""}\n\nThis link expires in 10 minutes.\n\nKyro CMS — https://kyro-cms.com`;
+  const text = `Hello ${userName},
+
+Sign in to Kyro CMS using the link below:
+${link}${
+    code
+      ? `
+
+Or enter code: ${code}`
+      : ""
+  }
+
+This link expires in 10 minutes.
+
+Kyro CMS — https://kyro-cms.com`;
 
   return { subject, html, text };
 }

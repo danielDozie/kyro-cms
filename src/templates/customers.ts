@@ -37,20 +37,36 @@ export const customersCollection: CollectionConfig = {
       name: "fullName",
       type: "text",
       label: "Full Name",
-      admin: { readOnly: true },
       hooks: {
         beforeValidate: [
           ({ data }) => {
-            const first = data?.firstName || "";
-            const last = data?.lastName || "";
-            const combined = `${first} ${last}`.trim();
-            return combined || data?.email || "Unknown Customer";
+            return data?.fullName || data?.email || "Unknown Customer";
           }
         ]
       }
     },
-    { name: "firstName", type: "text", label: "First Name" },
-    { name: "lastName", type: "text", label: "Last Name" },
+    {
+      name: "verified",
+      type: "checkbox",
+      label: "Email Verified",
+      defaultValue: false,
+    },
+    {
+      name: "magicLinkToken",
+      type: "text",
+      label: "Magic Link Token",
+      admin: {
+        hidden: true,
+      }
+    },
+    {
+      name: "magicLinkExpires",
+      type: "text",
+      label: "Magic Link Expiration",
+      admin: {
+        hidden: true,
+      }
+    },
     { name: "phone", type: "text", label: "Phone" },
     {
       name: "addresses",

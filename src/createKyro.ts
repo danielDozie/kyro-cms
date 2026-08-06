@@ -600,6 +600,20 @@ export function createKyro(config: KyroConfig): Kyro {
   return new Kyro(config);
 }
 
+export function createKyroHandler(config: KyroConfig) {
+  const kyro = createKyro(config);
+  let initPromise: Promise<void> | null = null;
+
+  return async function handler(req: Request | any, context?: any): Promise<Response> {
+    if (!initPromise) {
+      initPromise = kyro.init();
+    }
+    await initPromise;
+    const app = await kyro.getREST();
+    return app.fetch(req, context);
+  };
+}
+
 // ============================================================================
 // Convenience Exports
 // ============================================================================

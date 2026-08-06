@@ -2,9 +2,10 @@
 // Password Changed Security Alert Template
 // ============================================================================
 
+import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderPasswordChanged(userName = "User") {
+export function renderPasswordChanged(userName = "User", brandConfig?: BrandConfig) {
   const subject = "Security Alert: Password Changed — Kyro CMS";
   const timestampStr = new Date().toUTCString();
 
@@ -28,6 +29,7 @@ export function renderPasswordChanged(userName = "User") {
   `;
 
   const html = renderBaseLayout({
+    brand: brandConfig,
     title: "Password Updated",
     previewText: "Your Kyro CMS account password was updated.",
     badgeText: "Security Alert",
@@ -37,7 +39,11 @@ export function renderPasswordChanged(userName = "User") {
     ctaUrl: "https://kyro-cms.com",
   });
 
-  const text = `Security Alert: Your Kyro CMS password was updated at ${timestampStr}.\n\nIf you did not make this change, please reset your password immediately.\n\nKyro CMS — https://kyro-cms.com`;
+  const text = `Security Alert: Your Kyro CMS password was updated at ${timestampStr}.
+
+If you did not make this change, please reset your password immediately.
+
+Kyro CMS — https://kyro-cms.com`;
 
   return { subject, html, text };
 }

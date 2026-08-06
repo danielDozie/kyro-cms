@@ -2,9 +2,17 @@ import type { Transporter, SentMessageInfo } from "nodemailer";
 import { getEmailTemplates } from "../email/index.js";
 import { ConfigService } from "../config/ConfigService.js";
 
+export interface BrandConfig {
+  siteName?: string;
+  logoUrl?: string;
+  logoDarkUrl?: string;
+  appUrl?: string;
+}
+
 export interface EmailConfig {
   provider: "smtp" | "resend" | "sendgrid" | "mailgun" | "ses";
   from: string;
+  brand?: BrandConfig;
   fromName?: string;
   replyTo?: string;
   smtp?: {
@@ -43,14 +51,8 @@ export interface EmailOptions {
 }
 
 export interface EmailTemplates {
-  verifyEmail: (
-    link: string,
-    userName?: string,
-  ) => { subject: string; html: string; text: string };
-  resetPassword: (
-    link: string,
-    userName?: string,
-  ) => { subject: string; html: string; text: string };
+  verifyEmail: (link: string, userName?: string) => { subject: string; html: string; text: string };
+  resetPassword: (link: string, userName?: string) => { subject: string; html: string; text: string };
   welcome: (userName?: string) => {
     subject: string;
     html: string;
@@ -66,11 +68,36 @@ export interface EmailTemplates {
     html: string;
     text: string;
   };
-  newLogin: (
-    location: string,
-    time: string,
-    userName?: string,
+  newLogin: (location: string, time: string, userName?: string) => { subject: string; html: string; text: string };
+  magicLink: (link: string, code?: string, userName?: string) => { subject: string; html: string; text: string };
+  userInvite: (
+    inviteUrl: string,
+    roleName?: string,
+    inviterName?: string,
   ) => { subject: string; html: string; text: string };
+  orderConfirmation: (
+    orderId: string,
+    customerName?: string,
+    totalAmount?: string,
+    trackingUrl?: string,
+  ) => { subject: string; html: string; text: string };
+  orderShipped: (
+    orderId: string,
+    customerName?: string,
+    trackingNumber?: string,
+    trackingUrl?: string,
+  ) => { subject: string; html: string; text: string };
+  orderDelivered: (
+    orderId: string,
+    customerName?: string,
+    reviewUrl?: string,
+  ) => { subject: string; html: string; text: string };
+  orderRefunded: (
+    orderId: string,
+    customerName?: string,
+    refundAmount?: string,
+  ) => { subject: string; html: string; text: string };
+  abandonedCart: (customerName?: string, checkoutUrl?: string) => { subject: string; html: string; text: string };
 }
 
 const defaultTemplates: EmailTemplates = getEmailTemplates() as unknown as EmailTemplates;
@@ -83,7 +110,7 @@ export class EmailTransport {
 
   constructor(config: EmailConfig, templates?: Partial<EmailTemplates>) {
     this.config = config;
-    this.templates = { ...getEmailTemplates(), ...templates } as unknown as EmailTemplates;
+    this.templates = { ...getEmailTemplates(config.brand), ...templates } as unknown as EmailTemplates;
   }
 
   private async ensureTransporter(): Promise<Transporter<SentMessageInfo>> {
@@ -121,8 +148,6 @@ export class EmailTransport {
     const fromFull = `"${fromName || "Kyro CMS"}" <${from}>`;
     const replyTo = options.replyTo || configReplyTo;
 
-
-
     try {
       let result;
       switch (provider) {
@@ -130,13 +155,10 @@ export class EmailTransport {
         case "ses":
           {
             const transporter = await this.ensureTransporter();
-            if (!transporter)
-              throw new Error(`${provider} transporter not initialized`);
+            if (!transporter) throw new Error(`${provider} transporter not initialized`);
             result = await transporter.sendMail({
               from: fromFull,
-              to: Array.isArray(options.to)
-                ? options.to.join(", ")
-                : options.to,
+              to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
               subject: options.subject,
               html: options.html,
               text: options.text,
@@ -165,20 +187,13 @@ export class EmailTransport {
     } catch (error: any) {
       console.error(`[EmailTransport] FAILED to send email:`, error.message);
       if (error.response) {
-        console.error(
-          `[EmailTransport] Provider Error Detail:`,
-          JSON.stringify(error.response, null, 2),
-        );
+        console.error(`[EmailTransport] Provider Error Detail:`, JSON.stringify(error.response, null, 2));
       }
       throw error;
     }
   }
 
-  private async sendViaResend(
-    from: string,
-    options: EmailOptions,
-    replyTo?: string,
-  ) {
+  private async sendViaResend(from: string, options: EmailOptions, replyTo?: string) {
     const apiKey = this.config.resend?.apiKey;
     if (!apiKey) throw new Error("Resend API Key missing");
 
@@ -190,7 +205,6 @@ export class EmailTransport {
       text: options.text,
       reply_to: replyTo,
     };
-
 
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -208,20 +222,14 @@ export class EmailTransport {
     return resp.json();
   }
 
-  private async sendViaSendGrid(
-    from: string,
-    options: EmailOptions,
-    replyTo?: string,
-  ) {
+  private async sendViaSendGrid(from: string, options: EmailOptions, replyTo?: string) {
     const apiKey = this.config.sendgrid?.apiKey;
     if (!apiKey) throw new Error("SendGrid API Key missing");
 
     const body = {
       personalizations: [
         {
-          to: Array.isArray(options.to)
-            ? options.to.map((email) => ({ email }))
-            : [{ email: options.to }],
+          to: Array.isArray(options.to) ? options.to.map((email) => ({ email })) : [{ email: options.to }],
         },
       ],
       from: {
@@ -235,7 +243,6 @@ export class EmailTransport {
       ],
       reply_to: replyTo ? { email: replyTo } : undefined,
     };
-
 
     const resp = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
@@ -253,11 +260,7 @@ export class EmailTransport {
     return { success: true };
   }
 
-  private async sendViaMailgun(
-    from: string,
-    options: EmailOptions,
-    replyTo?: string,
-  ) {
+  private async sendViaMailgun(from: string, options: EmailOptions, replyTo?: string) {
     const { apiKey, domain, region } = this.config.mailgun || {};
     if (!apiKey || !domain) throw new Error("Mailgun config missing");
 
@@ -272,7 +275,6 @@ export class EmailTransport {
     formData.append("html", options.html);
     if (options.text) formData.append("text", options.text);
     if (replyTo) formData.append("h:Reply-To", replyTo);
-
 
     const resp = await fetch(`https://${base}/v3/${domain}/messages`, {
       method: "POST",
@@ -306,11 +308,82 @@ export class EmailTransport {
         return false;
       }
     }
-    return !!(
-      this.config.resend?.apiKey ||
-      this.config.sendgrid?.apiKey ||
-      this.config.mailgun?.apiKey
-    );
+    return !!(this.config.resend?.apiKey || this.config.sendgrid?.apiKey || this.config.mailgun?.apiKey);
+  }
+
+  private static async fetchBrandConfig(db: any): Promise<BrandConfig> {
+    let storeName = "Kyro CMS";
+    let logoUrl = "https://kyro-cms.com/logo.svg";
+    let logoDarkUrl = "https://kyro-cms.com/logo-white.svg";
+
+    try {
+      let storeRow = null;
+      let brandRow = null;
+
+      if (typeof db?.findOne === "function") {
+        storeRow = await db.findOne({ collection: "_globals_store-settings", where: {}, draft: true });
+        brandRow = await db.findOne({ collection: "_globals_brand-settings", where: {}, draft: true });
+      } else if (typeof db?.execute === "function") {
+        const { sql } = await import("drizzle-orm");
+        try {
+          const sr = await db.execute(sql`SELECT * FROM "_globals_store-settings" LIMIT 1`);
+          storeRow = Array.isArray(sr) ? sr[0] : sr?.rows ? sr.rows[0] : null;
+        } catch {}
+        try {
+          const br = await db.execute(sql`SELECT * FROM "_globals_brand-settings" LIMIT 1`);
+          brandRow = Array.isArray(br) ? br[0] : br?.rows ? br.rows[0] : null;
+        } catch {}
+      } else if (typeof db?.prepare === "function") {
+        try {
+          storeRow = db.prepare(`SELECT * FROM "_globals_store-settings" LIMIT 1`).get();
+        } catch {}
+        try {
+          brandRow = db.prepare(`SELECT * FROM "_globals_brand-settings" LIMIT 1`).get();
+        } catch {}
+      }
+
+      if (storeRow?.storeName) storeName = storeRow.storeName;
+
+      if (brandRow?.identity) {
+        const identity = typeof brandRow.identity === "string" ? JSON.parse(brandRow.identity) : brandRow.identity;
+        const getMediaUrl = async (id: string) => {
+          if (typeof db?.findOne === "function") {
+            const media = await db.findOne({ collection: "media", where: { id: { equals: id } } });
+            return media?.url;
+          } else if (typeof db?.execute === "function") {
+            const { sql } = await import("drizzle-orm");
+            try {
+              const mr = await db.execute(sql`SELECT url FROM "media" WHERE id = ${id}`);
+              const mediaRow = Array.isArray(mr) ? mr[0] : mr?.rows ? mr.rows[0] : null;
+              return mediaRow?.url;
+            } catch {}
+          } else if (typeof db?.prepare === "function") {
+            try {
+              const row = db.prepare(`SELECT url FROM "media" WHERE id = ?`).get(id) as any;
+              return row?.url;
+            } catch {}
+          }
+        };
+
+        if (identity.primaryLogo) {
+          const url = await getMediaUrl(identity.primaryLogo);
+          if (url) logoUrl = url;
+        }
+        if (identity.darkLogo) {
+          const url = await getMediaUrl(identity.darkLogo);
+          if (url) logoDarkUrl = url;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    return {
+      siteName: storeName,
+      logoUrl,
+      logoDarkUrl,
+      appUrl: process.env.PUBLIC_URL || "https://kyro-cms.com",
+    };
   }
 
   static async fromConfig(db: any): Promise<EmailTransport | null> {
@@ -322,7 +395,10 @@ export class EmailTransport {
       return this.fromEnv();
     }
 
+    const brandConfig = await this.fetchBrandConfig(db);
+
     const transformed: EmailConfig = {
+      brand: brandConfig,
       provider: (config.provider as any) || "smtp",
       from: config.from || "noreply@example.com",
       fromName: config.fromName,
@@ -336,14 +412,8 @@ export class EmailTransport {
               auth: { user: config.user || "", pass: config.pass || "" },
             }
           : undefined,
-      resend:
-        config.provider === "resend"
-          ? { apiKey: config.pass || "" }
-          : undefined,
-      sendgrid:
-        config.provider === "sendgrid"
-          ? { apiKey: config.pass || "" }
-          : undefined,
+      resend: config.provider === "resend" ? { apiKey: config.pass || "" } : undefined,
+      sendgrid: config.provider === "sendgrid" ? { apiKey: config.pass || "" } : undefined,
       mailgun:
         config.provider === "mailgun"
           ? {
@@ -367,10 +437,7 @@ export class EmailTransport {
 
   static fromEnv(): EmailTransport | null {
     const provider = (process.env.EMAIL_PROVIDER as any) || "smtp";
-    const from =
-      process.env.SMTP_FROM ||
-      process.env.DEFAULT_FROM ||
-      "noreply@example.com";
+    const from = process.env.SMTP_FROM || process.env.DEFAULT_FROM || "noreply@example.com";
     const fromName = process.env.SMTP_FROM_NAME || "Kyro CMS";
     const replyTo = process.env.SMTP_REPLY_TO;
 
@@ -430,19 +497,15 @@ export class EmailTransport {
         mailgun: {
           apiKey,
           domain,
-          region: (process.env.MAILGUN_REGION ||
-            (process.env.SMTP_SECURE === "true" ? "eu" : "us")) as any,
+          region: (process.env.MAILGUN_REGION || (process.env.SMTP_SECURE === "true" ? "eu" : "us")) as any,
         },
       });
     }
 
     if (provider === "ses") {
-      const accessKeyId =
-        process.env.AWS_ACCESS_KEY_ID || process.env.SMTP_USER;
-      const secretAccessKey =
-        process.env.AWS_SECRET_ACCESS_KEY || process.env.SMTP_PASS;
-      const region =
-        process.env.AWS_REGION || process.env.SMTP_HOST || "us-east-1";
+      const accessKeyId = process.env.AWS_ACCESS_KEY_ID || process.env.SMTP_USER;
+      const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.SMTP_PASS;
+      const region = process.env.AWS_REGION || process.env.SMTP_HOST || "us-east-1";
       if (!accessKeyId || !secretAccessKey) return null;
       return new EmailTransport({
         provider: "ses",

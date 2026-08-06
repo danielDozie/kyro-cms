@@ -122,6 +122,7 @@ declare class Kyro {
     shutdown(): Promise<void>;
 }
 declare function createKyro(config: KyroConfig): Kyro;
+declare function createKyroHandler(config: KyroConfig): (req: Request$1 | any, context?: any) => Promise<Response>;
 
 interface BaseEmailOptions {
     title: string;
@@ -178,6 +179,42 @@ declare function renderUserInvite(inviteUrl: string, roleName?: string, inviterN
     text: string;
 };
 
+declare function renderNewLogin(location: string, time: string, userName?: string): {
+    subject: string;
+    html: string;
+    text: string;
+};
+
+declare function renderOrderConfirmation(orderId: string, customerName: string | undefined, totalAmount: string, trackingUrl?: string): {
+    subject: string;
+    html: string;
+    text: string;
+};
+
+declare function renderOrderShipped(orderId: string, customerName: string | undefined, trackingNumber: string, trackingUrl: string): {
+    subject: string;
+    html: string;
+    text: string;
+};
+
+declare function renderOrderDelivered(orderId: string, customerName: string | undefined, reviewUrl: string): {
+    subject: string;
+    html: string;
+    text: string;
+};
+
+declare function renderOrderRefunded(orderId: string, customerName: string | undefined, refundAmount: string): {
+    subject: string;
+    html: string;
+    text: string;
+};
+
+declare function renderAbandonedCart(customerName: string | undefined, checkoutUrl: string): {
+    subject: string;
+    html: string;
+    text: string;
+};
+
 /**
  * Returns complete EmailTemplates registry for EmailTransport
  */
@@ -218,6 +255,31 @@ declare function getEmailTemplates(): {
         text: string;
     };
     userInvite: (inviteUrl: string, roleName?: string, inviterName?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderConfirmation: (orderId: string, customerName?: string, totalAmount?: string, trackingUrl?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderShipped: (orderId: string, customerName?: string, trackingNumber?: string, trackingUrl?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderDelivered: (orderId: string, customerName?: string, reviewUrl?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderRefunded: (orderId: string, customerName?: string, refundAmount?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    abandonedCart: (customerName?: string, checkoutUrl?: string) => {
         subject: string;
         html: string;
         text: string;
@@ -570,6 +632,41 @@ interface EmailTemplates {
         html: string;
         text: string;
     };
+    magicLink: (link: string, code?: string, userName?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    userInvite: (inviteUrl: string, roleName?: string, inviterName?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderConfirmation: (orderId: string, customerName?: string, totalAmount?: string, trackingUrl?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderShipped: (orderId: string, customerName?: string, trackingNumber?: string, trackingUrl?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderDelivered: (orderId: string, customerName?: string, reviewUrl?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    orderRefunded: (orderId: string, customerName?: string, refundAmount?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
+    abandonedCart: (customerName?: string, checkoutUrl?: string) => {
+        subject: string;
+        html: string;
+        text: string;
+    };
 }
 declare class EmailTransport {
     private transporter?;
@@ -798,6 +895,7 @@ declare class AuthRoutes {
     private auditLogger?;
     private baseUrl;
     private emailVerificationRequired;
+    private jwtSecret;
     constructor(config: AuthRoutesConfig);
     private getBaseUrl;
     register(req: Request): Promise<Response>;
@@ -819,6 +917,9 @@ declare class AuthRoutes {
     refreshSession(req: Request): Promise<Response>;
     private errorResponse;
     private rateLimitResponse;
+    requestMagicLink(req: Request): Promise<Response>;
+    verifyMagicLink(req: Request): Promise<Response>;
+    inviteUser(req: Request): Promise<Response>;
 }
 
 type DatabaseType = "sqlite" | "postgres" | "mongodb" | "memory";
@@ -1549,4 +1650,4 @@ declare class Logger {
 }
 declare const logger: Logger;
 
-export { AbstractBaseAdapter, AccountLockout, type AdapterOptions, AuditLog, AuditLogFilter, AuditLogger, Auth, AuthAdapter, AuthResult, Session as AuthSession, AuthTokenConfig, AuthUser, BaseAdapter, type BaseEmailOptions, CollectionConfig, type CompareVersionsOptions, ConfigValidationError, CreateArgs, type CreateStorageResult, type CreateVersionOptions, type DatabaseConnectionOptions, type DatabaseType, type DatabaseType$1 as DbAdapterType, DeleteArgs, DeliveryOptions, DeliveryResult, Dialect, type DraftPublishConfig, type DrizzleAdapterOptions, EmailTransport, type EncryptionConfig, type Environment, Field, FindArgs, FindByIDArgs, FindResult, GlobalConfig, InMemoryAccountLockout, InMemoryAuditLogger, InMemoryAuthAdapter, InMemoryRateLimiter, JWTPayload, Kyro, type KyroActionOptions, type KyroAuthConfig, type KyroAuthMiddlewareOptions, KyroConfig, type KyroDevToolbarOptions, type KyroEnvSchemaOptions, type KyroLoaderOptions, KyroPubSub, KyroWSServer, LocalAdapter, type LogLevel, Logger, LoginCredentials, MediaService, type MongoDBAdapterOptions, NeonAdapter, type NeonAdapterOptions, PasswordPolicy, type PaymentConfig, PluginManager, type PublishVersionOptions, RateLimiter, RedisAuthAdapter, RegisterData, Registry, Request$1 as Request, SQLiteAuthAdapter, type SeoTagsOptions, Session, type SocialLink, type StorageAdapter, type StorageOptions, type StoreConfig, TursoAdapter, type TursoAdapterOptions, UpdateArgs, User, UserRole, type Version, type VersionAdapter, type VersionDiff, type VersionHistoryOptions, VersionManager, type VersionPublishSchedule, type VersionStatus, WebhookConfig, WebhookDelivery, WebhookPayload, WebhookService, applyCollectionOverrides, authConfig, autoBootstrap, bootstrapAdmin, bootstrapWithRetry, buildDeliveryRecord, collectionToCreateZod, collectionToUpdateZod, collectionToWhereZod, collectionToZod, createAuditContext, createAuth, createAuthConfig, createAuthStorage, createKyro, createLocalAdapter, createLocalStorage, createNeonAdapter, createStorage, createTestPayload, createTursoAdapter, createVersionManager, defineConfig, defineKyroConfig, deliverWebhook, deliverWithRetry, fieldToZod, generateAnalyticsTags, generateKyroAstroTypes, generateSeoTags, generateWebhookSecret, getAppSecret, getBootstrapFromEnv, getDefaultDraftPublishConfig, getEmailTemplates, getEncryptionKey, getPaymentConfig, getPaymentConfigFromSettings, getSessionConfig, getSocialLinks, getSocialLinksFromSettings, getStoreConfig, getStoreConfigFromSettings, globalToZod, isArchived, isDraft, isEdgeRuntime, isPublished, kyroAction, kyroAuthMiddleware, kyroDevToolbarIntegration, kyroEnvSchema, kyroLoader, loadSecrets, logger, renderAccountLocked, renderBaseLayout, renderMagicLink, renderPasswordChanged, renderResetPassword, renderUserInvite, renderVerifyEmail, renderWelcome, setDbAdapter, signPayload, validateCollection, validateConfig, validateFields, validateGlobal };
+export { AbstractBaseAdapter, AccountLockout, type AdapterOptions, AuditLog, AuditLogFilter, AuditLogger, Auth, AuthAdapter, AuthResult, Session as AuthSession, AuthTokenConfig, AuthUser, BaseAdapter, type BaseEmailOptions, CollectionConfig, type CompareVersionsOptions, ConfigValidationError, CreateArgs, type CreateStorageResult, type CreateVersionOptions, type DatabaseConnectionOptions, type DatabaseType, type DatabaseType$1 as DbAdapterType, DeleteArgs, DeliveryOptions, DeliveryResult, Dialect, type DraftPublishConfig, type DrizzleAdapterOptions, EmailTransport, type EncryptionConfig, type Environment, Field, FindArgs, FindByIDArgs, FindResult, GlobalConfig, InMemoryAccountLockout, InMemoryAuditLogger, InMemoryAuthAdapter, InMemoryRateLimiter, JWTPayload, Kyro, type KyroActionOptions, type KyroAuthConfig, type KyroAuthMiddlewareOptions, KyroConfig, type KyroDevToolbarOptions, type KyroEnvSchemaOptions, type KyroLoaderOptions, KyroPubSub, KyroWSServer, LocalAdapter, type LogLevel, Logger, LoginCredentials, MediaService, type MongoDBAdapterOptions, NeonAdapter, type NeonAdapterOptions, PasswordPolicy, type PaymentConfig, PluginManager, type PublishVersionOptions, RateLimiter, RedisAuthAdapter, RegisterData, Registry, Request$1 as Request, SQLiteAuthAdapter, type SeoTagsOptions, Session, type SocialLink, type StorageAdapter, type StorageOptions, type StoreConfig, TursoAdapter, type TursoAdapterOptions, UpdateArgs, User, UserRole, type Version, type VersionAdapter, type VersionDiff, type VersionHistoryOptions, VersionManager, type VersionPublishSchedule, type VersionStatus, WebhookConfig, WebhookDelivery, WebhookPayload, WebhookService, applyCollectionOverrides, authConfig, autoBootstrap, bootstrapAdmin, bootstrapWithRetry, buildDeliveryRecord, collectionToCreateZod, collectionToUpdateZod, collectionToWhereZod, collectionToZod, createAuditContext, createAuth, createAuthConfig, createAuthStorage, createKyro, createKyroHandler, createLocalAdapter, createLocalStorage, createNeonAdapter, createStorage, createTestPayload, createTursoAdapter, createVersionManager, defineConfig, defineKyroConfig, deliverWebhook, deliverWithRetry, fieldToZod, generateAnalyticsTags, generateKyroAstroTypes, generateSeoTags, generateWebhookSecret, getAppSecret, getBootstrapFromEnv, getDefaultDraftPublishConfig, getEmailTemplates, getEncryptionKey, getPaymentConfig, getPaymentConfigFromSettings, getSessionConfig, getSocialLinks, getSocialLinksFromSettings, getStoreConfig, getStoreConfigFromSettings, globalToZod, isArchived, isDraft, isEdgeRuntime, isPublished, kyroAction, kyroAuthMiddleware, kyroDevToolbarIntegration, kyroEnvSchema, kyroLoader, loadSecrets, logger, renderAbandonedCart, renderAccountLocked, renderBaseLayout, renderMagicLink, renderNewLogin, renderOrderConfirmation, renderOrderDelivered, renderOrderRefunded, renderOrderShipped, renderPasswordChanged, renderResetPassword, renderUserInvite, renderVerifyEmail, renderWelcome, setDbAdapter, signPayload, validateCollection, validateConfig, validateFields, validateGlobal };

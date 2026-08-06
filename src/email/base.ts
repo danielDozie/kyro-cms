@@ -3,7 +3,15 @@
 // Adaptive Light/Dark Mode HTML Email Template Wrapper
 // ============================================================================
 
+export interface BrandConfig {
+  siteName?: string;
+  logoUrl?: string;
+  logoDarkUrl?: string;
+  appUrl?: string;
+}
+
 export interface BaseEmailOptions {
+  brand?: BrandConfig;
   title: string;
   previewText?: string;
   badgeText?: string;
@@ -17,6 +25,7 @@ export interface BaseEmailOptions {
 
 export function renderBaseLayout(options: BaseEmailOptions): string {
   const {
+    brand,
     title,
     previewText = title,
     badgeText = "Security Notification",
@@ -45,6 +54,11 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
     badgeBorder = "#fecaca";
     badgeColor = "#b91c1c";
   }
+
+  const siteName = brand?.siteName || "Kyro CMS";
+  const logoLight = brand?.logoUrl || "https://kyro-cms.com/logo.svg";
+  const logoDark = brand?.logoDarkUrl || brand?.logoUrl || "https://kyro-cms.com/logo-white.svg";
+  const appUrl = brand?.appUrl || "https://kyro-cms.com";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -93,12 +107,12 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
           <tr>
             <td align="left" valign="middle">
-              <a href="https://kyro-cms.com" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 10px;">
+              <a href="${appUrl}" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 10px;">
                 <!-- Light Mode Logo -->
-                <img src="https://kyro-cms.com/logo.svg" alt="Kyro Logo" class="logo-light" height="24" style="display: inline-block; border: 0; max-height: 24px; vertical-align: middle;" />
+                <img src="${logoLight}" alt="${siteName} Logo" class="logo-light" height="24" style="display: inline-block; border: 0; max-height: 24px; vertical-align: middle;" />
                 <!-- Dark Mode Logo -->
-                <img src="https://kyro-cms.com/logo-white.svg" alt="Kyro Logo" class="logo-dark" height="24" style="display: none; border: 0; max-height: 24px; vertical-align: middle;" />
-                <span class="email-brand-text" style="font-size: 16px; font-weight: 700; color: #09090b; letter-spacing: -0.3px; vertical-align: middle;">Kyro CMS</span>
+                <img src="${logoDark}" alt="${siteName} Logo" class="logo-dark" height="24" style="display: none; border: 0; max-height: 24px; vertical-align: middle;" />
+                <span class="email-brand-text" style="font-size: 16px; font-weight: 700; color: #09090b; letter-spacing: -0.3px; vertical-align: middle;">${siteName}</span>
               </a>
             </td>
             <td align="right" valign="middle">
@@ -149,11 +163,11 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
     <tr>
       <td class="email-footer" style="padding: 18px 28px; border-top: 1px solid #f4f4f5; background-color: #fafafa; text-align: center;">
         <p class="email-footer-text" style="margin: 0 0 8px; font-size: 12px; color: #71717a;">
-          Sent securely via <strong>Kyro CMS Authentication Engine</strong>.
+          Sent securely via <strong>${siteName} Authentication Engine</strong>.
         </p>
         <p style="margin: 0; font-size: 12px; color: #71717a;">
-          <a href="https://kyro-cms.com" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">kyro-cms.com</a> &nbsp;•&nbsp; 
-          <a href="https://kyro-cms.com/docs" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">Docs</a> &nbsp;•&nbsp; 
+          <a href="${appUrl}" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">${appUrl.replace(/^https?:\/\//, "")}</a> &nbsp;•&nbsp; 
+          <a href="${appUrl}/docs" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">Docs</a> &nbsp;•&nbsp; 
           <a href="https://github.com/danielDozie/kyro-cms" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">GitHub</a>
         </p>
       </td>

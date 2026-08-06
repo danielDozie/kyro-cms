@@ -2,9 +2,10 @@
 // Welcome Email Template
 // ============================================================================
 
+import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderWelcome(userName = "User", appUrl = "https://kyro-cms.com") {
+export function renderWelcome(userName = "User", appUrl = "https://kyro-cms.com", brandConfig?: BrandConfig) {
   const subject = "Welcome to Kyro CMS!";
   const bodyHtml = `
     <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
@@ -30,6 +31,7 @@ export function renderWelcome(userName = "User", appUrl = "https://kyro-cms.com"
   `;
 
   const html = renderBaseLayout({
+    brand: brandConfig,
     title: "Welcome to Kyro CMS",
     previewText: "Your account is verified and ready. Start building content applications.",
     badgeText: "Account Ready",
@@ -41,7 +43,11 @@ export function renderWelcome(userName = "User", appUrl = "https://kyro-cms.com"
     secondaryCtaUrl: "https://kyro-cms.com/docs",
   });
 
-  const text = `Welcome to Kyro CMS, ${userName}!\n\nYour account is active. Log in at ${appUrl} to start building.\n\nDocumentation: https://kyro-cms.com/docs`;
+  const text = `Welcome to Kyro CMS, ${userName}!
+
+Your account is active. Log in at ${appUrl} to start building.
+
+Documentation: https://kyro-cms.com/docs`;
 
   return { subject, html, text };
 }

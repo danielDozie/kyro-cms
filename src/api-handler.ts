@@ -210,3 +210,6 @@ export const ALL: APIRoute = async (context) => {
     });
   }
 };
+
+export const createKyroHandler = ALL;
+

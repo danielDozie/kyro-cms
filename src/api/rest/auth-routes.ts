@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes, createHmac } from "crypto";
 import type { AuthAdapter } from "../../auth/types.js";
 import { EmailTransport } from "../../auth/nodemailer-transport.js";
 import { PasswordPolicy } from "../../auth/security/password-policy.js";
@@ -51,6 +51,7 @@ export class AuthRoutes {
   private auditLogger?: InMemoryAuditLogger;
   private baseUrl: string;
   private emailVerificationRequired: boolean;
+  private jwtSecret: string;
 
   constructor(config: AuthRoutesConfig) {
     this.authAdapter = config.redis;
@@ -61,6 +62,7 @@ export class AuthRoutes {
     this.auditLogger = config.auditLogger;
     this.baseUrl = config.baseUrl || "http://localhost:4321";
     this.emailVerificationRequired = config.emailVerificationRequired ?? true;
+    this.jwtSecret = config.jwtSecret || "kyro-default-secret-key-change-me-in-production";
   }
 
   private getBaseUrl(req?: Request): string {
@@ -303,6 +305,12 @@ if (!body.email || !body.password) {
         role: user.role,
         tenantId: user.tenantId,
       });
+
+      if (this.email && user.email) {
+        const time = new Date().toLocaleString();
+        const template = this.email.getTemplates().newLogin(ipAddress, time, user.email);
+        this.email.send({ to: user.email, ...template }).catch(e => console.error("Failed to send newLogin email:", e));
+      }
 
       const responseData = {
         success: true,
@@ -636,7 +644,13 @@ if (!body.email || !body.password) {
     userEmail?: string,
   ): Promise<void> {
     if (this.lockout) {
-      await this.lockout.recordFailedAttempt(userId || ipAddress);
+      const status = await this.lockout.recordFailedAttempt(userId || ipAddress);
+      
+      if (status.locked && status.totalAttempts === this.lockout.getConfig().maxAttempts && this.email && userEmail) {
+        const durationMinutes = Math.ceil(this.lockout.getConfig().lockDuration / 60000);
+        const template = this.email.getTemplates().accountLocked(status.totalAttempts, durationMinutes, userEmail);
+        this.email.send({ to: userEmail, ...template }).catch(err => console.error("Failed to send accountLocked email:", err));
+      }
     }
 
     if (this.auditLogger) {
@@ -805,19 +819,113 @@ if (!body.email || !body.password) {
   }
 
   private async rateLimitResponse(limit: { retryAfter?: number }): Promise<Response> {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Too many requests",
-        retryAfter: limit.retryAfter,
-      }),
-      {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "Retry-After": String(limit.retryAfter || 60),
-        },
+    return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+      status: 429,
+      headers: {
+        "Content-Type": "application/json",
+        ...(limit.retryAfter ? { "Retry-After": limit.retryAfter.toString() } : {}),
       },
-    );
+    });
+  }
+
+  async requestMagicLink(req: Request): Promise<Response> {
+    const { ipAddress, userAgent } = createAuditContext(req);
+    try {
+      const body = (await req.json()) as { email: string };
+      if (!body.email) return this.errorResponse("Email required", 400);
+
+      const user = await this.authAdapter.findUserByEmail(body.email);
+      if (!user) return this.jsonResponse({ success: true, message: "If an account exists, a link was sent." });
+
+      if (this.email) {
+        const payload = Buffer.from(JSON.stringify({ email: user.email, exp: Date.now() + 10 * 60 * 1000 })).toString('base64url');
+        const signature = createHmac('sha256', this.jwtSecret).update(payload).digest('hex');
+        const token = `${payload}.${signature}`;
+        
+        const baseUrl = this.getBaseUrl(req);
+        const link = `${baseUrl}/admin/auth/magic-link?token=${token}`;
+        
+        const template = this.email.getTemplates().magicLink(link, undefined, user.email);
+        this.email.send({ to: user.email, ...template }).catch(e => console.error("Magic link err:", e));
+      }
+      return this.jsonResponse({ success: true, message: "If an account exists, a link was sent." });
+    } catch (e) {
+      return this.errorResponse("Failed to process request", 500);
+    }
+  }
+
+  async verifyMagicLink(req: Request): Promise<Response> {
+    const { ipAddress, userAgent } = createAuditContext(req);
+    const url = new URL(req.url);
+    const token = url.searchParams.get("token");
+    if (!token) return this.errorResponse("Token required", 400);
+
+    try {
+      const [payload, signature] = token.split('.');
+      if (!payload || !signature) return this.errorResponse("Invalid token", 400);
+
+      const expected = createHmac('sha256', this.jwtSecret).update(payload).digest('hex');
+      if (signature !== expected) return this.errorResponse("Invalid token", 400);
+
+      const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
+      if (Date.now() > data.exp) return this.errorResponse("Token expired", 400);
+
+      const user = await this.authAdapter.findUserByEmail(data.email);
+      if (!user) return this.errorResponse("User not found", 404);
+      if (user.locked) return this.errorResponse("Account locked", 403);
+
+      const sessionId = await createSession({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+      });
+
+      if (this.auditLogger) {
+        await this.auditLogger.log({
+          action: "login",
+          userId: user.id,
+          userEmail: user.email,
+          resource: "auth",
+          ipAddress,
+          userAgent,
+          success: true,
+        });
+      }
+
+      const response = this.jsonResponse({ success: true, user: this.sanitizeUser(user) });
+      return setSessionCookie(response, sessionId);
+    } catch (e) {
+      return this.errorResponse("Invalid token", 400);
+    }
+  }
+
+  async inviteUser(req: Request): Promise<Response> {
+    try {
+      const body = (await req.json()) as { email: string; role: string; inviterName?: string };
+      if (!body.email || !body.role) return this.errorResponse("Email and role required", 400);
+
+      let user = await this.authAdapter.findUserByEmail(body.email);
+      if (user) return this.errorResponse("User already exists", 409);
+
+      user = await this.authAdapter.createUser({
+        email: body.email,
+        password: randomBytes(16).toString("hex"),
+        role: body.role as any, // Cast to any to satisfy UserRole
+      });
+
+      if (this.email) {
+        const tokenRes = await this.authAdapter.createPasswordResetToken(user.email);
+        const baseUrl = this.getBaseUrl(req);
+        const inviteUrl = `${baseUrl}/admin/auth/reset-password?token=${tokenRes.token}`;
+        
+        const template = this.email.getTemplates().userInvite(inviteUrl, body.role, body.inviterName || "An administrator");
+        this.email.send({ to: user.email, ...template }).catch(e => console.error("Invite email err:", e));
+      }
+
+      return this.jsonResponse({ success: true, message: "User invited successfully" });
+    } catch (e) {
+      return this.errorResponse("Failed to invite user", 500);
+    }
   }
 }

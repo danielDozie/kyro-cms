@@ -22,8 +22,9 @@ describe("ESM import smoke tests", () => {
     expect(core).toBeDefined();
   });
 
-  it("exports defineConfig", () => {
+  it("exports defineConfig and createKyroHandler", () => {
     expect(typeof core.defineConfig).toBe("function");
+    expect(typeof core.createKyroHandler).toBe("function");
   });
 
   it("exports adapter factories", () => {

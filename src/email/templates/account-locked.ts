@@ -2,9 +2,15 @@
 // Account Lockout Security Template
 // ============================================================================
 
+import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderAccountLocked(attempts: number, durationMinutes: number, userName = "User") {
+export function renderAccountLocked(
+  attempts: number,
+  durationMinutes: number,
+  userName = "User",
+  brandConfig?: BrandConfig,
+) {
   const subject = "Security Alert: Account Temporarily Locked — Kyro CMS";
   const bodyHtml = `
     <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
@@ -26,6 +32,7 @@ export function renderAccountLocked(attempts: number, durationMinutes: number, u
   `;
 
   const html = renderBaseLayout({
+    brand: brandConfig,
     title: "Account Temporarily Locked",
     previewText: "Your Kyro CMS account was locked due to multiple failed login attempts.",
     badgeText: "Security Lockout",
@@ -35,7 +42,9 @@ export function renderAccountLocked(attempts: number, durationMinutes: number, u
     ctaUrl: "https://kyro-cms.com/docs",
   });
 
-  const text = `Security Alert: Account temporarily locked for ${userName} after ${attempts} failed login attempts. Unlocks in ${durationMinutes} minutes.\n\nKyro CMS — https://kyro-cms.com`;
+  const text = `Security Alert: Account temporarily locked for ${userName} after ${attempts} failed login attempts. Unlocks in ${durationMinutes} minutes.
+
+Kyro CMS — https://kyro-cms.com`;
 
   return { subject, html, text };
 }

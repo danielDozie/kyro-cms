@@ -14,10 +14,10 @@ export interface ProcedureClient<I, O> {
 
 export type RouterClient<T> = {
   [K in keyof T]: T[K] extends { input: infer I; output: infer O }
-    ? ProcedureClient<I, O>
-    : T[K] extends Record<string, unknown>
-      ? RouterClient<T[K]>
-      : T[K];
+  ? ProcedureClient<I, O>
+  : T[K] extends Record<string, unknown>
+  ? RouterClient<T[K]>
+  : T[K];
 };
 
 export interface CollectionFindResult<T> {
@@ -65,22 +65,22 @@ export interface GlobalClient<T> {
 
 export type InferDocFromRouter<TRouter, K> = K extends keyof TRouter
   ? TRouter[K] extends { findByID: { output: infer Doc } }
-    ? Doc
-    : TRouter[K] extends { find: { output: { docs: Array<infer Doc> } } }
-      ? Doc
-      : any
+  ? Doc
+  : TRouter[K] extends { find: { output: { docs: Array<infer Doc> } } }
+  ? Doc
+  : any
   : any;
 
 export type InferFindInputFromRouter<TRouter, K> = K extends keyof TRouter
   ? TRouter[K] extends { find: { input: infer FindInput } }
-    ? FindInput
-    : CollectionFindParams
+  ? FindInput
+  : CollectionFindParams
   : CollectionFindParams;
 
 export type InferGlobalFromRouter<TRouter, K> = K extends keyof TRouter
   ? TRouter[K] extends { get: { output: infer Doc } }
-    ? Doc
-    : any
+  ? Doc
+  : any
   : any;
 
 export type CollectionGetter<TRouter> = {
@@ -305,10 +305,15 @@ export function createClient<TRouter = Record<string, unknown>>(
   };
 
   const proxy = buildProxy([]) as RouterClient<TRouter>;
-  return Object.assign(proxy, {
+  const client = Object.assign(proxy, {
     collection: collection as unknown as KyroClient<TRouter>["collection"],
     global: global as unknown as KyroClient<TRouter>["global"],
     gql: gql as unknown as KyroClient<TRouter>["gql"],
     upload: upload as unknown as KyroClient<TRouter>["upload"],
   }) as unknown as KyroClient<TRouter>;
+
+  // Register globally so integrations like @kyro-cms/astro can discover it automatically
+  (globalThis as any).kyroClient = client;
+
+  return client;
 }

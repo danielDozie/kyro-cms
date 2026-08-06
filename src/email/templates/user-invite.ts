@@ -2,9 +2,15 @@
 // Workspace User Invitation Template
 // ============================================================================
 
+import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderUserInvite(inviteUrl: string, roleName = "Editor", inviterName = "An Administrator") {
+export function renderUserInvite(
+  inviteUrl: string,
+  roleName = "Editor",
+  inviterName = "An Administrator",
+  brandConfig?: BrandConfig,
+) {
   const subject = "You're invited to join Kyro CMS";
   const bodyHtml = `
     <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
@@ -26,6 +32,7 @@ export function renderUserInvite(inviteUrl: string, roleName = "Editor", inviter
   `;
 
   const html = renderBaseLayout({
+    brand: brandConfig,
     title: "Workspace Invitation",
     previewText: `You have been invited to join Kyro CMS as an ${roleName}.`,
     badgeText: "Team Invite",
@@ -37,7 +44,12 @@ export function renderUserInvite(inviteUrl: string, roleName = "Editor", inviter
     secondaryCtaUrl: "https://kyro-cms.com/docs",
   });
 
-  const text = `You're invited to join Kyro CMS as an ${roleName} by ${inviterName}.\n\nAccept your invitation here:\n${inviteUrl}\n\nKyro CMS — https://kyro-cms.com`;
+  const text = `You're invited to join Kyro CMS as an ${roleName} by ${inviterName}.
+
+Accept your invitation here:
+${inviteUrl}
+
+Kyro CMS — https://kyro-cms.com`;
 
   return { subject, html, text };
 }
