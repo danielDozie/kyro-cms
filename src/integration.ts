@@ -50,6 +50,7 @@ const NATIVE_BINARY_EXTERNALS = [
   "mock-aws-s3",
   "aws-sdk",
   "nock",
+  "cloudflare:workers",
 ];
 
 const NODE_BUILTINS = [
