@@ -240,7 +240,7 @@ export function ActionBar({
           hasChanges={hasChanges}
           onPublish={onPublish || onSave}
         >
-          {onSave && onPublish && (
+          {onPublish && (
             <DropdownItem icon={<IconSend className="w-4 h-4" />} onClick={onSave}>Save Draft</DropdownItem>
           )}
           {onDuplicate && (
@@ -258,7 +258,7 @@ export function ActionBar({
           {onPreview && (
             <DropdownItem icon={<IconEye className="w-4 h-4" />} onClick={onPreview}>Preview</DropdownItem>
           )}
-          {(Boolean(onSave && onPublish) || Boolean(onDuplicate) || Boolean(onCopyData) || Boolean(onPasteData) || Boolean(onViewHistory) || Boolean(onPreview)) && <DropdownSeparator />}
+          {(Boolean(onPublish) || Boolean(onDuplicate) || Boolean(onCopyData) || Boolean(onPasteData) || Boolean(onViewHistory) || Boolean(onPreview)) && <DropdownSeparator />}
           {onDelete && (
             <DropdownItem onClick={onDelete} danger icon={<IconTrash2 className="w-4 h-4" />}>Delete</DropdownItem>
           )}
