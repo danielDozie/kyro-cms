@@ -93,7 +93,6 @@ export const customersCollection: CollectionConfig = {
   ],
   timestamps: true,
   versions: {
-    drafts: true,
     maxPerDoc: 5,
   },
 };

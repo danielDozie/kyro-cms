@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/kyro-rich-text-react",
-  "version": "0.12.52",
+  "version": "0.12.53",
   "description": "React renderer for Kyro CMS Tiptap rich text content",
   "type": "module",
   "main": "./dist/index.js",
