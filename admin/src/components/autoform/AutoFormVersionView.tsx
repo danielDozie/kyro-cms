@@ -27,7 +27,7 @@ export function AutoFormVersionView({
 
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-4 pb-12">
-      <div className="surface-tile p-0 overflow-hidden">
+      <div className="surface-tile p-0 overflow-hidden rounded-lg">
         <div className="px-4 md:px-6 py-3 md:py-4 border-b border-[var(--kyro-border)] flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div>
             <h2 className="text-base md:text-lg font-bold text-[var(--kyro-text-primary)]">

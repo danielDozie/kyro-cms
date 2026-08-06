@@ -754,7 +754,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         if (versions.length > 0) {
           const ver = versions[0];
           const versionData = typeof ver.data === 'string' ? JSON.parse(ver.data) : ver.data;
-          return { ...doc, ...versionData, status: doc.status };
+          return { ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: ver.status === 'draft' };
         }
         return doc;
       }));
@@ -804,7 +804,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       if (versions.length > 0) {
         const ver = versions[0];
         const versionData = typeof ver.data === 'string' ? JSON.parse(ver.data) : ver.data;
-        doc = { ...doc, ...versionData, status: (doc as any).status };
+        doc = { ...doc, ...versionData, status: (doc as any).status, _hasUnpublishedChanges: ver.status === 'draft' };
       }
     }
 
@@ -936,7 +936,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         if (versions.length > 0) {
           const ver = versions[0];
           const versionData = typeof ver.data === 'string' ? JSON.parse(ver.data) : ver.data;
-          doc = { ...doc, ...versionData, status: (doc as any).status };
+          doc = { ...doc, ...versionData, status: (doc as any).status, _hasUnpublishedChanges: ver.status === 'draft' };
         }
       }
       return doc;

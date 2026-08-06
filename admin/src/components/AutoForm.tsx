@@ -101,9 +101,9 @@ const EMPTY_OBJECT = {};
 
 function AutoFormSkeleton() {
   return (
-    <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse">
-      <div className="h-8 bg-[var(--kyro-border)] rounded-xl w-1/3 opacity-50" />
-      <div className="h-32 bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+    <div className="surface-tile p-8 space-y-6 rounded-lg animate-pulse">
+      <div className="h-8 bg-[var(--kyro-border)] rounded-lg w-1/3 opacity-50" />
+      <div className="h-32 bg-[var(--kyro-surface-accent)] rounded-lg opacity-50" />
       <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-28 opacity-50" />
     </div>
   );
@@ -548,6 +548,7 @@ function AutoFormInner({
         } catch (err) {
           toast.error("Failed to unpublish");
         } finally {
+          window.dispatchEvent(new CustomEvent("kyro:global-save-end"));
           autoSaveSkipRef.current = false;
         }
       },
@@ -645,7 +646,7 @@ function AutoFormInner({
       }
 
       // Save and publish (X-Draft: false writes to main doc + versions table)
-      const data = normalizeUploadFields(dataToPublish, true) as Record<string, unknown>;
+      const data = normalizeUploadFields({ ...dataToPublish, status: 'published' }, true) as Record<string, unknown>;
       const response = await saveDocument(data, false);
 
       if (response?.ok) {
@@ -687,6 +688,7 @@ function AutoFormInner({
       toast.error("Failed to publish");
       setTimeout(() => setLocalSaveStatus("idle"), 3000);
     } finally {
+      window.dispatchEvent(new CustomEvent("kyro:global-save-end"));
       autoSaveSkipRef.current = false;
     }
   };
@@ -1076,9 +1078,9 @@ function AutoFormInner({
 
   if (!isMounted) {
     return (
-      <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse">
+      <div className="surface-tile p-8 space-y-6 rounded-lg animate-pulse">
         <div className="h-8 bg-[var(--kyro-border)] rounded-xl w-1/3 opacity-50" />
-        <div className="h-32 bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+        <div className="h-32 bg-[var(--kyro-surface-accent)] rounded-lg opacity-50" />
         <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-28 opacity-50" />
       </div>
     );

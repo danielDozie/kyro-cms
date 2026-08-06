@@ -123,7 +123,11 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
 
             if (relativePath.startsWith("/roles")) {
               if (!isSuperAdmin) hasAccess = false;
-            } else if (relativePath.startsWith("/plugins") || relativePath.startsWith("/keys") || relativePath.startsWith("/webhooks")) {
+            } else if (
+              relativePath.startsWith("/plugins") ||
+              relativePath.startsWith("/keys") ||
+              relativePath.startsWith("/webhooks")
+            ) {
               if (!isAdmin) hasAccess = false;
             } else if (relativePath.startsWith("/users")) {
               if (!isAdmin && permissions.collections?.users?.read !== true) hasAccess = false;
@@ -192,7 +196,7 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     >
     </div>
 
-    <div class="flex h-[100dvh] md:h-screen p-0 md:p-6 gap-0 md:gap-6 overflow-hidden w-full relative">
+    <div class="flex h-[100dvh] md:h-screen p-0 md:p-6 gap-0 md:gap-4 overflow-hidden w-full relative">
       <Sidebar title={title} />
 
       <!-- Main Content Column -->
@@ -451,7 +455,7 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
       }
     </script>
     <script>
-      import { navigate } from '../lib/navigate';
+      import { navigate } from "../lib/navigate";
 
       window.addEventListener("kyro:soft-reload", () => {
         const url = new URL(window.location.href);

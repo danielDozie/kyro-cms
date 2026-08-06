@@ -45,6 +45,15 @@ export class MongoDBAuthAdapter implements AuthAdapter {
         resolved = this.adapter.db;
       }
     }
+    if (!resolved && (globalThis as any).__KYRO_INSTANCE__?.db) {
+      const globalDb = (globalThis as any).__KYRO_INSTANCE__.db;
+      if (globalDb.db) {
+        resolved = globalDb.db;
+      } else if (globalDb.client) {
+        globalDb.db = globalDb.client.db(globalDb.database || "kyro_cms");
+        resolved = globalDb.db;
+      }
+    }
     if (!resolved) throw new Error("MongoDB database not initialized");
     return resolved;
   }

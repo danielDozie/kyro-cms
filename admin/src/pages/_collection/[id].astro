@@ -1,9 +1,10 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import i18next from '../../lib/i18n';
+import i18next from "../../lib/i18n";
 import { collections } from "../../lib/config";
 import { AutoForm } from "../../components/AutoForm";
-import { adminPath } from "../../lib/paths";
+import { CompactListView } from "../../components/CompactListView";
+import { adminPath, apiPath } from "../../lib/paths";
 
 const { collection, id } = Astro.params;
 
@@ -28,28 +29,99 @@ if (!isSettings) {
 import { requireAuthServer } from "../../lib/auth-server";
 
 if (collection) {
-  const reqOp = (!id || id === "new") ? "collectionCreate" : "collectionRead";
+  const reqOp = !id || id === "new" ? "collectionCreate" : "collectionRead";
   const redirect = await requireAuthServer(Astro.request, { [reqOp]: collection });
   if (redirect) return redirect;
 }
 
+let docs: any[] = [];
+let totalDocs = 0;
+const searchParam = Astro.url.searchParams.get("search") || "";
+
+if (!isSettings) {
+  try {
+    let fetchUrl = `${Astro.url.origin}${apiPath}/${collection}?page=1&limit=20&depth=1&t=${Date.now()}`;
+    if (searchParam) {
+      // Basic extraction of title field for the where query
+      const titleF = typeof config.admin?.useAsTitle === "string" 
+        ? config.admin.useAsTitle 
+        : config.fields?.find((f: any) => f.type !== "group" && typeof f.name === "string")?.name;
+      
+      if (titleF) {
+        const whereObj = { [titleF]: { contains: searchParam } };
+        fetchUrl += `&where=${encodeURIComponent(JSON.stringify(whereObj))}`;
+      }
+    }
+    const response = await fetch(
+      fetchUrl,
+      {
+        headers: Astro.request.headers,
+        credentials: "include",
+      },
+    );
+    if (response.ok) {
+      const data = await response.json();
+      docs = data.docs || [];
+      totalDocs = data.totalDocs || 0;
+    }
+  } catch (error) {
+    console.error("Failed to fetch documents:", error);
+  }
+}
+
+
 import SettingsPageAstro from "../settings/[slug].astro";
 ---
 
-{isSettings ? (
-  <SettingsPageAstro slug={id} />
-) : (
-  <AdminLayout title={title}>
-    <div class="flex-1 overflow-y-auto space-y-6">
-    <form id="doc-form">
-      <AutoForm
-        client:load
-        config={config}
-        collectionSlug={collection}
-        documentId={id || undefined}
-      />
-      <input type="hidden" id="form-data" name="form-data" value="{}" />
-    </form>
-  </div>
-</AdminLayout>
-)}
+{
+  isSettings ? (
+    <SettingsPageAstro slug={id} />
+  ) : (
+    <AdminLayout title={title}>
+      <div class="flex h-full w-full overflow-hidden md:gap-4">
+        {/* Left Pane: Document List (Hidden on mobile) */}
+        <div class="hidden md:flex w-72 lg:w-80 flex-col surface-tile rounded-2xl shrink-0 overflow-hidden border border-[var(--kyro-border)] mb-4 md:mb-0">
+          <CompactListView
+            client:load
+            collection={config}
+            collectionSlug={collection}
+            initialDocs={docs}
+            initialTotal={totalDocs}
+            activeId={!isNew ? id : undefined}
+            initialSearch={searchParam}
+          />
+        </div>
+
+        {/* Right Pane: Document Editor */}
+        <div class="flex-1 overflow-y-auto">
+          <div class="mx-auto space-y-6 pb-12 px-0 md:px-0">
+            <form id="doc-form">
+              <AutoForm
+                client:load
+                config={config}
+                collectionSlug={collection}
+                documentId={id && id !== "new" ? id : undefined}
+              />
+              <input type="hidden" id="form-data" name="form-data" value="{}" />
+            </form>
+          </div>
+        </div>
+      </div>
+      
+      <script>
+        document.addEventListener('astro:page-load', () => {
+          // Auto-minimize main sidebar when entering the 3-pane layout
+          const sidebar = document.getElementById("kyro-sidebar");
+          const toggleBtn = document.getElementById("sidebar-panel-toggle");
+          
+          if (sidebar && toggleBtn && window.innerWidth >= 768) {
+            const isMin = sidebar.getAttribute("data-minimized") === "true";
+            if (!isMin) {
+              toggleBtn.click();
+            }
+          }
+        }, { once: true });
+      </script>
+    </AdminLayout>
+  )
+}

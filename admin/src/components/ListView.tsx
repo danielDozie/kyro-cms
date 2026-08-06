@@ -55,9 +55,9 @@ import { ClientOnly } from "./ui/ClientOnly";
 
 function ListViewSkeleton() {
   return (
-    <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse">
+    <div className="surface-tile p-8 space-y-6 rounded-lg animate-pulse">
       <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-1/4 opacity-50" />
-      <div className="h-64 bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+      <div className="h-64 bg-[var(--kyro-surface-accent)] rounded-lg opacity-50" />
     </div>
   );
 }
@@ -274,7 +274,14 @@ function ListViewInner({
         depth: "1",
       });
 
-      if (debouncedSearch) params.append("search", debouncedSearch);
+      const where: Record<string, any> = {};
+      if (debouncedSearch && titleField) {
+        where[titleField] = { contains: debouncedSearch };
+      }
+      if (Object.keys(where).length > 0) {
+        params.append("where", JSON.stringify(where));
+      }
+
       if (sort) params.append("sort", sort.field);
       if (sort) params.append("order", sort.direction);
       if (filters.length > 0) {

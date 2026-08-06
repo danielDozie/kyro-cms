@@ -30,10 +30,10 @@ export function SplitButton({
   disabled,
   direction = "down",
 }: SplitButtonProps) {
-  const isPublishedIdle =
+  const isPublishedAndClean =
     status === "published" && !hasChanges && saveStatus !== "saving" && saveStatus !== "error";
 
-  const isDisabled = disabled || saveStatus === "saving" || isPublishedIdle || saveStatus === "saved";
+  const isDisabled = disabled || saveStatus === "saving" || isPublishedAndClean;
 
   // ── button colour ──────────────────────────────────────────────────────────
   const btnBase =
@@ -41,10 +41,9 @@ export function SplitButton({
 
   const getBtnClass = () => {
     if (saveStatus === "saving") return `${btnBase} bg-[var(--kyro-primary)]/70 border-[var(--kyro-primary)]/70 text-[var(--kyro-sidebar-text-active)] cursor-wait`;
-    if (saveStatus === "saved")  return `${btnBase} bg-[var(--kyro-gray-200)] border-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] cursor-not-allowed`;
     if (saveStatus === "error")  return `${btnBase} bg-[var(--kyro-error)]   border-[var(--kyro-error)]   text-[var(--kyro-sidebar-text-active)]`;
-    if (isPublishedIdle)         return `${btnBase} bg-[var(--kyro-gray-200)] border-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] cursor-not-allowed`;
-    // has changes → accent
+    if (isPublishedAndClean)     return `${btnBase} bg-[var(--kyro-gray-200)] border-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] cursor-not-allowed`;
+    // has changes or draft → primary action
     return `${btnBase} bg-[var(--kyro-primary)] border-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] hover:bg-[var(--kyro-primary-hover)]`;
   };
 
@@ -53,18 +52,16 @@ export function SplitButton({
 
   const getChevronClass = () => {
     if (saveStatus === "saving") return `${chevronBase} bg-[var(--kyro-primary)]/70 text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-primary)]/70`;
-    if (saveStatus === "saved")  return `${chevronBase} bg-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] border-[var(--kyro-gray-200)]`;
     if (saveStatus === "error")  return `${chevronBase} bg-[var(--kyro-error)]   text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-error)]`;
-    if (isPublishedIdle)         return `${chevronBase} bg-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] border-[var(--kyro-gray-200)]`;
+    if (isPublishedAndClean)     return `${chevronBase} bg-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] border-[var(--kyro-gray-200)]`;
     return `${chevronBase} bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-primary)] hover:bg-[var(--kyro-primary-hover)]`;
   };
 
   // ── label ──────────────────────────────────────────────────────────────────
   const getLabel = () => {
     if (saveStatus === "saving") return "Publishing...";
-    if (saveStatus === "saved")  return "Published";
     if (saveStatus === "error")  return "Retry";
-    if (isPublishedIdle)         return "Published";
+    if (isPublishedAndClean)     return "Published";
     return "Publish Changes";
   };
 
@@ -78,7 +75,7 @@ export function SplitButton({
         className={`${getBtnClass()} ${!children ? "rounded-r-lg border-r border-[var(--kyro-border)]" : ""}`}
       >
         {saveStatus === "saving" && <Spinner size="sm" className="inline mr-1.5" />}
-        {(isPublishedIdle || saveStatus === "saved") && (
+        {isPublishedAndClean && (
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="inline mr-1">
             <polyline points="20 6 9 17 4 12" />
           </svg>

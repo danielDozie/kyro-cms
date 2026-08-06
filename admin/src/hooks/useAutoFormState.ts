@@ -457,7 +457,7 @@ const persistBrowserDraft = useCallback(
         }));
       }
     }
-  }, [formData.title, config?.fields]);
+  }, [formData, config?.fields]);
 
   interface FieldConfig {
     name?: string;
@@ -490,7 +490,7 @@ const persistBrowserDraft = useCallback(
         }));
       }
     }
-  }, [formData.title, isSlugLocked, config?.fields]);
+  }, [formData, isSlugLocked, config?.fields]);
 
   // Auto-save effect — only starts timers on keystroke-originated changes.
   // Local save fires after 1.5s of inactivity, server save after 8s.
@@ -591,7 +591,8 @@ const persistBrowserDraft = useCallback(
   })();
 
   const hasUnpublishedChanges =
-    (!!formData.id || !!globalSlug) && documentStatus === 'draft';
+    !!formData._hasUnpublishedChanges ||
+    ((!!formData.id || !!globalSlug) && documentStatus === 'draft');
 
   return {
     ...store,

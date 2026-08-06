@@ -570,7 +570,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
           .get(slug, doc.id) as any;
         if (version) {
           const versionData = version.data ? JSON.parse(version.data) : {};
-          return sanitizeDoc({ ...doc, ...versionData, status: doc.status });
+          return sanitizeDoc({ ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: version.status === 'draft' });
         }
         return doc;
       }));
@@ -637,7 +637,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
         .get(slug, doc.id) as any;
       if (version) {
         const versionData = version.data ? JSON.parse(version.data) : {};
-        doc = { ...doc, ...versionData, status: doc.status };
+        doc = { ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: version.status === 'draft' };
       }
     }
 
@@ -825,7 +825,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
             .get(args.collection, parsed.globalSlug) as any;
           if (version) {
             const versionData = version.data ? JSON.parse(version.data) : {};
-            doc = { ...doc, ...versionData, status: doc.status };
+            doc = { ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: version.status === 'draft' };
           }
         }
         return doc;

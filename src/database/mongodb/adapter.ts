@@ -141,7 +141,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
           const versionData = typeof version.data === 'string'
             ? JSON.parse(version.data)
             : (version.data && typeof version.data === 'object' ? version.data : {});
-          return { ...doc, ...versionData, status: doc.status };
+          return { ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: version.status === 'draft' };
         }
         return doc;
       }));
@@ -192,7 +192,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
         const versionData = typeof version.data === 'string'
           ? JSON.parse(version.data)
           : (version.data && typeof version.data === 'object' ? version.data : {});
-        processedDoc = { ...processedDoc, ...versionData, status: processedDoc.status };
+        processedDoc = { ...processedDoc, ...versionData, status: processedDoc.status, _hasUnpublishedChanges: version.status === 'draft' };
       }
     }
 

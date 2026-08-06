@@ -225,14 +225,6 @@ export function ActionBar({
 
         <div className="h-4 w-px bg-[var(--kyro-border)] mx-0.5" />
 
-        {status === "draft" && onPublish && (
-          <button type="button" onClick={onPublish} disabled={saveStatus === "saving"}
-            className="kyro-btn kyro-btn-primary kyro-btn-sm flex items-center gap-1 shrink-0"
-          >
-            <IconSend className="w-3.5 h-3.5" />
-            <span className="max-md:hidden">Publish</span>
-          </button>
-        )}
         {status === "published" && onUnpublish && (
           <button type="button" onClick={onUnpublish} disabled={saveStatus === "saving"}
             className="kyro-btn kyro-btn-secondary kyro-btn-sm flex items-center gap-1 shrink-0"
@@ -246,8 +238,11 @@ export function ActionBar({
           status={status}
           saveStatus={saveStatus}
           hasChanges={hasChanges}
-          onPublish={onSave}
+          onPublish={onPublish || onSave}
         >
+          {onSave && onPublish && (
+            <DropdownItem icon={<IconSend className="w-4 h-4" />} onClick={onSave}>Save Draft</DropdownItem>
+          )}
           {onDuplicate && (
             <DropdownItem icon={<IconCopy className="w-4 h-4" />} onClick={onDuplicate}>Duplicate</DropdownItem>
           )}
@@ -263,7 +258,7 @@ export function ActionBar({
           {onPreview && (
             <DropdownItem icon={<IconEye className="w-4 h-4" />} onClick={onPreview}>Preview</DropdownItem>
           )}
-          {(onDuplicate || onCopyData || onPasteData || onViewHistory || onPreview) && <DropdownSeparator />}
+          {(Boolean(onSave && onPublish) || Boolean(onDuplicate) || Boolean(onCopyData) || Boolean(onPasteData) || Boolean(onViewHistory) || Boolean(onPreview)) && <DropdownSeparator />}
           {onDelete && (
             <DropdownItem onClick={onDelete} danger icon={<IconTrash2 className="w-4 h-4" />}>Delete</DropdownItem>
           )}

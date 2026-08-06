@@ -397,7 +397,6 @@ export { kyroAction, type KyroActionOptions } from "./actions.js";
 export { kyroAuthMiddleware, type KyroAuthMiddlewareOptions } from "./middleware.js";
 export { generateKyroAstroTypes } from "./typegen.js";
 export { kyroEnvSchema, type KyroEnvSchemaOptions } from "./env.js";
-export { kyroDevToolbarIntegration, type KyroDevToolbarOptions } from "./integrations/dev-toolbar.js";
 export { isEdgeRuntime } from "./utils/runtime.js";
 export { Logger, logger, type LogLevel } from "./utils/logger.js";
 

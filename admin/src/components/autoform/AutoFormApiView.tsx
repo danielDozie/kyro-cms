@@ -11,13 +11,13 @@ export function AutoFormApiView({
   collectionSlug,
   globalSlug,
 }: AutoFormApiViewProps) {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const { formData } = useAutoFormStore();
 
   return (
     <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
-        <div className="surface-tile p-8 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
+        <div className="surface-tile p-8 min-w-0 rounded-lg">
           <h2 className="text-xl font-bold mb-6">Response Payload</h2>
           <div className="bg-[#0f172a] p-6 rounded-2xl border border-white/5 overflow-x-auto max-h-[800px]">
             <pre className="text-blue-300 text-xs font-mono whitespace-pre-wrap break-all">
@@ -27,7 +27,7 @@ export function AutoFormApiView({
         </div>
 
         <div className="space-y-6">
-          <div className="surface-tile p-8 space-y-6">
+          <div className="surface-tile p-8 space-y-6 rounded-lg">
             <h2 className="text-xl font-bold mb-6">API Info</h2>
 
             <div className="space-y-6">

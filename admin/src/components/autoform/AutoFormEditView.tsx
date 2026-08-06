@@ -36,7 +36,7 @@ export function AutoFormEditView({
 
   return (
     <div
-      className={`w-full mx-auto grid gap-4 md:gap-8 pb-32 transition-all duration-700 ${showPreview
+      className={`w-full mx-auto grid gap-4 pb-32 transition-all duration-700 ${showPreview
         ? "grid-cols-1 lg:grid-cols-2"
         : sidebarCollapsed || !hasSidebarFields
           ? "grid-cols-1"

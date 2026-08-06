@@ -193,7 +193,7 @@ export function DetailView({
   const handlePublish = async () => {
     try {
       setSaving(true);
-      await apiPatch(`/api/${slug}/${documentId}`, data, {
+      await apiPatch(`/api/${slug}/${documentId}`, { ...data, status: 'published' }, {
         autoToast: false,
         headers: { "X-Draft": "false" },
       } as any);

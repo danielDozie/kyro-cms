@@ -74,11 +74,11 @@ function JsonNode({ value, depth = 0 }: { value: any; depth?: number }) {
                 <span className="text-[var(--kyro-text-muted)] truncate max-w-[200px] inline-block">
                   {count <= 2
                     ? value.map((v: any, i: number) => (
-                        <span key={i}>
-                          {i > 0 && <span className="text-[var(--kyro-text-muted)]">, </span>}
-                          <JsonNode value={v} depth={depth + 1} />
-                        </span>
-                      ))
+                      <span key={i}>
+                        {i > 0 && <span className="text-[var(--kyro-text-muted)]">, </span>}
+                        <JsonNode value={v} depth={depth + 1} />
+                      </span>
+                    ))
                     : `${count} items`
                   }
                 </span>
@@ -120,13 +120,13 @@ function JsonNode({ value, depth = 0 }: { value: any; depth?: number }) {
                 <span className="text-[var(--kyro-text-muted)] truncate max-w-[200px] inline-block">
                   {keys.length <= 2
                     ? keys.map((k, i) => (
-                        <span key={k}>
-                          <span className="text-[#8e44ad]">"{k}"</span>
-                          <span className="text-[var(--kyro-text-muted)]">: </span>
-                          <JsonNode value={value[k]} depth={depth + 1} />
-                          {i < keys.length - 1 && <span className="text-[var(--kyro-text-muted)]">, </span>}
-                        </span>
-                      ))
+                      <span key={k}>
+                        <span className="text-[#8e44ad]">"{k}"</span>
+                        <span className="text-[var(--kyro-text-muted)]">: </span>
+                        <JsonNode value={value[k]} depth={depth + 1} />
+                        {i < keys.length - 1 && <span className="text-[var(--kyro-text-muted)]">, </span>}
+                      </span>
+                    ))
                     : `${keys.length} keys`
                   }
                 </span>
@@ -421,9 +421,9 @@ import { ClientOnly } from "./ui/ClientOnly";
 
 function GraphQLPlaygroundSkeleton() {
   return (
-    <div className="surface-tile p-8 space-y-6 rounded-2xl animate-pulse h-[calc(100vh-120px)]">
+    <div className="surface-tile p-8 space-y-6 rounded-lg animate-pulse h-[calc(100vh-120px)]">
       <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-1/3 opacity-50" />
-      <div className="h-full bg-[var(--kyro-surface-accent)] rounded-2xl opacity-50" />
+      <div className="h-full bg-[var(--kyro-surface-accent)] rounded-lg opacity-50" />
     </div>
   );
 }
@@ -444,7 +444,7 @@ function GraphQLPlaygroundInner({
       try {
         const saved = localStorage.getItem("kyro_graphql_tab");
         if (saved) return JSON.parse(saved);
-      } catch {}
+      } catch { }
     }
     return {
       id: "default",
@@ -469,7 +469,7 @@ function GraphQLPlaygroundInner({
       try {
         const saved = localStorage.getItem("kyro_graphql_history");
         if (saved) return JSON.parse(saved);
-      } catch {}
+      } catch { }
     }
     return [];
   });
@@ -757,8 +757,8 @@ function GraphQLPlaygroundInner({
     (field: FieldInfo) => {
       const isMutation = schema?.mutationType?.name
         ? schema.types
-            .find((t) => t.name === schema.mutationType!.name)
-            ?.fields?.some((f) => f.name === field.name)
+          .find((t) => t.name === schema.mutationType!.name)
+          ?.fields?.some((f) => f.name === field.name)
         : false;
       if (!schema) return;
       const q = generateSkeletonQuery(field, schema, !!isMutation);
@@ -909,8 +909,8 @@ function GraphQLPlaygroundInner({
                 key={p.key}
                 onClick={() => setActiveEditorTab(p.key)}
                 className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${activeEditorTab === p.key
-                    ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
-                    : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
+                  ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
+                  : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
                   }`}
               >
                 {p.label}
@@ -962,8 +962,8 @@ function GraphQLPlaygroundInner({
                 key={p.key}
                 onClick={() => { setRightTab(p.key); if (p.key === "docs") setShowDocs(true); }}
                 className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${rightTab === p.key
-                    ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
-                    : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
+                  ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
+                  : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
                   }`}
               >
                 {p.label}

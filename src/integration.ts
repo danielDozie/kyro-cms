@@ -27,13 +27,20 @@ export interface KyroIntegrationOptions {
   enableWebSocket?: boolean;
 }
 
-const KYRO_PACKAGES = [
+/** Packages that are server-only and must be externalized from all builds */
+const KYRO_SERVER_PACKAGES = [
   "@kyro-cms/core",
   "@kyro-cms/admin",
   "@kyro-cms/astro",
   "@kyro-cms/ai",
+];
+
+/** Packages that may run in the browser (used in hydrated React islands) */
+const KYRO_CLIENT_PACKAGES = [
   "@kyro-cms/connect",
 ];
+
+const KYRO_ALL_PACKAGES = [...KYRO_SERVER_PACKAGES, ...KYRO_CLIENT_PACKAGES];
 
 const NATIVE_BINARY_EXTERNALS = [
   "better-sqlite3",
@@ -62,8 +69,10 @@ const NODE_BUILTINS = [
   "zlib", "node:zlib", "buffer", "node:buffer",
 ];
 
-const KYRO_EXTERNAL_MODULES = [...KYRO_PACKAGES, ...NATIVE_BINARY_EXTERNALS];
-const KYRO_SSR_EXTERNALS = [...KYRO_PACKAGES, ...NODE_BUILTINS, ...NATIVE_BINARY_EXTERNALS];
+/** Used for build.rollupOptions.external and optimizeDeps.exclude (client + server builds) */
+const KYRO_EXTERNAL_MODULES = [...KYRO_SERVER_PACKAGES, ...NATIVE_BINARY_EXTERNALS];
+/** Used for ssr.external (server-side only) — includes client packages since SSR can resolve them from node_modules */
+const KYRO_SSR_EXTERNALS = [...KYRO_ALL_PACKAGES, ...NODE_BUILTINS, ...NATIVE_BINARY_EXTERNALS];
 
 export default function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
   const {

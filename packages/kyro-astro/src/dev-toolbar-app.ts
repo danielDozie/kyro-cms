@@ -1,13 +1,13 @@
 import { defineToolbarApp } from 'astro/toolbar';
 
 export default defineToolbarApp({
-  init(canvas) {
+  init(canvas, app) {
     const style = document.createElement('style');
     style.textContent = `
       .window {
-        background: #0f172a;
-        color: #f8fafc;
-        border: 1px solid #334155;
+        background: #171717;
+        color: #ffffff;
+        border: 1px solid #262626;
         border-radius: 12px;
         padding: 20px;
         width: 320px;
@@ -20,17 +20,17 @@ export default defineToolbarApp({
         gap: 10px;
         margin-bottom: 16px;
         padding-bottom: 12px;
-        border-bottom: 1px solid #1e293b;
+        border-bottom: 1px solid #262626;
       }
       .logo {
         width: 28px;
         height: 28px;
-        background: linear-gradient(135deg, #6366f1, #a855f7);
-        border-radius: 8px;
+        background: #ffffff;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #0a0a0a;
         font-weight: bold;
         font-size: 14px;
       }
@@ -38,16 +38,16 @@ export default defineToolbarApp({
         font-size: 15px;
         font-weight: 600;
         margin: 0;
-        color: #f8fafc;
+        color: #ffffff;
       }
       .badge {
         font-size: 10px;
         font-weight: 600;
-        background: #1e1b4b;
-        color: #818cf8;
+        background: #262626;
+        color: #d1d5db;
         padding: 2px 8px;
         border-radius: 9999px;
-        border: 1px solid #3730a3;
+        border: 1px solid #404040;
         margin-left: auto;
       }
       .section {
@@ -56,9 +56,7 @@ export default defineToolbarApp({
       .section-title {
         font-size: 11px;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #94a3b8;
+        color: #737373;
         margin-bottom: 8px;
       }
       .btn-grid {
@@ -71,42 +69,45 @@ export default defineToolbarApp({
         align-items: center;
         justify-content: center;
         gap: 6px;
-        background: #1e293b;
-        color: #f1f5f9;
+        background: #262626;
+        color: #ffffff;
         text-decoration: none;
         padding: 8px 12px;
         border-radius: 6px;
         font-size: 12px;
         font-weight: 500;
-        border: 1px solid #334155;
+        border: 1px solid #404040;
         transition: all 0.15s ease;
       }
       .btn:hover {
-        background: #334155;
-        border-color: #475569;
-        color: white;
+        background: #404040;
+        border-color: #525252;
+        color: #ffffff;
       }
       .btn-primary {
-        background: #4f46e5;
-        border-color: #6366f1;
+        background: #ffffff;
+        border-color: #ffffff;
+        color: #0a0a0a;
         grid-column: span 2;
         padding: 10px 12px;
         font-weight: 600;
       }
       .btn-primary:hover {
-        background: #4338ca;
+        background: #e5e7eb;
+        border-color: #e5e7eb;
+        color: #0a0a0a;
       }
       .info-row {
         display: flex;
         justify-content: space-between;
         font-size: 12px;
         padding: 6px 0;
-        color: #cbd5e1;
-        border-bottom: 1px dashed #1e293b;
+        color: #a3a3a3;
+        border-bottom: 1px dashed #262626;
       }
       .info-value {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        color: #a7f3d0;
+        color: #ffffff;
       }
     `;
 
@@ -153,6 +154,13 @@ export default defineToolbarApp({
     `;
 
     canvas.appendChild(style);
-    canvas.appendChild(windowEl);
+
+    app.onToggled(({ state }) => {
+      if (state) {
+        canvas.appendChild(windowEl);
+      } else {
+        windowEl.remove();
+      }
+    });
   },
 });

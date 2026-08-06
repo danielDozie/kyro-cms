@@ -276,7 +276,7 @@ async function createDefaultAuthAdapter(
   }
   if ('dialect' in db && (db as any).dialect === "mongodb") {
     const mongoDb = db as MongoDBAdapter;
-    return new MongoDBAuthAdapter({ db: () => mongoDb.db });
+    return new MongoDBAuthAdapter({ db: () => mongoDb.db, adapter: mongoDb });
   }
   const defaultAuthDbPath = resolve(rootDir, "data", "auth.db");
   return new SQLiteAuthAdapter({
@@ -3086,20 +3086,21 @@ app.put("/api/auth/sessions/:id/name", async (c) => authRoutes.renameSession(c.r
             tenantId: ctxTenantID,
           });
         } else if (isDraftEnabled) {
-          // Publish: main doc + versions table
+          // Publish or Unpublish: main doc + versions table
+          const statusToSet = body.status === 'draft' ? 'draft' : 'published';
           await db.update({
             collection: slug,
             id,
-            data: { ...validated, status: 'published' },
+            data: { ...validated, status: statusToSet },
             tenantId: ctxTenantID,
           });
           await db.createVersion({
             collection: slug,
             documentId: id,
-            data: validated,
-            status: 'published',
+            data: { ...validated, status: statusToSet },
+            status: statusToSet as "published" | "draft" | "archived",
             createdBy: ctxUser?.id,
-            changeDescription: 'Published',
+            changeDescription: statusToSet === 'published' ? 'Published' : 'Unpublished',
             tenantId: ctxTenantID,
           });
         } else {

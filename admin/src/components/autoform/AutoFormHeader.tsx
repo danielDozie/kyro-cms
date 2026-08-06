@@ -328,7 +328,7 @@ export function AutoFormHeader({
   return (
     <>
       {/* MOBILE HEADER */}
-      <header className="md:hidden border-b border-[var(--kyro-border)] z-50 bg-[var(--kyro-surface)] backdrop-blur-md rounded-lg">
+      <header className="md:hidden border-b border-[var(--kyro-border)] z-30 bg-[var(--kyro-surface)] backdrop-blur-md rounded-lg">
         <div className="flex items-center gap-2 px-3 py-2.5">
           <a
             href={`${ADMIN_BASE}/${collectionSlug}`}
@@ -402,7 +402,7 @@ export function AutoFormHeader({
       </header>
 
       {/* DESKTOP HEADER */}
-      <header className="hidden md:flex surface-tile px-8 py-6 items-center justify-between sticky top-0 border-b border-[var(--kyro-border)] mb-8 bg-[var(--kyro-surface)] z-50 backdrop-blur-md rounded-lg">
+      <header className="hidden md:flex surface-tile px-8 py-6 items-center justify-between sticky top-0 border-b border-[var(--kyro-border)] mb-4 bg-[var(--kyro-surface)] z-50 backdrop-blur-md rounded-lg">
         <div className="flex flex-col gap-2 min-w-0">
           <div className="flex items-center gap-3 flex-wrap min-w-0">
             <a
