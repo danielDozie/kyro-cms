@@ -291,9 +291,9 @@ function ListViewInner({
       const result = (await apiGet(
         withCacheBust(`/api/${collectionSlug}?${params}`),
         { autoToast: false },
-      ) as { docs?: Record<string, unknown>[]; totalDocs?: number });
-      setDocs(result.docs || []);
-      setTotalDocs(result.totalDocs || 0);
+      ) as { docs?: Record<string, unknown>[]; totalDocs?: number; data?: Record<string, unknown>[]; meta?: { total?: number } });
+      setDocs(result.docs || result.data || []);
+      setTotalDocs(result.totalDocs ?? result.meta?.total ?? 0);
     } catch (error) {
       console.error("Failed to load docs:", error);
     } finally {
@@ -301,12 +301,14 @@ function ListViewInner({
     }
   }, [collectionSlug, page, limit, debouncedSearch, sort, filters]);
 
-  // Initial fetch only if not provided with initialDocs or if empty
+  // Sync initialDocs when props change or fetch if empty
   useEffect(() => {
-    if (docs.length === 0 && initialTotal === 0) {
+    setDocs(initialDocs);
+    setTotalDocs(initialTotal);
+    if (initialDocs.length === 0 && initialTotal === 0) {
       fetchDocs();
     }
-  }, []);
+  }, [collectionSlug, initialDocs, initialTotal]);
 
   // Subsequent fetches on filter/pagination changes
   const isFirstRender = useRef(true);

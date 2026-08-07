@@ -3,7 +3,6 @@ import {
   allGlobalSettings,
 } from "./src/templates/index.js";
 import { AiAssistantPlugin, AiAutoSeoPlugin } from "@kyro-cms/ai";
-import { createOpenAI } from "@ai-sdk/openai";
 import { setDbAdapter, loadSecrets, getAppSecret } from "./src/lib/secret.js";
 import path from "path";
 import fs from "fs";

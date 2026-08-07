@@ -47,8 +47,8 @@ if (!isSettings) {
     );
     if (response.ok) {
       const data = await response.json();
-      docs = data.docs || [];
-      totalDocs = data.totalDocs || 0;
+      docs = data.docs || data.data || [];
+      totalDocs = data.totalDocs ?? data.meta?.total ?? 0;
     }
   } catch (error) {
     console.error("Failed to fetch documents:", error);

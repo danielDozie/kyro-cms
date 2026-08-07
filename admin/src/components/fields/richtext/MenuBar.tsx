@@ -202,7 +202,7 @@ Here is the content to expand: ${selectedText || context}`;
       }
     } catch (err) {
       console.error("AI Assistant Error:", err);
-      addToast('error', "AI Assistant failed to generate text.");
+      addToast('warning', "AI Assistant failed to generate text.");
     } finally {
       setIsAiLoading(false);
     }

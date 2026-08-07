@@ -52,15 +52,17 @@ nonAuthCollections
     groupedCollections.get(groupName)!.push(item);
   });
 
-const dynamicSections = Array.from(groupedCollections.entries()).map(([group, items]) => {
-  const sortedItems = items.sort((a, b) => (a.order || 999) - (b.order || 999));
-  const minOrder = sortedItems.length > 0 ? (sortedItems[0].order ?? 999) : 999;
-  return {
-    label: group,
-    items: sortedItems,
-    minOrder
-  };
-}).sort((a, b) => a.minOrder - b.minOrder);
+const dynamicSections = Array.from(groupedCollections.entries())
+  .map(([group, items]) => {
+    const sortedItems = items.sort((a, b) => (a.order || 999) - (b.order || 999));
+    const minOrder = sortedItems.length > 0 ? (sortedItems[0].order ?? 999) : 999;
+    return {
+      label: group,
+      items: sortedItems,
+      minOrder,
+    };
+  })
+  .sort((a, b) => a.minOrder - b.minOrder);
 
 import { getAuthServer } from "../lib/auth-server";
 
@@ -138,7 +140,7 @@ const navSections = navSectionsRaw
 
 const iconAliases: Record<string, string> = {
   collection: "Dot",
-  media: "Grid",
+  media: "Image",
   home: "Home",
   users: "Users",
   shield: "Shield",
@@ -167,7 +169,7 @@ function isActive(item: NavItem): boolean {
 
 <aside
   id="kyro-sidebar"
-  class="surface-tile w-[280px] md:w-[320px] flex flex-col flex-shrink-0 overflow-hidden fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r md:border-r-0 border-[var(--kyro-border)] rounded-r-2xl md:rounded-3xl rounded-l-none md:rounded-l-3xl shadow-2xl md:shadow-none"
+  class="surface-tile rounded-lg w-[280px] flex flex-col flex-shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r border-[var(--kyro-border)]"
 >
   <div
     class="sidebar-header px-6 md:px-6 py-6 flex items-center justify-between gap-2 border-b border-[var(--kyro-border)]/50 shrink-0 transition-all duration-300"
@@ -186,7 +188,7 @@ function isActive(item: NavItem): boolean {
                     height: logoHeight ? `${logoHeight}px` : "32px",
                     objectFit: "contain",
                   }}
-                  class={`rounded-lg ${darkLogo ? "block dark:hidden" : ""}`}
+                  class={`rounded ${darkLogo ? "block dark:hidden" : ""}`}
                 />
               )}
               {darkLogo && (
@@ -198,7 +200,7 @@ function isActive(item: NavItem): boolean {
                     height: logoHeight ? `${logoHeight}px` : "32px",
                     objectFit: "contain",
                   }}
-                  class={`rounded-lg ${siteLogo ? "hidden dark:block" : ""}`}
+                  class={`rounded ${siteLogo ? "hidden dark:block" : ""}`}
                 />
               )}
             </div>
@@ -224,19 +226,12 @@ function isActive(item: NavItem): boolean {
     <button
       id="sidebar-panel-toggle"
       type="button"
-      title="Minimize Sidebar"
+      title="Toggle Sidebar"
       aria-label="Toggle Sidebar"
-      class="hidden md:flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] transition-all flex-shrink-0 cursor-pointer shadow-sm active:scale-95"
+      class="hidden md:flex items-center justify-center p-1.5 text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-colors rounded flex-shrink-0 cursor-pointer"
     >
-      <svg
-        id="sidebar-toggle-icon"
-        class="w-4 h-4 transition-transform duration-300"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
-      </svg>
+      <Icons.PanelLeftClose className="w-5 h-5 sidebar-icon-expanded" />
+      <Icons.PanelLeftOpen className="w-5 h-5 sidebar-icon-collapsed hidden" />
     </button>
 
     {/* Mobile Close Button */}
@@ -533,13 +528,13 @@ function isActive(item: NavItem): boolean {
       const updateMinimizedUI = (isMin: boolean) => {
         if (isMin) {
           sidebar.setAttribute("data-minimized", "true");
-          sidebar.classList.remove("md:w-[280px]", "md:w-[320px]");
-          sidebar.classList.add("md:w-[76px]");
+          sidebar.classList.remove("w-[280px]");
+          sidebar.classList.add("w-[76px]");
           toggleBtn.setAttribute("title", "Expand Sidebar");
         } else {
           sidebar.removeAttribute("data-minimized");
-          sidebar.classList.remove("md:w-[76px]");
-          sidebar.classList.add("md:w-[280px]");
+          sidebar.classList.remove("w-[76px]");
+          sidebar.classList.add("w-[280px]");
           toggleBtn.setAttribute("title", "Minimize Sidebar");
         }
       };
@@ -705,8 +700,11 @@ function isActive(item: NavItem): boolean {
       opacity: 1 !important;
     } */
 
-    #kyro-sidebar[data-minimized="true"] #sidebar-toggle-icon {
-      transform: rotate(180deg);
+    #kyro-sidebar[data-minimized="true"] .sidebar-icon-expanded {
+      display: none !important;
+    }
+    #kyro-sidebar[data-minimized="true"] .sidebar-icon-collapsed {
+      display: block !important;
     }
 
     /* Footer & User Menu Rail alignment for Collapsed State */

@@ -23,9 +23,8 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
   const enablePublicAccess = settings?.access?.enablePublicAccess ?? true;
   const defaultCollectionAccess = settings?.access?.defaultCollectionAccess ?? "none";
 
-  for (const slug of Object.keys(registry.getCollections())) {
-    const collection = registry.getCollection(slug);
-    if (!collection) continue;
+  for (const collection of registry.getCollections()) {
+    const slug = collection.slug;
     const basePath = `/api/${slug}`;
 
     // POST /api/:collection/dynamic-options/:fieldName
@@ -136,10 +135,283 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const totalDocs = await db.count({ collection: slug, where, tenantId: ctxTenantID } as any);
       await populateRelationships(findRes.docs || [], collection.fields, db as BaseAdapter, registry, 1, depth);
       
+      const docs = (findRes.docs || []).map(sanitizeDoc);
       return c.json({
-        data: (findRes.docs || []).map(sanitizeDoc),
+        docs,
+        totalDocs,
+        limit,
+        page,
+        totalPages: Math.ceil(totalDocs / limit),
+        data: docs,
         meta: { total: totalDocs, page, limit, totalPages: Math.ceil(totalDocs / limit) },
       });
+    });
+
+    // GET /api/:collection/:id/versions - List versions for a document
+    app.get(`${basePath}/:id/versions`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "read",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const id = c.req.param("id");
+      const page = parseInt(c.req.query("page") || "1");
+      const limit = Math.min(parseInt(c.req.query("limit") || "30"), 100);
+
+      let docs: any[] = [];
+      let totalDocs = 0;
+
+      if (typeof (db as any).findVersions === "function") {
+        try {
+          const result = await (db as any).findVersions({
+            collection: slug,
+            documentId: id,
+            page,
+            limit,
+            tenantId: ctxTenantID,
+          });
+          docs = result.docs || [];
+          totalDocs = result.totalDocs || docs.length;
+        } catch (e) {
+          console.warn(`[findVersions] Error fetching versions for ${slug}/${id}:`, e);
+        }
+      }
+
+      return c.json({
+        docs,
+        totalDocs,
+        page,
+        limit,
+        totalPages: Math.ceil(totalDocs / limit) || 1,
+        data: docs,
+        meta: { total: totalDocs, page, limit, totalPages: Math.ceil(totalDocs / limit) || 1 },
+      });
+    });
+
+    // GET /api/:collection/:id/versions/:versionId - Get specific version
+    app.get(`${basePath}/:id/versions/:versionId`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "read",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const versionId = c.req.param("versionId");
+      let doc: any = null;
+
+      if (typeof (db as any).findVersionByID === "function") {
+        doc = await (db as any).findVersionByID({
+          collection: slug,
+          versionId,
+          tenantId: ctxTenantID,
+        });
+      }
+
+      if (!doc) {
+        throw new ApiError(404, `Version '${versionId}' not found`);
+      }
+
+      return c.json({ doc, data: doc });
+    });
+
+    // POST /api/:collection/:id/versions/:versionId/restore - Restore version
+    app.post(`${basePath}/:id/versions/:versionId/restore`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "update",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const id = c.req.param("id");
+      const versionId = c.req.param("versionId");
+
+      if (typeof (db as any).restoreVersion === "function") {
+        const restored = await (db as any).restoreVersion({
+          collection: slug,
+          documentId: id,
+          versionId,
+          tenantId: ctxTenantID,
+        });
+        return c.json({ doc: restored, data: restored, message: "Version restored successfully" });
+      }
+
+      throw new ApiError(501, "Version restoration not supported by database adapter");
+    });
+
+    // GET /api/:collection/:id - Single document
+    app.get(`${basePath}/:id`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const url = new URL(c.req.url);
+      const draftParam = url.searchParams.get("draft");
+      const kyroToken = url.searchParams.get("kyroToken");
+      let previewAllowed = false;
+
+      if (draftParam === "true" && kyroToken && authSecret) {
+        try {
+          const decoded = await verify(kyroToken, authSecret, "HS256");
+          if (decoded && decoded.type === "preview" && decoded.collection === collection.slug) {
+            previewAllowed = true;
+          }
+        } catch (e) {
+          console.warn("Invalid preview token", e);
+        }
+      }
+
+      if (!previewAllowed) {
+        const access = await checkCollectionAccess(
+          collection,
+          "read",
+          c.req.raw,
+          ctxUser,
+          ctxTenantID,
+          apiKeyContext,
+          enablePublicAccess,
+          defaultCollectionAccess,
+        );
+        if (!access.allowed) {
+          throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+        }
+      }
+
+      const id = c.req.param("id");
+      const depth = parseInt(url.searchParams.get("depth") || "1");
+      const isDraftRequest = draftParam === "true" ? true : draftParam === "false" ? false : !!ctxUser;
+
+      const doc = await db.findByID({
+        collection: slug,
+        id,
+        tenantId: ctxTenantID,
+        draft: isDraftRequest,
+      });
+
+      if (!doc) {
+        throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+      }
+
+      await populateRelationships([doc], collection.fields, db as BaseAdapter, registry, 1, depth);
+      const sanitized = sanitizeDoc(doc);
+      return c.json({ doc: sanitized, data: sanitized });
+    });
+
+    // POST /api/:collection - Create document
+    app.post(basePath, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "create",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const body = await c.req.json();
+      const created = await db.create({
+        collection: slug,
+        data: body,
+        tenantId: ctxTenantID,
+      });
+
+      const sanitized = sanitizeDoc(created);
+      return c.json({ doc: sanitized, data: sanitized, message: "Document created successfully" }, 201);
+    });
+
+    // PATCH /api/:collection/:id - Update document
+    app.patch(`${basePath}/:id`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "update",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const id = c.req.param("id");
+      const body = await c.req.json();
+      const updated = await db.update({
+        collection: slug,
+        id,
+        data: body,
+        tenantId: ctxTenantID,
+      });
+
+      if (!updated) {
+        throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+      }
+
+      const sanitized = sanitizeDoc(updated);
+      return c.json({ doc: sanitized, data: sanitized, message: "Document updated successfully" });
+    });
+
+    // DELETE /api/:collection/:id - Delete document
+    app.delete(`${basePath}/:id`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "delete",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const id = c.req.param("id");
+      const deleted = await db.delete({
+        collection: slug,
+        id,
+        tenantId: ctxTenantID,
+      });
+
+      if (!deleted) {
+        throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+      }
+
+      return c.json({ success: true, message: `Document '${id}' deleted successfully` });
     });
 
   }

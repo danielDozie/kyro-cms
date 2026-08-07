@@ -77,7 +77,99 @@ export function mountGlobalRoutes(
       }
 
       await populateRelationships([doc], globalConfig.fields, db as BaseAdapter, registry, 1, depth);
-      return c.json({ data: sanitizeDoc(doc) });
+      const sanitized = sanitizeDoc(doc);
+      return c.json({ doc: sanitized, data: sanitized });
+    });
+
+    // GET /api/globals/:slug/versions - List versions for a global
+    app.get(`${basePath}/versions`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID } =
+        await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+
+      await ensureGlobalAccess(
+        globalConfig,
+        "read",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        enablePublicAccess,
+      );
+
+      const collectionSlug = `_globals_${slug}`;
+      const page = parseInt(c.req.query("page") || "1");
+      const limit = Math.min(parseInt(c.req.query("limit") || "30"), 100);
+
+      let docs: any[] = [];
+      let totalDocs = 0;
+
+      if (typeof (db as any).findVersions === "function") {
+        try {
+          const result = await (db as any).findVersions({
+            collection: collectionSlug,
+            documentId: slug,
+            page,
+            limit,
+            tenantId: ctxTenantID,
+          });
+          docs = result.docs || [];
+          totalDocs = result.totalDocs || docs.length;
+        } catch (e) {
+          console.warn(`[findVersions] Error fetching global versions for ${slug}:`, e);
+        }
+      }
+
+      return c.json({
+        docs,
+        totalDocs,
+        page,
+        limit,
+        totalPages: Math.ceil(totalDocs / limit) || 1,
+        data: docs,
+        meta: { total: totalDocs, page, limit, totalPages: Math.ceil(totalDocs / limit) || 1 },
+      });
+    });
+
+    // POST /api/globals/:slug - Save / Update global
+    app.post(basePath, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID } =
+        await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+
+      await ensureGlobalAccess(
+        globalConfig,
+        "update",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        enablePublicAccess,
+      );
+
+      const body = await c.req.json();
+      const collectionSlug = `_globals_${slug}`;
+
+      let existing = await db.findOne({
+        collection: collectionSlug,
+        where: {},
+        tenantId: ctxTenantID,
+      });
+
+      let updated;
+      if (existing) {
+        updated = await db.update({
+          collection: collectionSlug,
+          id: existing.id,
+          data: body,
+          tenantId: ctxTenantID,
+        });
+      } else {
+        updated = await db.create({
+          collection: collectionSlug,
+          data: { id: slug, ...body },
+          tenantId: ctxTenantID,
+        });
+      }
+
+      const sanitized = sanitizeDoc(updated);
+      return c.json({ doc: sanitized, data: sanitized, message: "Global updated successfully" });
     });
   }
 }

@@ -17,6 +17,7 @@ import {
   FolderInput,
   FolderPlus,
   Grid,
+  Image,
   Link,
   Crop as CropIcon,
   Film,
@@ -509,7 +510,7 @@ export function MediaGallery({
             ) : items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-32 text-center">
                 <div className="w-24 h-24 rounded-[2rem] bg-[var(--kyro-surface-accent)] flex items-center justify-center mb-8 rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                  <Grid className="w-10 h-10 text-[var(--kyro-text-muted)] opacity-30" />
+                  <Image className="w-10 h-10 text-[var(--kyro-text-muted)] opacity-30" />
                 </div>
                 <h3 className="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tight">
                   No assets found
@@ -543,12 +544,12 @@ export function MediaGallery({
                       <img
                         src={getCroppedUrl(item, 400) || item.url}
                         alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        className="w-full h-full object-cover"
                         loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-6 gap-4">
-                        <div className="p-4 rounded-2xl bg-[var(--kyro-surface)] shadow-inner text-[var(--kyro-text-secondary)] group-hover:scale-110 transition-transform duration-500">
+                        <div className="p-4 rounded-2xl bg-[var(--kyro-surface)] shadow-inner text-[var(--kyro-text-secondary)]">
                           {item.type === "video" ? (
                             <Film className="w-8 h-8" />
                           ) : item.type === "audio" ? (
