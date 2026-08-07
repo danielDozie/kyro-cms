@@ -2,6 +2,7 @@ import type { Field, Hook } from "../fields/types.js";
 import type { CollectionAccess, GlobalAccess } from "../access/types.js";
 import type { CollectionHooks, GlobalHooks } from "../hooks/types.js";
 import type { TenantContext } from "../auth/rls/tenant.js";
+import type { StorageProvider } from "../storage/index.js";
 
 // ============================================================================
 // Configuration Interfaces
@@ -350,6 +351,7 @@ export interface KyroConfig {
   collections?: CollectionConfig[];
   globals?: GlobalConfig[];
   adapter: BaseAdapter;
+  storage?: StorageProvider;
   plugins?: import("../plugins/index.js").KyroPlugin[];
   auth?:
     | boolean

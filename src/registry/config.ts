@@ -23,6 +23,7 @@ export function defineConfig(config: {
   collections?: CollectionConfig[] | Record<string, CollectionConfig>;
   globals?: GlobalConfig[] | Record<string, GlobalConfig>;
   adapter: KyroConfig["adapter"];
+  storage?: KyroConfig["storage"];
   plugins?: KyroConfig["plugins"];
   auth?: KyroConfig["auth"];
   cors?: KyroConfig["cors"];
@@ -38,6 +39,7 @@ export function defineConfig(config: {
     collections: normalizeCollections(config.collections),
     globals: normalizeGlobals(config.globals),
     adapter: config.adapter,
+    storage: config.storage,
     plugins: config.plugins,
     auth: config.auth,
     cors: config.cors,
