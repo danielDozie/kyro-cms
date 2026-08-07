@@ -11,8 +11,7 @@ export function generateSEOFields(): Field {
         type: "text",
         label: "Meta Title",
         admin: {
-          description: "The title used for search engines (recommended < 60 chars).",
-          autoGenerate: "title",
+          description: "The title used for search engines (recommended < 60 chars). Leave empty for AI auto-generation.",
         },
       },
       {
@@ -20,8 +19,7 @@ export function generateSEOFields(): Field {
         type: "textarea",
         label: "Meta Description",
         admin: {
-          description: "A brief summary for search engines (recommended < 160 chars).",
-          autoGenerate: "content",
+          description: "A brief summary for search engines (recommended < 160 chars). Leave empty for AI auto-generation.",
         },
       },
       {

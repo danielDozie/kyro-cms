@@ -31,6 +31,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../ui/Toast";
 import { PromptModal } from "../../ui/PromptModal";
+import { buildAiPrompt } from "../../../prompts";
 
 const PRESET_COLORS = [
   { name: "Default", value: "inherit" },
@@ -122,7 +123,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
     setActiveDropdown(null);
     
     const titleValue = (document.querySelector('input#title, input[name="title"]') as HTMLInputElement)?.value;
-    const title = formData?.title || titleValue || "Untitled Document";
+    const rawTitle = formData?.title || titleValue;
+    const title = typeof rawTitle === "string" ? rawTitle : titleValue || "Untitled Document";
     
     let collectionName = "document";
     try {
@@ -144,29 +146,18 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       ' '
     );
 
-    let prompt = "";
-    if (action === "Generate") {
-      prompt = `Write a comprehensive, engaging, and professional ${collectionName} titled "${title}". 
-The content MUST be full-featured and highly formatted. You MUST include:
-1. Proper Markdown formatting (headings, paragraphs, bold/italic text, blockquotes)
-2. Relevant and context-specific images. You MUST use EXACT Markdown image syntax like this: '![alt text](https://image.pollinations.ai/prompt/URL_ENCODED_KEYWORDS)' (replace URL_ENCODED_KEYWORDS with descriptive keywords for the image)
-3. Hyperlinks where necessary to provide additional context or references
-4. Well-structured sections with bullet points or numbered lists where appropriate.`;
-    } else if (action === "Summarize") {
-      prompt = `Summarize the following content from the ${collectionName} titled "${title}" into a concise paragraph. Use clear Markdown formatting if necessary (like bolding key terms): ${selectedText || context}`;
-    } else if (action === "Expand") {
-      prompt = `Expand on the following content from the ${collectionName} titled "${title}". Add more details, context, and depth. 
-Please format the output using rich Markdown (headings, paragraphs, lists). 
-If visual context would be helpful, include relevant images using EXACT Markdown image syntax: '![alt text](https://image.pollinations.ai/prompt/URL_ENCODED_KEYWORDS)'.
-Here is the content to expand: ${selectedText || context}`;
-    } else if (action === "Prompt") {
-      if (customPrompt) {
-        prompt = `${customPrompt}\n\nPlease format your response using rich Markdown. If your response includes images, use EXACT Markdown image syntax: '![alt text](https://image.pollinations.ai/prompt/URL_ENCODED_KEYWORDS)'`;
-      } else {
-        setIsPromptModalOpen(true);
-        return;
-      }
+    if (action === "Prompt" && !customPrompt) {
+      setIsPromptModalOpen(true);
+      return;
     }
+
+    const prompt = buildAiPrompt({
+      action,
+      title,
+      collectionName,
+      contextContent: selectedText || context,
+      customPrompt,
+    });
 
     setIsAiLoading(true);
     try {

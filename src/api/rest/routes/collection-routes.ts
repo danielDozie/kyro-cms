@@ -8,6 +8,7 @@ import {
 import { populateRelationships } from "../../../utils/populate.js";
 import { sanitizeDoc } from "../../../utils/sanitize.js";
 import { ApiError } from "../../../utils/errors.js";
+import { HookPipeline } from "../../../hooks/HookPipeline.js";
 import type { BaseAdapter } from "../../../registry/types.js";
 
 export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw: any) {
@@ -338,12 +339,37 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         throw new ApiError((access.status || 403) as number, access.error || "Access denied");
       }
 
-      const body = await c.req.json();
+      let body = await c.req.json();
+
+      // Execute beforeChange collection hooks
+      if (collection.hooks?.beforeChange && collection.hooks.beforeChange.length > 0) {
+        const pipeline = new HookPipeline(collection.hooks.beforeChange);
+        body = await pipeline.execute({
+          data: body,
+          collection: slug,
+          operation: 'create',
+          req: c.req.raw as any,
+          user: ctxUser,
+        });
+      }
+
       const created = await db.create({
         collection: slug,
         data: body,
         tenantId: ctxTenantID,
       });
+
+      // Execute afterChange collection hooks
+      if (collection.hooks?.afterChange && collection.hooks.afterChange.length > 0) {
+        const pipeline = new HookPipeline(collection.hooks.afterChange);
+        await pipeline.execute({
+          data: created,
+          collection: slug,
+          operation: 'create',
+          req: c.req.raw as any,
+          user: ctxUser,
+        });
+      }
 
       const sanitized = sanitizeDoc(created);
       return c.json({ doc: sanitized, data: sanitized, message: "Document created successfully" }, 201);
@@ -367,7 +393,22 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       }
 
       const id = c.req.param("id");
-      const body = await c.req.json();
+      let body = await c.req.json();
+
+      // Execute beforeChange collection hooks
+      if (collection.hooks?.beforeChange && collection.hooks.beforeChange.length > 0) {
+        const originalDoc = await db.findByID({ collection: slug, id, tenantId: ctxTenantID });
+        const pipeline = new HookPipeline(collection.hooks.beforeChange);
+        body = await pipeline.execute({
+          data: body,
+          originalDoc: originalDoc || undefined,
+          collection: slug,
+          operation: 'update',
+          req: c.req.raw as any,
+          user: ctxUser,
+        });
+      }
+
       const updated = await db.update({
         collection: slug,
         id,
@@ -377,6 +418,18 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
 
       if (!updated) {
         throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+      }
+
+      // Execute afterChange collection hooks
+      if (collection.hooks?.afterChange && collection.hooks.afterChange.length > 0) {
+        const pipeline = new HookPipeline(collection.hooks.afterChange);
+        await pipeline.execute({
+          data: updated,
+          collection: slug,
+          operation: 'update',
+          req: c.req.raw as any,
+          user: ctxUser,
+        });
       }
 
       const sanitized = sanitizeDoc(updated);

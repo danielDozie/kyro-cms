@@ -4,6 +4,7 @@ import { aura } from "@uiw/codemirror-theme-aura";
 import type { CodeField as CodeFieldType } from "@kyro-cms/core/client";
 import { useTheme } from "../ThemeProvider";
 import type { Extension } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 
 interface CodeFieldProps {
   field: CodeFieldType;
@@ -105,10 +106,10 @@ export const CodeField: React.FC<CodeFieldProps> = ({
         const loader =
           languageExtensions[language] || languageExtensions.javascript;
         const ext = await loader();
-        setExtensions([ext as Extension]);
+        setExtensions([ext as Extension, EditorView.lineWrapping]);
       } catch (err) {
         console.error("Failed to load language extension:", err);
-        setExtensions([]);
+        setExtensions([EditorView.lineWrapping]);
       } finally {
         setLoading(false);
       }
@@ -211,13 +212,15 @@ export const CodeField: React.FC<CodeFieldProps> = ({
 
       {/* Editor container */}
       <div
-        className={`relative rounded-md overflow-hidden transition-all duration-200 ${
+        className={`relative rounded-md overflow-hidden transition-all duration-200 w-full max-w-full ${
           isFullScreen ? "fixed inset-4 z-50" : ""
         }`}
         style={{
           backgroundColor: "var(--kyro-surface)",
           borderColor: error ? "var(--kyro-error)" : "var(--kyro-border)",
           borderWidth: "1px",
+          maxWidth: "100%",
+          overflowX: "hidden",
         }}
       >
         {/* Top accent bar */}
