@@ -11,7 +11,7 @@ import {
   createWSServer,
   type KyroWSServer,
 } from "./api/ws/index.js";
-import { createHonoApp } from "./api/rest/index.js";
+import { createKyroApp } from "./api/rest/index.js";
 import { buildGraphQLSchema, RelationLoader, depthLimit } from "./api/graphql/index.js";
 import { createYoga } from "graphql-yoga";
 import { createKyroServer, createContext } from "./api/trpc/index.js";
@@ -365,7 +365,7 @@ export class Kyro {
     const authSecret = authObj?.secret;
     const checkSession = authObj?.checkSession !== false;
 
-    return createHonoApp({
+    return createKyroApp({
       registry: this.registry,
       db: this.db,
       authSecret,
@@ -649,7 +649,7 @@ export {
   createMongoDBAdapter,
 } from "./database/mongodb/index.js";
 export { KyroPubSub, KyroWSServer, createWSServer } from "./api/ws/index.js";
-export { createHonoApp } from "./api/rest/index.js";
+export { createKyroApp } from "./api/rest/index.js";
 export {
   buildGraphQLSchema,
   createGraphQLSchema,

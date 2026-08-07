@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import type {
   Field,
   TextField as TextFieldType,
@@ -22,15 +22,15 @@ import { MarkdownField } from "./fields/MarkdownField";
 import TextField from "./fields/TextField";
 import IconField from "./fields/IconField";
 import { BlocksField } from "./fields/BlocksField";
-import { RichTextField } from "./fields";
 import { ListField } from "./fields/ListField";
 import RelationshipField from "./fields/RelationshipField";
 import SecretField from "./fields/SecretField";
 import FieldLayout from "./fields/FieldLayout";
-import ArrayField from "./fields/ArrayField";
 import { GroupLayout } from "./fields/GroupLayout";
 import { ArrayLayout } from "./fields/ArrayLayout";
 import { setChangeSource } from "../lib/change-source";
+
+const LazyRichTextField = lazy(() => import("./fields/RichTextField"));
 
 interface FieldRendererProps {
   field: Field;
@@ -161,13 +161,15 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       );
     case "richtext":
       return (
-        <RichTextField
-          field={field}
-          value={value as Record<string, any> | null}
-          onChange={onChangeKeystroke}
-          disabled={disabled}
-          error={error}
-        />
+        <Suspense fallback={<div className="h-24 surface-tile animate-pulse rounded-lg" />}>
+          <LazyRichTextField
+            field={field}
+            value={value as Record<string, any> | null}
+            onChange={onChangeKeystroke}
+            disabled={disabled}
+            error={error}
+          />
+        </Suspense>
       );
     case "markdown":
       return (

@@ -1,1 +1,1 @@
-export { createHonoApp, createRESTAPI, type HonoAppOptions } from './hono-app.js';
+export { createKyroApp, createRESTAPI, type KyroAppOptions } from './kyro-app.js';

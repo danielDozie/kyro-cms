@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { apiGet } from "../../lib/api";
+import { apiGet, apiPatch, apiDelete } from "../../lib/api";
 import { useUIStore, useAuthStore, toast } from "../../lib/stores";
 import { UploadField } from "../fields/UploadField";
 import { useTranslation } from "react-i18next";
@@ -115,32 +115,20 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
         return;
       }
 
-      const res = await fetch(`${apiPath}/users/${user.id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success("User updated");
-        const currentMe = (window as any).__kyroAuth?.user || useAuthStore.getState().user;
-        if (currentMe && (currentMe.id === user.id || currentMe.email === user.email)) {
-          apiGet<any>("/api/auth/me").then((meRes) => {
-            const updatedUser = meRes?.user || meRes;
-            if (updatedUser) {
-              useAuthStore.getState().setUser(updatedUser);
-            }
-          });
-        }
-        navigate(adminPath + "/users");
-      } else {
-        toast.error(data.error || "Failed to save user");
+      await apiPatch(`/users/${user.id}`, body, { autoToast: false });
+      toast.success("User updated");
+      const currentMe = (window as any).__kyroAuth?.user || useAuthStore.getState().user;
+      if (currentMe && (currentMe.id === user.id || currentMe.email === user.email)) {
+        apiGet<any>("/api/auth/me", { autoToast: false }).then((meRes) => {
+          const updatedUser = meRes?.user || meRes;
+          if (updatedUser) {
+            useAuthStore.getState().setUser(updatedUser);
+          }
+        });
       }
-    } catch (e) {
-      toast.error("Failed to save user");
+      navigate(adminPath + "/users");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save user");
     } finally {
       setSaving(false);
     }
@@ -157,20 +145,11 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
       onConfirm: async () => {
         setLocking(true);
         try {
-          const res = await fetch(`${apiPath}/users/${user.id}`, {
-            method: "PATCH",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ locked: !isLocked }),
-          });
-          if (res.ok) {
-            setIsLocked(!isLocked);
-            toast.success(isLocked ? "User unlocked" : "User locked");
-          } else {
-            toast.error("Failed to update lock status");
-          }
-        } catch (e) {
-          toast.error("Failed to toggle lock");
+          await apiPatch(`/users/${user.id}`, { locked: !isLocked }, { autoToast: false });
+          setIsLocked(!isLocked);
+          toast.success(isLocked ? "User unlocked" : "User locked");
+        } catch (e: any) {
+          toast.error(e.message || "Failed to toggle lock");
         } finally {
           setLocking(false);
         }
@@ -186,18 +165,11 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
       onConfirm: async () => {
         setDeleting(true);
         try {
-          const res = await fetch(`${apiPath}/users/${user.id}`, {
-            method: "DELETE",
-            credentials: "include",
-          });
-          if (res.ok) {
-            toast.success("User deleted");
-            navigate(adminPath + "/users");
-          } else {
-            toast.error("Failed to delete user");
-          }
-        } catch (e) {
-          toast.error("Failed to delete user");
+          await apiDelete(`/users/${user.id}`, { autoToast: false });
+          toast.success("User deleted");
+          navigate(adminPath + "/users");
+        } catch (e: any) {
+          toast.error(e.message || "Failed to delete user");
         } finally {
           setDeleting(false);
         }

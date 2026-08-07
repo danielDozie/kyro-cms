@@ -101,8 +101,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
     if (!testEndpoint) return;
     setExploring(true);
     try {
-      const response = await fetch(resolveApi(`/api/${testEndpoint}`));
-      const data = await response.json();
+      const data = await apiGet(`/${testEndpoint}`, { autoToast: false });
       setPlaygroundResult(data);
     } catch (e) {
       setPlaygroundResult({

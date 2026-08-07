@@ -1,6 +1,7 @@
 import { Plus, Lock, CheckCircle2, Edit2, Trash2, XCircle, X } from "../ui/icons";
 import { useState } from "react";
 import { useUIStore } from "../../lib/stores";
+import { apiDelete } from "../../lib/api";
 import { navigate } from '../../lib/navigate';
 
 interface User {
@@ -53,19 +54,11 @@ export function UsersList({
         setDeleting(true);
         setErrorMsg(null);
         try {
-          const res = await fetch(`${apiPath}/users/${user.id}`, {
-            method: "DELETE",
-            credentials: "include",
-          });
-          const data = await res.json();
-          if (res.ok) {
-            setUsers((prev) => prev.filter((u) => u.id !== user.id));
-            setTotalUsers((prev) => prev - 1);
-          } else {
-            setErrorMsg(data.error || "Failed to delete user");
-          }
-        } catch (e) {
-          setErrorMsg("Failed to delete user");
+          await apiDelete(`/users/${user.id}`, { autoToast: false });
+          setUsers((prev) => prev.filter((u) => u.id !== user.id));
+          setTotalUsers((prev) => prev - 1);
+        } catch (e: any) {
+          setErrorMsg(e.message || "Failed to delete user");
         } finally {
           setDeleting(false);
         }

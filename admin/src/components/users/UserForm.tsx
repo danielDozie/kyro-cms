@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiPost, apiPatch } from "../../lib/api";
 import { useTranslation } from "react-i18next";
 import { navigate } from '../../lib/navigate';
 
@@ -50,38 +51,27 @@ export function UserForm({ mode, apiPath, adminPath, user }: UserFormProps) {
     if (tenantId.trim()) body.tenantId = tenantId.trim();
 
     try {
-      const url =
-        mode === "create" ? `${apiPath}/users` : `${apiPath}/users/${user!.id}`;
-      const method = mode === "create" ? "POST" : "PATCH";
-
-      const res = await fetch(url, {
-        method,
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage({
-          text:
-            mode === "create"
-              ? "User created successfully!"
-              : "User updated successfully!",
-          type: "success",
-        });
-        setTimeout(() => {
-          navigate(`${adminPath}/users`);
-        }, 1000);
+      if (mode === "create") {
+        await apiPost("/users", body, { autoToast: false });
       } else {
-        setMessage({
-          text: data.error || "Failed to save user",
-          type: "error",
-        });
+        await apiPatch(`/users/${user!.id}`, body, { autoToast: false });
       }
-    } catch (err) {
-      setMessage({ text: "An unexpected error occurred", type: "error" });
+
+      setMessage({
+        text: mode === "create" ? "User created successfully!" : "User updated successfully!",
+        type: "success",
+      });
+      if (mode === "create") {
+        setEmail("");
+        setName("");
+        setPassword("");
+      }
+      setTimeout(() => navigate(adminPath + "/users"), 1000);
+    } catch (e: any) {
+      setMessage({
+        text: e.message || "An error occurred",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { apiGet, resolveApi } from "../../lib/api";
+import { resolveUrl, apiGet } from "../../lib/api";
 import {
   Search,
   FileText,
@@ -72,10 +72,7 @@ export function CommandPalette({
 
     setLoading(true);
     try {
-      const response = await fetch(
-        resolveApi(`/api/search?q=${encodeURIComponent(searchQuery)}&limit=15`),
-      );
-      const data = await response.json();
+      const data = await apiGet(`/search?q=${encodeURIComponent(searchQuery)}&limit=15`, { autoToast: false });
       if (data.results) {
         setSearchResults(data.results);
       }

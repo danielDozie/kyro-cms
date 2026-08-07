@@ -7,7 +7,6 @@ import type {
 } from "@kyro-cms/core/client";
 import type { DeclarativeCondition } from "../lib/core-types";
 
-type View = "edit" | "version" | "api";
 import { globals, collections } from "../lib/config";
 import { resolveUrl, apiGet, apiDelete, fetchWithAuth } from "../lib/api";
 import { EmptyState } from "./ui/EmptyState";
@@ -50,52 +49,7 @@ interface AutoFormProps {
   documentStatus?: string;
 }
 
-function getNestedValue(obj: unknown, path: string): unknown {
-  if (!obj || typeof path !== "string") return undefined;
-  return path.split('.').reduce<unknown>((acc, part) => {
-    if (acc && typeof acc === "object" && part in acc) {
-      return (acc as Record<string, unknown>)[part];
-    }
-    return undefined;
-  }, obj);
-}
-
-function evaluateDeclarativeCondition(cond: DeclarativeCondition | undefined, currentData: Record<string, unknown>, formData: Record<string, unknown>): boolean {
-  if (!cond) return true;
-
-  if ("and" in cond && Array.isArray(cond.and)) {
-    return cond.and.every((c: DeclarativeCondition) => evaluateDeclarativeCondition(c, currentData, formData));
-  }
-  if ("or" in cond && Array.isArray(cond.or)) {
-    return cond.or.some((c: DeclarativeCondition) => evaluateDeclarativeCondition(c, currentData, formData));
-  }
-
-  if ("field" in cond && cond.field) {
-    const targetField = cond.field;
-    let val = getNestedValue(currentData, targetField);
-    if (val === undefined) {
-      val = getNestedValue(formData, targetField);
-    }
-
-    if ("equals" in cond) {
-      return val === cond.equals;
-    }
-    if ("notEquals" in cond) {
-      return val !== cond.notEquals;
-    }
-    if ("in" in cond && Array.isArray(cond.in)) {
-      return cond.in.includes(val as string | number | boolean);
-    }
-    if ("greaterThan" in cond && cond.greaterThan !== undefined) {
-      return typeof val === "number" && val > cond.greaterThan;
-    }
-
-    // If field exists but no operator is provided, just check truthiness
-    return Boolean(val);
-  }
-
-  return true;
-}
+import { getNestedValue, evaluateDeclarativeCondition } from "../lib/condition-evaluator";
 
 const EMPTY_OBJECT = {};
 
@@ -118,11 +72,9 @@ function AutoFormInner({
   collectionSlug,
   globalSlug,
   documentId,
-  documentName,
   layout = "split",
   onActionSuccess,
   onActionError,
-  justSaved,
 }: AutoFormProps) {
   const isMounted = useIsMounted();
 
@@ -156,42 +108,22 @@ function AutoFormInner({
 
   const {
     formData,
-    lastSavedData,
     hasUnsavedChanges,
-    isAutoSaving,
-    backgroundProcessing,
     autoSaveStatus,
     lastSavedAt,
-    retryCount,
-    sidebarCollapsed,
-    setSidebarCollapsed,
-    activeTab,
-    setActiveTab,
-    isSlugLocked,
-    setIsSlugLocked,
     view,
     setView,
-    isDropdownOpen,
-    setIsDropdownOpen,
-    versions,
-    loadingVersions,
-    showPreview,
     setShowPreview,
     isMenuOpen,
     setIsMenuOpen,
     loadingFields,
     setLoadingFields,
-    compareMode,
-    setCompareMode,
     compareSelected,
     setCompareSelected,
-    compareDiffs,
     setCompareDiffs,
-    loadingDiffs,
     setLoadingDiffs,
     setField,
     setFormData,
-    markSaved,
     setLastSavedData,
     setAutoSaveStatus,
     fetchVersions,
@@ -1214,10 +1146,6 @@ function AutoFormInner({
 }
 
 // SEO Utilities
-function stripHtml(html: string) {
-  if (typeof html !== "string") return "";
-  return html.replace(/<[^>]*>?/gm, "").trim();
-}
 
 export function AutoForm(props: AutoFormProps) {
   return (

@@ -164,7 +164,7 @@ export {
   createKyroServer,
 } from "./api/index.js";
 export { buildGraphQLSchema, createGraphQLSchema } from "./api/index.js";
-export { createHonoApp, createRESTAPI } from "./api/index.js";
+export { createKyroApp, createRESTAPI } from "./api/index.js";
 export {
   PubSub,
   KyroPubSub,

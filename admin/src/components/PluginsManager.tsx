@@ -17,7 +17,7 @@ import { PageHeader } from "./ui/PageHeader";
 import { Badge } from "./ui/Badge";
 import { useTranslation } from "react-i18next";
 import { navigate } from "../lib/navigate";
-
+import { apiGet } from "../lib/api";
 
 interface Plugin {
   id: string;
@@ -47,11 +47,8 @@ export function PluginsManager() {
   const fetchPlugins = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/plugins");
-      if (res.ok) {
-        const data = await res.json();
-        setPlugins(data);
-      }
+      const data = await apiGet("/plugins", { autoToast: false });
+      setPlugins(data);
     } catch (e) {
       console.error("Failed to fetch plugins:", e);
     } finally {
