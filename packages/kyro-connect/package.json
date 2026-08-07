@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/connect",
-  "version": "0.12.61",
+  "version": "0.12.62",
   "description": "Universal SDK for Kyro CMS. Type-safe client + codegen for any platform.",
   "type": "module",
   "main": "./dist/index.js",
