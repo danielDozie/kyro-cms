@@ -14,6 +14,14 @@ Or directly:
 npx @kyro-cms/create
 ```
 
+### Non-Interactive Setup (CI/CD & Headless Environments)
+
+`create-kyro` includes automatic Non-TTY terminal detection (`!process.stdout.isTTY`) and manual option scanning. Pass parameters directly to bypass stdin prompts in background jobs or automated deployment scripts:
+
+```bash
+npx @kyro-cms/create my-app --db sqlite --template blog --yes
+```
+
 ## What it does
 
 1. **Interactive Setup** - Prompts for:

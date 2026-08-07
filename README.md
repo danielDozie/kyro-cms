@@ -50,11 +50,11 @@ pnpm install @kyro-cms/core
 
 ```typescript
 // kyro.config.ts
-import { defineConfig, createLocalAdapter } from "@kyro-cms/core";
+import { defineKyroConfig, createLocalAdapter } from "@kyro-cms/core";
 
-export default defineConfig({
+export default defineKyroConfig({
   name: "my-app",
-  adapter: createLocalAdapter({ path: "./data.db" }),
+  adapter: createLocalAdapter({ path: "./data/kyro.db" }),
   collections: {
     posts: {
       slug: "posts",
@@ -76,7 +76,8 @@ export default defineConfig({
 
 Kyro is designed for Astro-first content applications:
 
-- **Fast dev setup:** zero-config local SQLite support
+- **Fast dev setup:** zero-config local SQLite support (`createLocalAdapter({ path: "./data/kyro.db" })`)
+- **High-performance engine:** batched relationship population, zero-latency access control checks, and ~99% smaller ESM entrypoints
 - **Unified API surface:** one schema powers REST, GraphQL, tRPC, and WebSockets
 - **Production-ready:** swap adapters without rewriting collections
 - **Admin experience:** auto-generated UIs, auth, RBAC, and draft workflows
