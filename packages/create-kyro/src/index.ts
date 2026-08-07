@@ -23,7 +23,7 @@ function generatePassword(length = 24): string {
   return password;
 }
 
-const VERSION = '0.12.57';
+const VERSION = '0.12.58';
 
 async function main() {
   logger.intro('create-kyro', VERSION);

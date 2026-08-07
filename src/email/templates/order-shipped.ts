@@ -34,8 +34,6 @@ export function renderOrderShipped(
     brand: brandConfig,
     title: "Order Shipped",
     previewText: `Your order #${orderId} has shipped. Track your package now.`,
-    badgeText: "Shipped",
-    badgeType: "info",
     bodyHtml,
     ctaText: "Track Package",
     ctaUrl: trackingUrl,

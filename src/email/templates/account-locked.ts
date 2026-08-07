@@ -10,33 +10,43 @@ export function renderAccountLocked(
   durationMinutes: number,
   userName = "User",
   brandConfig?: BrandConfig,
+  ipAddress?: string,
+  device?: string
 ) {
   const subject = "Security Alert: Account Temporarily Locked — Kyro CMS";
   const bodyHtml = `
-    <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
+    <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b; text-align: center;">
       Hello <strong class="email-strong" style="color: #09090b;">${userName}</strong>,
     </p>
-    <p class="email-text" style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #52525b;">
+    <p class="email-text" style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #52525b; text-align: center;">
       Your Kyro CMS account was temporarily locked after <strong>${attempts} failed login attempts</strong>.
     </p>
 
     <!-- Lockout Notice Card -->
-    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-table" style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; margin-bottom: 20px; padding: 14px; border-collapse: separate;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-table" style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; margin-bottom: 20px; padding: 16px; border-collapse: separate;">
       <tr>
-        <td style="font-size: 13px; color: #b45309; line-height: 1.5;">
+        <td style="font-size: 13px; color: #b45309; line-height: 1.5; text-align: center;">
           🔒 <strong>Lockout duration:</strong> ${durationMinutes} minutes.<br />
           You may try logging in again after the cooling-off period expires.
         </td>
       </tr>
     </table>
+    
+    ${ipAddress || device ? `
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-table" style="background-color: #fafafa; border: 1px solid #f4f4f5; border-radius: 12px; margin-bottom: 20px; padding: 16px; border-collapse: separate;">
+      <tr>
+        <td style="font-size: 13px; color: #09090b; line-height: 1.6;" class="email-value">
+          <strong>Failed Attempts IP:</strong> ${ipAddress || 'Unknown'}<br />
+          <strong>Device:</strong> ${device || 'Unknown'}
+        </td>
+      </tr>
+    </table>` : ''}
   `;
 
   const html = renderBaseLayout({
     brand: brandConfig,
     title: "Account Temporarily Locked",
     previewText: "Your Kyro CMS account was locked due to multiple failed login attempts.",
-    badgeText: "Security Lockout",
-    badgeType: "warning",
     bodyHtml,
     ctaText: "Unlock Instructions",
     ctaUrl: "https://kyro-cms.com/docs",

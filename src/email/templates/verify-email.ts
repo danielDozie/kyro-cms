@@ -34,8 +34,6 @@ export function renderVerifyEmail(link: string, userName = "User", brandConfig?:
     brand: brandConfig,
     title: "Confirm Your Email Address",
     previewText: "Please confirm your email address to activate your Kyro CMS account.",
-    badgeText: "Action Required",
-    badgeType: "warning",
     bodyHtml,
     ctaText: "Confirm Email Address",
     ctaUrl: link,

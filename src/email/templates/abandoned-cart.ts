@@ -20,8 +20,6 @@ export function renderAbandonedCart(customerName = "Customer", checkoutUrl: stri
     brand: brandConfig,
     title: "Complete Your Purchase",
     previewText: `Your shopping cart is waiting for you. Complete your purchase now.`,
-    badgeText: "Cart Reminder",
-    badgeType: "warning",
     bodyHtml,
     ctaText: "Return to Checkout",
     ctaUrl: checkoutUrl,

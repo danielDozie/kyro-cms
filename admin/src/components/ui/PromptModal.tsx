@@ -39,8 +39,8 @@ export function PromptModal({
         onClick={onClose}
       />
       <div className="relative w-full max-w-lg mx-4 bg-[var(--kyro-surface)] rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-[var(--kyro-border)]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--kyro-border)]">
-          <h2 className="text-lg font-semibold text-[var(--kyro-text-primary)]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--kyro-border)]">
+          <h2 className="text-[15px] font-semibold text-[var(--kyro-text-primary)]">
             {title}
           </h2>
           <button
@@ -52,7 +52,7 @@ export function PromptModal({
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="px-6 py-4">
+          <div className="px-5 py-4">
             <input
               type="text"
               value={value}
@@ -62,7 +62,7 @@ export function PromptModal({
               className="w-full px-3 py-2 border border-[var(--kyro-input-border)] rounded-lg bg-[var(--kyro-input-bg)] text-[var(--kyro-text-primary)] placeholder-[var(--kyro-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] focus:border-transparent"
             />
           </div>
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] rounded-b-lg">
+          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] rounded-b-lg">
             <button
               type="button"
               onClick={onClose}

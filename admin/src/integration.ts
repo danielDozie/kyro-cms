@@ -60,6 +60,19 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
           if (fs.existsSync(envPath)) {
             loadDotEnv({ path: envPath });
           }
+          const stubPlugin = {
+            name: 'db-stub',
+            setup(build: any) {
+              build.onResolve({ filter: /^(better-sqlite3|pg|postgres|mongodb|ioredis)$/ }, (args: any) => ({
+                path: args.path,
+                namespace: 'db-stub',
+              }));
+              build.onLoad({ filter: /.*/, namespace: 'db-stub' }, () => ({
+                contents: 'export default {}; export const Client = class {}; export const Pool = class {};',
+                loader: 'js',
+              }));
+            },
+          };
           const result = await build({
             entryPoints: [resolvedConfig],
             bundle: true,
@@ -71,6 +84,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
             loader: { '.ts': 'ts', '.tsx': 'tsx' },
             resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json'],
             external: ['@kyro-cms/*', '@ai-sdk/*'],
+            plugins: [stubPlugin],
           });
           tmpFile = resolvedConfig.replace(/\.ts$/, ".admin.mjs");
           fs.writeFileSync(tmpFile, result.outputFiles[0].text, "utf8");

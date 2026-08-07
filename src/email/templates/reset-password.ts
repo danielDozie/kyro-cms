@@ -34,8 +34,6 @@ export function renderResetPassword(link: string, userName = "User", brandConfig
     brand: brandConfig,
     title: "Reset Your Password",
     previewText: "Use this secure link to reset your Kyro CMS password.",
-    badgeText: "Security Action",
-    badgeType: "warning",
     bodyHtml,
     ctaText: "Reset Password",
     ctaUrl: link,

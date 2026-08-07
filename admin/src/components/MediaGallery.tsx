@@ -437,7 +437,7 @@ export function MediaGallery({
       })}
     >
       {/* Top Bar */}
-      <div className={`flex flex-col ${pickerMode ? "gap-2 p-2" : "gap-4 md:gap-6 p-4 md:p-6 rounded-md md:rounded-t-xl surface-tile"} border-b border-[var(--kyro-border)] backdrop-blur-md sticky top-0 z-10`}>
+      <div className={`flex flex-col ${pickerMode ? "gap-2 p-2" : "gap-4 md:gap-6 p-4 md:p-6 rounded-lg md:rounded-t-lg surface-tile"} border-b border-[var(--kyro-border)] backdrop-blur-md sticky top-0 z-10`}>
         {!pickerMode && (
           <div className="flex items-center justify-between w-full">
             <div>
@@ -502,10 +502,10 @@ export function MediaGallery({
         </div>
       </div>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden gap-4 mt-4">
         {/* Folders Sidebar */}
         {!pickerMode && (
-          <div className="w-64 border-r border-[var(--kyro-border)] surface-tile mt-6 overflow-y-auto hidden md:block">
+          <div className="w-64 border-r border-[var(--kyro-border)] surface-tile rounded-lg overflow-y-auto hidden md:block">
             <div className="p-6 space-y-6">
               <div>
                 <span className="text-[10px] font-bold  tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40 block mb-4">
@@ -587,7 +587,7 @@ export function MediaGallery({
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-[var(--kyro-bg)]">
-          <div className={`flex-1 overflow-y-auto custom-scrollbar ${pickerMode ? "px-2 py-4" : "py-4 px-2 md:py-8 md:px-4"}`}>
+          <div className={`flex-1 overflow-y-auto custom-scrollbar ${pickerMode ? "" : ""}`}>
             {loading ? (
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 <Shimmer variant="media-card" count={12} />

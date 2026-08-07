@@ -14,8 +14,6 @@ export interface BaseEmailOptions {
   brand?: BrandConfig;
   title: string;
   previewText?: string;
-  badgeText?: string;
-  badgeType?: "success" | "info" | "warning" | "error";
   bodyHtml: string;
   ctaText?: string;
   ctaUrl?: string;
@@ -28,32 +26,12 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
     brand,
     title,
     previewText = title,
-    badgeText = "Security Notification",
-    badgeType = "info",
     bodyHtml,
     ctaText,
     ctaUrl,
     secondaryCtaText,
     secondaryCtaUrl,
   } = options;
-
-  let badgeBg = "#eff6ff";
-  let badgeBorder = "#bfdbfe";
-  let badgeColor = "#1d4ed8";
-
-  if (badgeType === "success") {
-    badgeBg = "#ecfdf5";
-    badgeBorder = "#a7f3d0";
-    badgeColor = "#047857";
-  } else if (badgeType === "warning") {
-    badgeBg = "#fffbeb";
-    badgeBorder = "#fde68a";
-    badgeColor = "#b45309";
-  } else if (badgeType === "error") {
-    badgeBg = "#fef2f2";
-    badgeBorder = "#fecaca";
-    badgeColor = "#b91c1c";
-  }
 
   const siteName = brand?.siteName || "Kyro CMS";
   const logoLight = brand?.logoUrl || "https://kyro-cms.com/logo.svg";
@@ -96,29 +74,24 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
     }
   </style>
 </head>
-<body class="email-body" style="margin: 0; padding: 36px 16px; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #09090b; -webkit-font-smoothing: antialiased;">
+<body class="email-body" style="margin: 0; padding: 24px 12px; background-color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #09090b; -webkit-font-smoothing: antialiased;">
   <!-- Preview Text -->
   <div style="display: none; max-height: 0; overflow: hidden;">${previewText}</div>
 
-  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-card" style="max-width: 540px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-card" style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border: 1px solid #f4f4f5; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);">
     <!-- Header Bar -->
     <tr>
-      <td class="email-header" style="padding: 22px 28px; border-bottom: 1px solid #f4f4f5; background-color: #ffffff;">
+      <td class="email-header" style="padding: 16px 24px; border-bottom: 1px solid #fafafa; background-color: #ffffff;">
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
           <tr>
-            <td align="left" valign="middle">
-              <a href="${appUrl}" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 10px;">
+            <td align="center" valign="middle">
+              <a href="${appUrl}" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
                 <!-- Light Mode Logo -->
-                <img src="${logoLight}" alt="${siteName} Logo" class="logo-light" height="24" style="display: inline-block; border: 0; max-height: 24px; vertical-align: middle;" />
+                <img src="${logoLight}" alt="${siteName} Logo" class="logo-light" height="22" style="display: inline-block; border: 0; max-height: 22px; vertical-align: middle;" />
                 <!-- Dark Mode Logo -->
-                <img src="${logoDark}" alt="${siteName} Logo" class="logo-dark" height="24" style="display: none; border: 0; max-height: 24px; vertical-align: middle;" />
-                <span class="email-brand-text" style="font-size: 16px; font-weight: 700; color: #09090b; letter-spacing: -0.3px; vertical-align: middle;">${siteName}</span>
+                <img src="${logoDark}" alt="${siteName} Logo" class="logo-dark" height="22" style="display: none; border: 0; max-height: 22px; vertical-align: middle;" />
+                <span class="email-brand-text" style="font-size: 15px; font-weight: 600; color: #09090b; letter-spacing: -0.2px; vertical-align: middle;">${siteName}</span>
               </a>
-            </td>
-            <td align="right" valign="middle">
-              <span class="badge-status" style="display: inline-block; padding: 4px 10px; background-color: ${badgeBg}; border: 1px solid ${badgeBorder}; border-radius: 9999px; font-size: 11px; font-weight: 500; color: ${badgeColor};">
-                ${badgeText}
-              </span>
             </td>
           </tr>
         </table>
@@ -127,8 +100,8 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
 
     <!-- Body Section -->
     <tr>
-      <td style="padding: 28px;">
-        <h1 class="email-title" style="margin: 0 0 12px; font-size: 20px; font-weight: 600; color: #09090b; letter-spacing: -0.3px;">
+      <td style="padding: 24px;">
+        <h1 class="email-title" style="margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #09090b; letter-spacing: -0.2px; text-align: center;">
           ${title}
         </h1>
         
@@ -138,15 +111,15 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
           ctaText && ctaUrl
             ? `
         <!-- Action Buttons -->
-        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 24px;">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 20px;">
           <tr>
-            <td align="left">
-              <a href="${ctaUrl}" target="_blank" class="email-btn-primary" style="display: inline-block; padding: 11px 20px; background-color: #09090b; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 6px;">
+            <td align="center">
+              <a href="${ctaUrl}" target="_blank" class="email-btn-primary" style="display: inline-block; padding: 10px 18px; background-color: #09090b; color: #ffffff; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 8px;">
                 ${ctaText} →
               </a>
               ${
                 secondaryCtaText && secondaryCtaUrl
-                  ? `<a href="${secondaryCtaUrl}" target="_blank" class="email-btn-secondary" style="display: inline-block; padding: 11px 16px; margin-left: 8px; background-color: #ffffff; border: 1px solid #e4e4e7; color: #09090b; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 6px;">
+                  ? `<a href="${secondaryCtaUrl}" target="_blank" class="email-btn-secondary" style="display: inline-block; padding: 10px 16px; margin-left: 8px; background-color: #ffffff; border: 1px solid #e4e4e7; color: #09090b; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 8px;">
                 ${secondaryCtaText}
               </a>`
                   : ""
@@ -161,14 +134,10 @@ export function renderBaseLayout(options: BaseEmailOptions): string {
 
     <!-- Footer -->
     <tr>
-      <td class="email-footer" style="padding: 18px 28px; border-top: 1px solid #f4f4f5; background-color: #fafafa; text-align: center;">
-        <p class="email-footer-text" style="margin: 0 0 8px; font-size: 12px; color: #71717a;">
-          Sent securely via <strong>${siteName} Authentication Engine</strong>.
-        </p>
-        <p style="margin: 0; font-size: 12px; color: #71717a;">
-          <a href="${appUrl}" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">${appUrl.replace(/^https?:\/\//, "")}</a> &nbsp;•&nbsp; 
-          <a href="${appUrl}/docs" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">Docs</a> &nbsp;•&nbsp; 
-          <a href="https://github.com/danielDozie/kyro-cms" target="_blank" class="email-footer-link" style="color: #09090b; text-decoration: none; font-weight: 500;">GitHub</a>
+      <td class="email-footer" style="padding: 16px 24px; border-top: 1px solid #fafafa; background-color: #fdfdfd; text-align: center;">
+        <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
+          <a href="${appUrl}" target="_blank" class="email-footer-link" style="color: #71717a; text-decoration: none; font-weight: 500;">${appUrl.replace(/^https?:\/\//, "")}</a> &nbsp;•&nbsp; 
+          <a href="${appUrl}/docs" target="_blank" class="email-footer-link" style="color: #71717a; text-decoration: none; font-weight: 500;">Docs</a>
         </p>
       </td>
     </tr>

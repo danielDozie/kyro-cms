@@ -28,8 +28,6 @@ export function renderOrderDelivered(
     brand: brandConfig,
     title: "Order Delivered",
     previewText: `Your order #${orderId} has arrived!`,
-    badgeText: "Delivered",
-    badgeType: "success",
     bodyHtml,
     ctaText: "Leave a Review",
     ctaUrl: reviewUrl,

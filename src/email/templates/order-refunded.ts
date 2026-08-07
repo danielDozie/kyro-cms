@@ -33,8 +33,6 @@ export function renderOrderRefunded(
     brand: brandConfig,
     title: "Refund Processed",
     previewText: `We have processed a refund of ${refundAmount} for order #${orderId}.`,
-    badgeText: "Refunded",
-    badgeType: "info",
     bodyHtml,
     ctaText: "View Store",
     ctaUrl: "https://kyro-cms.com",

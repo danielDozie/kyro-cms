@@ -308,7 +308,7 @@ if (!body.email || !body.password) {
 
       if (this.email && user.email) {
         const time = new Date().toLocaleString();
-        const template = this.email.getTemplates().newLogin(ipAddress, time, user.email);
+        const template = this.email.getTemplates().newLogin(ipAddress, time, user.email, undefined, userAgent);
         this.email.send({ to: user.email, ...template }).catch(e => console.error("Failed to send newLogin email:", e));
       }
 
@@ -476,7 +476,7 @@ if (!body.email || !body.password) {
       await this.authAdapter.deleteUserSessions(user.id);
 
       if (this.email && this.email.getTemplates) {
-        const template = this.email.getTemplates().passwordChanged(user.email);
+        const template = this.email.getTemplates().passwordChanged(user.email, undefined, ipAddress, userAgent);
         await this.email.send({ to: user.email, ...template });
       }
 
@@ -648,7 +648,7 @@ if (!body.email || !body.password) {
       
       if (status.locked && status.totalAttempts === this.lockout.getConfig().maxAttempts && this.email && userEmail) {
         const durationMinutes = Math.ceil(this.lockout.getConfig().lockDuration / 60000);
-        const template = this.email.getTemplates().accountLocked(status.totalAttempts, durationMinutes, userEmail);
+        const template = this.email.getTemplates().accountLocked(status.totalAttempts, durationMinutes, userEmail, undefined, ipAddress, userAgent);
         this.email.send({ to: userEmail, ...template }).catch(err => console.error("Failed to send accountLocked email:", err));
       }
     }

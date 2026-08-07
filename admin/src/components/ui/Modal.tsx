@@ -20,6 +20,7 @@ interface ModalProps {
   footer?: ReactNode;
   size?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
   variant?: "default" | "danger" | "lightbox";
+  compact?: boolean;
 }
 
 export function Modal({
@@ -30,6 +31,7 @@ export function Modal({
   footer,
   size = "lg",
   variant = "default",
+  compact = false,
 }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -73,8 +75,8 @@ export function Modal({
           } flex flex-col overflow-hidden`}
       >
         {!isLightbox && (
-          <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/50 backdrop-blur-md">
-            <h2 className="text-xl font-bold text-[var(--kyro-text-primary)]">
+          <div className={`flex items-center justify-between ${compact ? 'px-5 py-3' : 'px-8 py-6'} border-b border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/50 backdrop-blur-md`}>
+            <h2 className={`${compact ? 'text-[15px]' : 'text-xl'} font-bold text-[var(--kyro-text-primary)]`}>
               {title}
             </h2>
             <button
@@ -86,9 +88,9 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className={`flex-1 overflow-auto ${isLightbox ? "" : "px-8 py-8"}`}>{children}</div>
+        <div className={`flex-1 overflow-auto ${isLightbox ? "" : compact ? "px-5 py-4" : "px-8 py-8"}`}>{children}</div>
         {footer && !isLightbox && (
-          <div className="flex items-center justify-end gap-3 px-8 py-6 border-t border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/50">
+          <div className={`flex items-center justify-end ${compact ? 'gap-2 px-5 py-3' : 'gap-3 px-8 py-6'} border-t border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/50`}>
             {footer}
           </div>
         )}
@@ -128,6 +130,7 @@ export function ConfirmModal({
       onClose={onClose}
       title={title}
       size="sm"
+      compact
       footer={
         <>
           <button

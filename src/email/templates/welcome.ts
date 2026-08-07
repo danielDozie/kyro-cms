@@ -34,8 +34,6 @@ export function renderWelcome(userName = "User", appUrl = "https://kyro-cms.com"
     brand: brandConfig,
     title: "Welcome to Kyro CMS",
     previewText: "Your account is verified and ready. Start building content applications.",
-    badgeText: "Account Ready",
-    badgeType: "success",
     bodyHtml,
     ctaText: "Open Dashboard",
     ctaUrl: appUrl,

@@ -62,13 +62,16 @@ export interface EmailTemplates {
     attempts: number,
     duration: number,
     userName?: string,
+    brandConfig?: any,
+    ipAddress?: string,
+    device?: string
   ) => { subject: string; html: string; text: string };
-  passwordChanged: (userName?: string) => {
+  passwordChanged: (userName?: string, brandConfig?: any, ipAddress?: string, device?: string) => {
     subject: string;
     html: string;
     text: string;
   };
-  newLogin: (location: string, time: string, userName?: string) => { subject: string; html: string; text: string };
+  newLogin: (location: string, time: string, userName?: string, brandConfig?: any, device?: string) => { subject: string; html: string; text: string };
   magicLink: (link: string, code?: string, userName?: string) => { subject: string; html: string; text: string };
   userInvite: (
     inviteUrl: string,

@@ -35,8 +35,6 @@ export function renderUserInvite(
     brand: brandConfig,
     title: "Workspace Invitation",
     previewText: `You have been invited to join Kyro CMS as an ${roleName}.`,
-    badgeText: "Team Invite",
-    badgeType: "info",
     bodyHtml,
     ctaText: "Accept Invitation",
     ctaUrl: inviteUrl,

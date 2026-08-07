@@ -35,8 +35,6 @@ export function renderOrderConfirmation(
     brand: brandConfig,
     title: "Order Confirmed",
     previewText: `Your order #${orderId} has been confirmed.`,
-    badgeText: "Confirmed",
-    badgeType: "success",
     bodyHtml,
     ctaText: "View Order",
     ctaUrl: trackingUrl || "https://kyro-cms.com",

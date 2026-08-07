@@ -539,9 +539,6 @@
           "name": "fullName",
           "type": "text",
           "label": "Full Name",
-          "admin": {
-            "readOnly": true
-          },
           "hooks": {
             "beforeValidate": [
               null
@@ -549,14 +546,26 @@
           }
         },
         {
-          "name": "firstName",
-          "type": "text",
-          "label": "First Name"
+          "name": "verified",
+          "type": "checkbox",
+          "label": "Email Verified",
+          "defaultValue": false
         },
         {
-          "name": "lastName",
+          "name": "magicLinkToken",
           "type": "text",
-          "label": "Last Name"
+          "label": "Magic Link Token",
+          "admin": {
+            "hidden": true
+          }
+        },
+        {
+          "name": "magicLinkExpires",
+          "type": "text",
+          "label": "Magic Link Expiration",
+          "admin": {
+            "hidden": true
+          }
         },
         {
           "name": "phone",
@@ -617,7 +626,6 @@
       ],
       "timestamps": true,
       "versions": {
-        "drafts": true,
         "maxPerDoc": 5
       }
     },

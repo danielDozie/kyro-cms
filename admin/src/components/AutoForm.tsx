@@ -526,7 +526,7 @@ function AutoFormInner({
   const handleUnpublish = () => {
     confirm({
       title: "Unpublish Document",
-      message: "Unpublish this document?",
+      message: "Unpublish this document? It will be reverted to a draft state.",
       onConfirm: async () => {
         autoSaveSkipRef.current = true;
         try {

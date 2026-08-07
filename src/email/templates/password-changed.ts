@@ -5,35 +5,48 @@
 import type { BrandConfig } from "../base.js";
 import { renderBaseLayout } from "../base.js";
 
-export function renderPasswordChanged(userName = "User", brandConfig?: BrandConfig) {
+export function renderPasswordChanged(
+  userName = "User",
+  brandConfig?: BrandConfig,
+  ipAddress?: string,
+  device?: string
+) {
   const subject = "Security Alert: Password Changed — Kyro CMS";
   const timestampStr = new Date().toUTCString();
 
   const bodyHtml = `
-    <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b;">
+    <p class="email-text" style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #52525b; text-align: center;">
       Hello <strong class="email-strong" style="color: #09090b;">${userName}</strong>,
     </p>
-    <p class="email-text" style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #52525b;">
+    <p class="email-text" style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #52525b; text-align: center;">
       This email confirms that the password for your Kyro CMS account was successfully updated on <strong>${timestampStr}</strong>.
     </p>
 
     <!-- Security Warning Card -->
-    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-table" style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; margin-bottom: 20px; padding: 14px; border-collapse: separate;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-table" style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; margin-bottom: 20px; padding: 16px; border-collapse: separate;">
       <tr>
-        <td style="font-size: 13px; color: #991b1b; line-height: 1.5;">
+        <td style="font-size: 13px; color: #991b1b; line-height: 1.5; text-align: center;">
           ⚠️ <strong>Did not request this change?</strong><br />
           If you did not initiate this change, your account may be compromised. Reset your password immediately and contact an administrator.
         </td>
       </tr>
     </table>
+    
+    ${ipAddress || device ? `
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" class="email-table" style="background-color: #fafafa; border: 1px solid #f4f4f5; border-radius: 12px; margin-bottom: 20px; padding: 16px; border-collapse: separate;">
+      <tr>
+        <td style="font-size: 13px; color: #09090b; line-height: 1.6;" class="email-value">
+          <strong>Action IP:</strong> ${ipAddress || 'Unknown'}<br />
+          <strong>Device:</strong> ${device || 'Unknown'}
+        </td>
+      </tr>
+    </table>` : ''}
   `;
 
   const html = renderBaseLayout({
     brand: brandConfig,
     title: "Password Updated",
     previewText: "Your Kyro CMS account password was updated.",
-    badgeText: "Security Alert",
-    badgeType: "warning",
     bodyHtml,
     ctaText: "Account Security",
     ctaUrl: "https://kyro-cms.com",
