@@ -237,6 +237,7 @@ export function c(size) {
                   }
                   if (id === "\0debug-browser") {
                     return `
+var module = { exports: {} };
 function debug(namespace) {
   function d(...args) {
     if (typeof localStorage !== "undefined" && localStorage.getItem("DEBUG")) {
@@ -250,6 +251,7 @@ debug.disable = function() {};
 debug.enabled = function() { return false; };
 debug.default = debug;
 module.exports = debug;
+export default debug;
 `;
                   }
                 },
