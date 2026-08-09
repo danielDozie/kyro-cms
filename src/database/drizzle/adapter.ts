@@ -630,7 +630,13 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         `);
         if (versions.length > 0) {
           const ver = versions[0];
-          const versionData = typeof ver.data === 'string' ? JSON.parse(ver.data) : ver.data;
+          let versionData = ver.data;
+          while (typeof versionData === 'string') {
+            try { versionData = JSON.parse(versionData); } catch { break; }
+          }
+          if (!versionData || typeof versionData !== 'object' || Array.isArray(versionData)) {
+            versionData = {};
+          }
           return { ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: ver.status === 'draft' };
         }
         return doc;
@@ -680,7 +686,13 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       `);
       if (versions.length > 0) {
         const ver = versions[0];
-        const versionData = typeof ver.data === 'string' ? JSON.parse(ver.data) : ver.data;
+        let versionData = ver.data;
+        while (typeof versionData === 'string') {
+          try { versionData = JSON.parse(versionData); } catch { break; }
+        }
+        if (!versionData || typeof versionData !== 'object' || Array.isArray(versionData)) {
+          versionData = {};
+        }
         doc = { ...doc, ...versionData, status: (doc as any).status, _hasUnpublishedChanges: ver.status === 'draft' };
       }
     }
@@ -910,12 +922,13 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
 
     const id = Math.random().toString(36).substring(2, 15);
     
+    const serializedData = typeof args.data === 'string' ? args.data : JSON.stringify(args.data);
     await this.executeRaw(sql`
       INSERT INTO kyro_versions (
         id, collection_slug, document_id, tenant_id, data, status, autosave, created_by, change_description, created_at, updated_at
       ) VALUES (
         ${id}, ${args.collection}, ${args.documentId}, ${args.tenantId && config.tenantScoped ? args.tenantId : null}, 
-        ${JSON.stringify(args.data)}, ${args.status}, ${args.autosave ? 1 : 0}, ${args.createdBy || null}, 
+        ${serializedData}, ${args.status}, ${args.autosave ? 1 : 0}, ${args.createdBy || null}, 
         ${args.changeDescription || null}, ${now}, ${now}
       )
     `);

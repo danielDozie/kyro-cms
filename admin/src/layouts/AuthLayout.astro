@@ -4,6 +4,9 @@ import { adminPath, apiPath } from "../lib/paths";
 import { getSiteSettings, getGlobal, getBrandSettings } from "../lib/globals";
 import { ClientRouter } from 'astro:transitions';
 import LoadingIndicator from 'astro-loading-indicator/component';
+import logoWhite from "../assets/logo-white.svg";
+import logoDark from "../assets/logo.svg";
+import faviconSvg from "../assets/favicon.svg";
 
 interface Props {
   title: string;
@@ -57,7 +60,7 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     <link
       rel="icon"
       type={siteFavicon?.mimeType || "image/svg+xml"}
-      href={siteFavicon?.url || "/favicon.svg"}
+      href={siteFavicon?.url || faviconSvg.src}
     />
     <script is:inline define:vars={{ adminPath, apiPath }}>
       (async () => {
@@ -139,8 +142,8 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
                 </div>
               ) : (
                 <>
-                  <img src="/logo-white.svg" alt="Kyro CMS" class="w-7 h-7 hidden dark:block" />
-                  <img src="/logo.svg" alt="Kyro CMS" class="w-7 h-7 block dark:hidden" />
+                  <img src={logoWhite.src} alt="Kyro CMS" class="w-7 h-7 hidden dark:block" />
+                  <img src={logoDark.src} alt="Kyro CMS" class="w-7 h-7 block dark:hidden" />
                   {showSiteName && (
                     <span class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
                       {siteName}

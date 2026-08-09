@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/admin",
-  "version": "0.12.62",
+  "version": "0.12.64",
   "engines": {
     "node": ">=22"
   },

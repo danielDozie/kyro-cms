@@ -566,7 +566,7 @@ function buildFieldConfig(
     const gqlType = fieldToGraphQLType(field, registry, collectionTypes, false, parentName, schemaCache) as GraphQLOutputType;
     const uploadField = field as any;
     return {
-      type: field.required ? new GraphQLNonNull(gqlType) : gqlType,
+      type: gqlType,
       description: field.admin?.description || field.label,
       deprecationReason,
       resolve: async (source: any, args: any, ctx: any) => {
@@ -607,7 +607,7 @@ function buildFieldConfig(
   if (field.type === "relationship" && !(field as any).hasMany) {
     const gqlType = fieldToGraphQLType(field, registry, collectionTypes, false, parentName, schemaCache) as GraphQLOutputType;
     return {
-      type: field.required ? new GraphQLNonNull(gqlType) : gqlType,
+      type: gqlType,
       description: field.admin?.description || field.label,
       deprecationReason,
       resolve: async (source: any, args: any, ctx: any) => {
@@ -634,7 +634,8 @@ function buildFieldConfig(
           if (loaded) return isPoly ? { relationTo: collection, value: { ...loaded, __collection: collection } } : loaded;
           return null; // Document was deleted or not found
         }
-        return isPoly ? { relationTo: collection, value: { id: docId, __collection: collection } } : { id: docId };
+        const docObj = typeof docId === "object" && docId !== null ? docId : { id: docId };
+        return isPoly ? { relationTo: collection, value: { ...docObj, __collection: collection } } : docObj;
       },
     };
   }
@@ -682,7 +683,8 @@ function buildFieldConfig(
               }
               continue; // Document was deleted or not found, omit from array
             }
-            results.push(isPoly ? { relationTo: collection, value: { id: docId, __collection: collection } } : { id: docId });
+            const docObj = typeof docId === "object" && docId !== null ? docId : { id: docId };
+            results.push(isPoly ? { relationTo: collection, value: { ...docObj, __collection: collection } } : docObj);
           }
           return results;
         }
@@ -695,7 +697,8 @@ function buildFieldConfig(
              docId = item;
            }
 
-           return isPoly ? { relationTo: collection, value: { id: docId } } : { id: docId };
+           const docObj = typeof docId === "object" && docId !== null ? docId : { id: docId };
+           return isPoly ? { relationTo: collection, value: { ...docObj, __collection: collection } } : docObj;
         });
       },
     };
@@ -703,7 +706,7 @@ function buildFieldConfig(
   if (field.type === "blocks") {
     const gqlType = fieldToGraphQLType(field, registry, collectionTypes, false, parentName, schemaCache) as GraphQLOutputType;
     return {
-      type: field.required ? new GraphQLNonNull(gqlType) : gqlType,
+      type: gqlType,
       description: field.admin?.description || field.label,
       deprecationReason,
       resolve: (source: any) => {
@@ -730,7 +733,7 @@ function buildFieldConfig(
   // Default: build a simple field config without custom resolver
   const gqlType = fieldToGraphQLType(field, registry, collectionTypes, false, parentName, schemaCache) as GraphQLOutputType;
   return {
-    type: field.required ? new GraphQLNonNull(gqlType) : gqlType,
+    type: gqlType,
     description: field.admin?.description || field.label,
     deprecationReason,
     resolve: (source: any) => {

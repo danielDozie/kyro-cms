@@ -129,8 +129,8 @@ export function mountGlobalRoutes(
       });
     });
 
-    // POST /api/globals/:slug - Save / Update global
-    app.post(basePath, async (c) => {
+    // POST, PATCH, PUT /api/globals/:slug - Save / Update global
+    const handleSaveGlobal = async (c: any) => {
       const { user: ctxUser, tenantId: ctxTenantID } =
         await resolveAuthContext(c.req.raw, authMw, user, tenantId);
 
@@ -170,6 +170,10 @@ export function mountGlobalRoutes(
 
       const sanitized = sanitizeDoc(updated);
       return c.json({ doc: sanitized, data: sanitized, message: "Global updated successfully" });
-    });
+    };
+
+    app.post(basePath, handleSaveGlobal);
+    app.patch(basePath, handleSaveGlobal);
+    app.put(basePath, handleSaveGlobal);
   }
 }

@@ -2,7 +2,7 @@ import type { Hono } from "hono";
 import type { AuthRoutes } from "../auth-routes.js";
 import type { BaseAdapter } from "../../../registry/types.js";
 import type { Registry } from "../../../registry/index.js";
-import { resolveAuthContext, checkCollectionAccess, checkGlobalAccess } from "../utils/api-helpers.js";
+import { resolveAuthContext, checkCollectionAccess, checkGlobalAccess, jsonError } from "../utils/api-helpers.js";
 import { ApiError } from "../../../utils/errors.js";
 
 export function mountAuthEndpoints(
@@ -69,95 +69,99 @@ export function mountAuthEndpoints(
 
   // Access rights introspection
   app.get("/api/auth/access", async (c) => {
-    const { user: ctxUser, tenantId: ctxTenantID } = await resolveAuthContext(
-      c.req.raw,
-      authMw,
-      optionsUser,
-      optionsTenantId
-    );
-    if (!ctxUser) {
-      throw new ApiError(401, "Not authenticated");
+    try {
+      const { user: ctxUser, tenantId: ctxTenantID } = await resolveAuthContext(
+        c.req.raw,
+        authMw,
+        optionsUser,
+        optionsTenantId
+      );
+      if (!ctxUser) {
+        throw new ApiError(401, "Not authenticated");
+      }
+      const collections: Record<string, any> = {};
+      const globals: Record<string, any> = {};
+      for (const col of registry.getCollections()) {
+        const permissions = {
+          read: (
+            await checkCollectionAccess(
+              col,
+              "read",
+              c.req.raw,
+              ctxUser,
+              ctxTenantID,
+              undefined,
+              enablePublicAccess,
+              defaultCollectionAccess
+            )
+          ).allowed,
+          create: (
+            await checkCollectionAccess(
+              col,
+              "create",
+              c.req.raw,
+              ctxUser,
+              ctxTenantID,
+              undefined,
+              enablePublicAccess,
+              defaultCollectionAccess
+            )
+          ).allowed,
+          update: (
+            await checkCollectionAccess(
+              col,
+              "update",
+              c.req.raw,
+              ctxUser,
+              ctxTenantID,
+              undefined,
+              enablePublicAccess,
+              defaultCollectionAccess
+            )
+          ).allowed,
+          delete: (
+            await checkCollectionAccess(
+              col,
+              "delete",
+              c.req.raw,
+              ctxUser,
+              ctxTenantID,
+              undefined,
+              enablePublicAccess,
+              defaultCollectionAccess
+            )
+          ).allowed,
+        };
+        collections[col.slug] = permissions;
+      }
+      for (const globalConfig of registry.getGlobals()) {
+        const permissions = {
+          read: (
+            await checkGlobalAccess(
+              globalConfig,
+              "read",
+              c.req.raw,
+              ctxUser,
+              ctxTenantID,
+              enablePublicAccess
+            )
+          ).allowed,
+          update: (
+            await checkGlobalAccess(
+              globalConfig,
+              "update",
+              c.req.raw,
+              ctxUser,
+              ctxTenantID,
+              enablePublicAccess
+            )
+          ).allowed,
+        };
+        globals[globalConfig.slug] = permissions;
+      }
+      return c.json({ collections, globals });
+    } catch (err: any) {
+      return jsonError(c, err);
     }
-    const collections: Record<string, any> = {};
-    const globals: Record<string, any> = {};
-    for (const col of registry.getCollections()) {
-      const permissions = {
-        read: (
-          await checkCollectionAccess(
-            col,
-            "read",
-            c.req.raw,
-            ctxUser,
-            ctxTenantID,
-            undefined,
-            enablePublicAccess,
-            defaultCollectionAccess
-          )
-        ).allowed,
-        create: (
-          await checkCollectionAccess(
-            col,
-            "create",
-            c.req.raw,
-            ctxUser,
-            ctxTenantID,
-            undefined,
-            enablePublicAccess,
-            defaultCollectionAccess
-          )
-        ).allowed,
-        update: (
-          await checkCollectionAccess(
-            col,
-            "update",
-            c.req.raw,
-            ctxUser,
-            ctxTenantID,
-            undefined,
-            enablePublicAccess,
-            defaultCollectionAccess
-          )
-        ).allowed,
-        delete: (
-          await checkCollectionAccess(
-            col,
-            "delete",
-            c.req.raw,
-            ctxUser,
-            ctxTenantID,
-            undefined,
-            enablePublicAccess,
-            defaultCollectionAccess
-          )
-        ).allowed,
-      };
-      collections[col.slug] = permissions;
-    }
-    for (const globalConfig of registry.getGlobals()) {
-      const permissions = {
-        read: (
-          await checkGlobalAccess(
-            globalConfig,
-            "read",
-            c.req.raw,
-            ctxUser,
-            ctxTenantID,
-            enablePublicAccess
-          )
-        ).allowed,
-        update: (
-          await checkGlobalAccess(
-            globalConfig,
-            "update",
-            c.req.raw,
-            ctxUser,
-            ctxTenantID,
-            enablePublicAccess
-          )
-        ).allowed,
-      };
-      globals[globalConfig.slug] = permissions;
-    }
-    return c.json({ collections, globals });
   });
 }

@@ -32,6 +32,8 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "../../ui/Toast";
 import { PromptModal } from "../../ui/PromptModal";
 import { buildAiPrompt } from "../../../prompts";
+const logoWhite = "/logo-white.svg";
+const logoDark = "/logo.svg";
 
 const PRESET_COLORS = [
   { name: "Default", value: "inherit" },
@@ -592,8 +594,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({
               <Sparkles size={14} className="text-[var(--kyro-primary)]" />
             ) : (
               <>
-                <img src="/logo.svg" alt="Kyro AI" className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100 block dark:hidden" />
-                <img src="/logo-white.svg" alt="Kyro AI" className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100 hidden dark:block" />
+                <img src={logoDark} alt="Kyro AI" className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100 block dark:hidden" />
+                <img src={logoWhite} alt="Kyro AI" className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100 hidden dark:block" />
               </>
             )}
           </ToolbarButton>

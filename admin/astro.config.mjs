@@ -113,6 +113,7 @@ export default defineConfig({
       global: "globalThis",
     },
     resolve: {
+      dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
       alias: {
         "@kyro-cms/core": path.resolve(process.cwd(), "..", "src"),
       },
@@ -165,16 +166,17 @@ export default defineConfig({
     },
     optimizeDeps: {
       include: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
         "@tiptap/core", "@tiptap/react", "@tiptap/starter-kit",
         "@tiptap/extension-link", "@tiptap/extension-image", "@tiptap/extension-text-align",
         "@tiptap/extension-underline", "@tiptap/extension-highlight",
         "@tiptap/extension-task-list", "@tiptap/extension-task-item",
         "@tiptap/extension-text-style", "@tiptap/extension-color",
         "recharts",
-        "recharts > recharts-scale",
-        "recharts > recharts-scale > decimal.js-light",
-        "recharts > react-smooth",
-        "recharts > react-smooth > react-transition-group",
+        "lucide-react",
       ],
       needsInterop: [
         "decimal.js-light",

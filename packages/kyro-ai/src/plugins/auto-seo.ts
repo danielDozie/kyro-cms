@@ -40,30 +40,37 @@ export class AiAutoSeoPlugin extends KyroPlugin {
 
       // Ensure we have some content to work with (check content, body, description, text, or title)
       const content = targetData.content || targetData.body || targetData.description || targetData.text || targetData.title;
-      if (!content) return data;
+      if (!content && !targetData.title) return data;
 
       const extractText = (node: any): string => {
         if (!node) return '';
         if (typeof node === 'string') return node;
+        if (typeof node === 'number') return String(node);
         if (node.type === 'text') return node.text || '';
         let text = '';
         if (Array.isArray(node.content)) {
           text += node.content.map(extractText).join(' ');
         } else if (Array.isArray(node)) {
           text += node.map(extractText).join(' ');
+        } else if (typeof node === 'object') {
+          for (const key of Object.keys(node)) {
+            if (['heading', 'title', 'subtitle', 'body', 'description', 'text', 'content'].includes(key)) {
+              text += ' ' + extractText(node[key]);
+            }
+          }
         }
-        if (['paragraph', 'heading'].includes(node.type)) {
+        if (['paragraph', 'heading'].includes(node?.type)) {
           text += '\n';
         }
         return text;
       };
 
-      // Extract raw text if it's tiptap json
-      let rawText = '';
+      // Extract raw text if it's tiptap json, blocks array, or object
+      let rawText = (targetData.title || '') + ' ';
       if (typeof content === 'string') {
-        rawText = content;
-      } else if (typeof content === 'object') {
-        rawText = extractText(content);
+        rawText += content;
+      } else if (content) {
+        rawText += extractText(content);
       }
 
       if (!rawText.trim()) return data;

@@ -6,6 +6,9 @@ import { getSiteSettings, getBrandSettings } from "../lib/globals";
 import * as Icons from "lucide-react";
 import { UserMenu } from "./UserMenu";
 
+import logoWhite from "../assets/logo-white.svg";
+import logoDark from "../assets/logo.svg";
+
 interface NavItem {
   href: string;
   label: string;
@@ -212,8 +215,8 @@ function isActive(item: NavItem): boolean {
           </div>
         ) : (
           <div class="flex items-center gap-3 overflow-hidden">
-            <img src="/logo-white.svg" alt="Kyro CMS" class="w-7 h-7 hidden dark:block flex-shrink-0" />
-            <img src="/logo.svg" alt="Kyro CMS" class="w-7 h-7 block dark:hidden flex-shrink-0" />
+            <img src={logoWhite.src} alt="Kyro CMS" class="w-7 h-7 hidden dark:block flex-shrink-0" />
+            <img src={logoDark.src} alt="Kyro CMS" class="w-7 h-7 block dark:hidden flex-shrink-0" />
             <span class="sidebar-text text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)] truncate transition-opacity duration-200">
               {siteName}
             </span>

@@ -33,7 +33,7 @@ export class RelationLoader {
       cache = new Map();
       this.caches.set(key, cache);
     }
-    if (cache.has(id)) {
+    if (cache.has(id) && !this.pending.get(key)?.has(id)) {
       return cache.get(id);
     }
 
@@ -43,7 +43,6 @@ export class RelationLoader {
       this.pending.set(key, pendingSet);
     }
     pendingSet.add(id);
-    cache.set(id, undefined);
 
     if (!this.flushScheduled) {
       this.flushScheduled = true;

@@ -25,12 +25,12 @@ export function mountMediaRoutes(
     if (!mediaService) {
       try {
         let dialect: any = "sqlite";
-        if ('dialect' in db && db.dialect === "postgres" && db instanceof DrizzleAdapter) {
-          dialect = db.dialect;
+        if ('dialect' in db && db.dialect === "postgres") {
+          dialect = "postgres";
         } else if ('dialect' in db && db.dialect === "mongodb") {
           dialect = "mongodb";
         }
-        const mediaDb = dialect === "postgres" && db instanceof DrizzleAdapter ? db.client : db;
+        const mediaDb = dialect === "postgres" ? (db as any).client || db : db;
         mediaService = await MediaService.init(mediaDb, { dialect });
       } catch (error: any) {
         console.error("[getMedia] Init error:", error);

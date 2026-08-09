@@ -31,7 +31,11 @@ export function CompactListView({
   initialSearch = "",
 }: CompactListViewProps) {
   const collectionSlug = providedSlug || collection?.slug || "";
-  const { t } = useTranslation();
+  let t = (key: string) => key;
+  try {
+    const i18n = useTranslation();
+    if (i18n?.t) t = i18n.t;
+  } catch {}
   const { permissions } = useAuthStore();
   const canCreate = permissions?.collections?.[collectionSlug]?.create !== false;
 

@@ -82,7 +82,7 @@ import SettingsPageAstro from "../settings/[slug].astro";
         {/* Left Pane: Document List (Hidden on mobile) */}
         <div class="hidden md:flex w-72 lg:w-80 flex-col surface-tile rounded-2xl shrink-0 overflow-hidden border border-[var(--kyro-border)] mb-4 md:mb-0">
           <CompactListView
-            client:load
+            client:only="react"
             collection={config}
             collectionSlug={collection}
             initialDocs={docs}
