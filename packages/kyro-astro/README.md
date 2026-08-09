@@ -34,19 +34,14 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import node from '@astrojs/node';
 import kyro from '@kyro-cms/astro';
-import { kyroAdmin } from '@kyro-cms/admin/integration';
 
 export default defineConfig({
-  devToolbar: {
-    enabled: true,
-  },
-  integrations: [
-    react(),
-    kyro(), // Includes Kyro CMS API & Dev Toolbar App
-    kyroAdmin(),
-  ],
   output: 'server',
   adapter: node({ mode: 'standalone' }),
+  integrations: [
+    react(),
+    kyro(), // Auto-registers Kyro CMS API & Admin UI
+  ],
 });
 ```
 
@@ -61,8 +56,9 @@ The Dev Toolbar app provides a quick-access panel right inside Astro's toolbar d
 ```javascript
 import { kyroDevToolbarIntegration } from '@kyro-cms/astro';
 
-// Automatically included in kyro(), or added explicitly:
+// Added explicitly as an optional integration:
 integrations: [
+  kyro(),
   kyroDevToolbarIntegration(),
 ]
 ```

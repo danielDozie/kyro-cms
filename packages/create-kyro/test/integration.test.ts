@@ -140,7 +140,7 @@ describe("file generation", () => {
       it("has valid integration setup", () => {
         const config = generateAstroConfig(baseAnswers);
         expect(config).toContain("import { kyro } from '@kyro-cms/core'");
-        expect(config).toContain("kyroAdmin(");
+        expect(config).toContain("kyro({ adminPath: '/admin'");
         expect(config).not.toContain("@astrojs/node");
         expect(config).not.toContain("ssr");
         expect(config).not.toContain("better-sqlite3");
