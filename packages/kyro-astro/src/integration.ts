@@ -7,10 +7,58 @@ export interface KyroIntegrationOptions {
   apiPath?: string;
   adminPath?: string;
   admin?: boolean;
+  devToolbar?: boolean;
   enableGraphQL?: boolean;
   enableTRPC?: boolean;
   enableWebSocket?: boolean;
 }
+
+/** Packages that are server-only and must be externalized from all builds */
+const KYRO_SERVER_PACKAGES = [
+  "@kyro-cms/core",
+  "@kyro-cms/admin",
+  "@kyro-cms/astro",
+  "@kyro-cms/ai",
+];
+
+/** Packages that may run in the browser */
+const KYRO_CLIENT_PACKAGES = [
+  "@kyro-cms/connect",
+];
+
+const KYRO_ALL_PACKAGES = [...KYRO_SERVER_PACKAGES, ...KYRO_CLIENT_PACKAGES];
+
+const NATIVE_BINARY_EXTERNALS = [
+  "better-sqlite3",
+  "pg",
+  "mongodb",
+  "ioredis",
+  "sharp",
+  "ssh2",
+  "cpu-features",
+  "ssh2-sftp-client",
+  "nodemailer",
+  "jsonwebtoken",
+  "@mapbox/node-pre-gyp",
+  "mock-aws-s3",
+  "aws-sdk",
+  "nock",
+  "cloudflare:workers",
+];
+
+const NODE_BUILTINS = [
+  "crypto", "node:crypto", "module", "node:module", "fs", "node:fs",
+  "fs/promises", "node:fs/promises", "path", "node:path", "util", "node:util",
+  "stream", "node:stream", "events", "node:events", "url", "node:url",
+  "http", "node:http", "https", "node:https", "os", "node:os",
+  "child_process", "node:child_process", "assert", "node:assert",
+  "zlib", "node:zlib", "buffer", "node:buffer",
+];
+
+/** Used for build.rollupOptions.external and optimizeDeps.exclude */
+const KYRO_EXTERNAL_MODULES = [...KYRO_SERVER_PACKAGES, ...NATIVE_BINARY_EXTERNALS];
+/** Used for ssr.external (server-side only) */
+const KYRO_SSR_EXTERNALS = [...KYRO_ALL_PACKAGES, ...NODE_BUILTINS, ...NATIVE_BINARY_EXTERNALS];
 
 export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
   const {
@@ -18,6 +66,7 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
     apiPath = "/api",
     adminPath = "/admin",
     admin = true,
+    devToolbar = true,
     enableGraphQL = false,
     enableTRPC = false,
     enableWebSocket = false,
@@ -26,7 +75,7 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
   return {
     name: "@kyro-cms/astro",
     hooks: {
-      "astro:config:setup": async ({ config, updateConfig, injectRoute, logger }) => {
+      "astro:config:setup": async ({ config, updateConfig, injectRoute, logger, addDevToolbarApp }: any) => {
         logger.info(`Setting up Kyro CMS Astro Integration (API: ${apiPath}, Admin: ${adminPath})`);
 
         if (apiPath === adminPath) {
@@ -45,107 +94,15 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
           },
           vite: {
             ssr: {
-              external: [
-                "@kyro-cms/core",
-                "@kyro-cms/admin",
-                "@kyro-cms/astro",
-                "@kyro-cms/ai",
-                "@kyro-cms/connect",
-                "crypto",
-                "node:crypto",
-                "module",
-                "node:module",
-                "fs",
-                "node:fs",
-                "fs/promises",
-                "node:fs/promises",
-                "path",
-                "node:path",
-                "util",
-                "node:util",
-                "stream",
-                "node:stream",
-                "events",
-                "node:events",
-                "url",
-                "node:url",
-                "http",
-                "node:http",
-                "https",
-                "node:https",
-                "os",
-                "node:os",
-                "child_process",
-                "node:child_process",
-                "assert",
-                "node:assert",
-                "zlib",
-                "node:zlib",
-                "buffer",
-                "node:buffer",
-                "better-sqlite3",
-                "pg",
-                "mongodb",
-                "ioredis",
-                "sharp",
-                "ssh2",
-                "cpu-features",
-                "ssh2-sftp-client",
-                "nodemailer",
-                "jsonwebtoken",
-                "@mapbox/node-pre-gyp",
-                "mock-aws-s3",
-                "aws-sdk",
-                "nock",
-              ],
+              external: KYRO_SSR_EXTERNALS,
             },
             build: {
               rollupOptions: {
-                external: [
-                  "@kyro-cms/core",
-                  "@kyro-cms/admin",
-                  "@kyro-cms/astro",
-                  "@kyro-cms/ai",
-                  "@kyro-cms/connect",
-                  "better-sqlite3",
-                  "pg",
-                  "mongodb",
-                  "ioredis",
-                  "sharp",
-                  "ssh2",
-                  "cpu-features",
-                  "ssh2-sftp-client",
-                  "nodemailer",
-                  "jsonwebtoken",
-                  "@mapbox/node-pre-gyp",
-                  "mock-aws-s3",
-                  "aws-sdk",
-                  "nock",
-                ],
+                external: KYRO_EXTERNAL_MODULES,
               },
             },
             optimizeDeps: {
-              exclude: [
-                "@kyro-cms/core",
-                "@kyro-cms/admin",
-                "@kyro-cms/astro",
-                "@kyro-cms/ai",
-                "@kyro-cms/connect",
-                "better-sqlite3",
-                "pg",
-                "mongodb",
-                "ioredis",
-                "sharp",
-                "ssh2",
-                "cpu-features",
-                "ssh2-sftp-client",
-                "nodemailer",
-                "jsonwebtoken",
-                "@mapbox/node-pre-gyp",
-                "mock-aws-s3",
-                "aws-sdk",
-                "nock",
-              ],
+              exclude: KYRO_EXTERNAL_MODULES,
             },
             server: {
               watch: {
@@ -154,6 +111,7 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
             },
             resolve: {
               alias: {
+                debug: "debug/src/node.js",
                 "kyro:config": resolvedConfigPath,
               },
             },
@@ -177,6 +135,25 @@ export function kyro(options: KyroIntegrationOptions = {}): AstroIntegration {
 
         if (enableWebSocket) {
           logger.info(`WebSocket support enabled`);
+        }
+
+        // Auto-register Kyro Admin integration unless explicitly disabled
+        if (admin !== false) {
+          try {
+            // @ts-ignore
+            const adminModule: any = await import("@kyro-cms/admin/integration");
+            const adminIntegration = adminModule.kyroAdmin({ basePath: adminPath, apiPath, configPath });
+            if (adminIntegration.hooks?.["astro:config:setup"]) {
+              await (adminIntegration.hooks["astro:config:setup"] as any)({
+                config,
+                updateConfig,
+                injectRoute,
+                logger,
+              });
+            }
+          } catch (e: any) {
+            // Admin package may not be present in all setups
+          }
         }
       },
     },

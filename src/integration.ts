@@ -22,6 +22,7 @@ export interface KyroIntegrationOptions {
   apiPath?: string;
   adminPath?: string;
   admin?: boolean;
+  devToolbar?: boolean;
   enableGraphQL?: boolean;
   enableTRPC?: boolean;
   enableWebSocket?: boolean;
@@ -88,7 +89,7 @@ export default function kyro(options: KyroIntegrationOptions = {}): AstroIntegra
   return {
     name: "@kyro-cms/core",
     hooks: {
-      "astro:config:setup": async ({ config, updateConfig, injectRoute, logger }) => {
+      "astro:config:setup": async ({ config, updateConfig, injectRoute, logger, addDevToolbarApp }: any) => {
         logger.info(`Setting up Kyro CMS (API: ${apiPath}, Admin: ${adminPath})`);
  
         if (apiPath === adminPath) {
@@ -172,6 +173,7 @@ export function useSyncExternalStoreWithSelector(subscribe, getSnapshot, getServ
             ],
             resolve: {
               alias: {
+                debug: "debug/src/node.js",
                 "kyro:config": finalConfigPath,
               },
             },
@@ -208,6 +210,25 @@ export function useSyncExternalStoreWithSelector(subscribe, getSnapshot, getServ
 
         if (enableWebSocket) {
           logger.info(`WebSocket support enabled (auto-starts at first request)`);
+        }
+
+        // Auto-register Kyro Admin integration unless explicitly disabled
+        if (admin !== false) {
+          try {
+            // @ts-ignore
+            const adminModule: any = await import("@kyro-cms/admin/integration");
+            const adminIntegration = adminModule.kyroAdmin({ basePath: adminPath, apiPath, configPath });
+            if (adminIntegration.hooks?.["astro:config:setup"]) {
+              await (adminIntegration.hooks["astro:config:setup"] as any)({
+                config,
+                updateConfig,
+                injectRoute,
+                logger,
+              });
+            }
+          } catch (e: any) {
+            // Admin package may not be present in all setups
+          }
         }
       },
     },
