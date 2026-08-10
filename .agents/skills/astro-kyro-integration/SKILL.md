@@ -16,6 +16,7 @@ import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import react from '@astrojs/react';
 import kyro from '@kyro-cms/astro';
+import { kyroAdmin } from '@kyro-cms/admin/integration';
 
 export default defineConfig({
   output: 'server',
@@ -26,9 +27,12 @@ export default defineConfig({
       configPath: './kyro.config.ts',
       apiPath: '/api',
       adminPath: '/admin',
-      admin: true,
       enableGraphQL: false,
       enableTRPC: false,
+    }),
+    kyroAdmin({
+      basePath: '/admin',
+      apiPath: '/api',
     }),
   ],
 });

@@ -211,25 +211,6 @@ export function useSyncExternalStoreWithSelector(subscribe, getSnapshot, getServ
         if (enableWebSocket) {
           logger.info(`WebSocket support enabled (auto-starts at first request)`);
         }
-
-        // Auto-register Kyro Admin integration unless explicitly disabled
-        if (admin !== false) {
-          try {
-            // @ts-ignore
-            const adminModule: any = await import("@kyro-cms/admin/integration");
-            const adminIntegration = adminModule.kyroAdmin({ basePath: adminPath, apiPath, configPath });
-            if (adminIntegration.hooks?.["astro:config:setup"]) {
-              await (adminIntegration.hooks["astro:config:setup"] as any)({
-                config,
-                updateConfig,
-                injectRoute,
-                logger,
-              });
-            }
-          } catch (e: any) {
-            // Admin package may not be present in all setups
-          }
-        }
       },
     },
   };

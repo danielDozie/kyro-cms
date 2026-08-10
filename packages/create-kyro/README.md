@@ -32,7 +32,7 @@ npx @kyro-cms/create my-app --db sqlite --template blog --yes
 2. **Project Generation** - Creates:
    - `package.json` with dependencies (`@kyro-cms/core`, `@kyro-cms/admin`, `astro`)
    - `kyro.config.ts` with your selections (collections, globals, database adapter, auth)
-   - `astro.config.mjs` with `kyro()` integration configured
+   - `astro.config.mjs` with `kyro()` and `kyroAdmin()` integrations configured
    - `tsconfig.json`
    - `.env.example` with configuration hints
    - Welcome page and project structure

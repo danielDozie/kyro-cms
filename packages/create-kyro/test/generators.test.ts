@@ -127,7 +127,13 @@ describe("generators", () => {
     it("includes kyro integration from core", () => {
       const config = generateAstroConfig(baseAnswers);
       expect(config).toContain("import { kyro } from '@kyro-cms/core'");
-      expect(config).toContain("kyro({ adminPath: '/admin'");
+      expect(config).toContain("kyro(");
+    });
+
+    it("includes kyroAdmin integration from admin", () => {
+      const config = generateAstroConfig(baseAnswers);
+      expect(config).toContain("@kyro-cms/admin");
+      expect(config).toContain("kyroAdmin(");
     });
 
     it("sets correct server port", () => {

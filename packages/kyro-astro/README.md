@@ -34,13 +34,15 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import node from '@astrojs/node';
 import kyro from '@kyro-cms/astro';
+import { kyroAdmin } from '@kyro-cms/admin/integration';
 
 export default defineConfig({
   output: 'server',
   adapter: node({ mode: 'standalone' }),
   integrations: [
     react(),
-    kyro(), // Auto-registers Kyro CMS API & Admin UI
+    kyro(), // Includes Kyro CMS API
+    kyroAdmin(),
   ],
 });
 ```
