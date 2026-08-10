@@ -853,7 +853,7 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
   app.get("/api/health", (c) => {
     return c.json({
       status: "ok",
-      version: "0.12.65",
+      version: "0.12.66",
       collections: registry.getCollectionSlugs(),
       timestamp: new Date().toISOString(),
     });
