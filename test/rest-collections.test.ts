@@ -19,6 +19,10 @@ const testCollection: CollectionConfig = {
     { name: "views", type: "number", integer: true, defaultValue: 0 },
   ],
   timestamps: true,
+  versions: {
+    drafts: true,
+    maxPerDoc: 10,
+  },
 };
 
 describe("REST Collections API", () => {
@@ -82,7 +86,7 @@ describe("REST Collections API", () => {
     expect(data.data.id).toBe(createdId);
   });
 
-  it("updates a document", async () => {
+  it("updates a document and creates versions", async () => {
     const res = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -91,6 +95,38 @@ describe("REST Collections API", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.data.title).toBe("Updated Post");
+
+    // Check version list
+    const versionsRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}/versions`));
+    expect(versionsRes.status).toBe(200);
+    const versionsData = await versionsRes.json();
+    expect(versionsData.docs.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("compares two versions", async () => {
+    const versionsRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}/versions`));
+    const versionsData = await versionsRes.json();
+    const v1 = versionsData.docs[1].id;
+    const v2 = versionsData.docs[0].id;
+
+    const compareRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}/versions?compareA=${v1}&compareB=${v2}`));
+    expect(compareRes.status).toBe(200);
+    const compareData = await compareRes.json();
+    expect(compareData.diffs).toBeDefined();
+    expect(compareData.diffs.some((d: any) => d.field === "title")).toBe(true);
+  });
+
+  it("restores a historical version", async () => {
+    const versionsRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}/versions`));
+    const versionsData = await versionsRes.json();
+    const oldestVersionId = versionsData.docs[versionsData.docs.length - 1].id;
+
+    const restoreRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}/versions/${oldestVersionId}/restore`, {
+      method: "POST",
+    }));
+    expect(restoreRes.status).toBe(200);
+    const restoreData = await restoreRes.json();
+    expect(restoreData.data.title).toBe("Test Post");
   });
 
   it("deletes a document", async () => {

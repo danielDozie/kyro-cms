@@ -133,7 +133,7 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
     const referer = c.req.header('referer') || '';
     const isKyroAdmin = c.req.header('x-kyro-admin') === 'true' || referer.includes('/admin');
 
-    if (!isKyroAdmin) {
+    if (!isKyroAdmin && c.res.status < 400) {
       const contentType = c.res.headers.get('Content-Type');
       if (contentType && contentType.includes('application/json')) {
         try {
@@ -150,8 +150,8 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
 
   // Global Error Handler
   app.onError((err, c) => {
-    if (err instanceof ApiError) {
-      return c.json({ error: err.message, ...err.metadata }, err.statusCode as any);
+    if (err instanceof ApiError || (err && typeof (err as any).statusCode === "number")) {
+      return c.json({ error: err.message, ...(err as any).metadata }, ((err as any).statusCode || (err as any).status || 500) as any);
     }
 
     if (err.name === "ZodError") {
@@ -853,7 +853,7 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
   app.get("/api/health", (c) => {
     return c.json({
       status: "ok",
-      version: "0.12.64",
+      version: "0.12.65",
       collections: registry.getCollectionSlugs(),
       timestamp: new Date().toISOString(),
     });
@@ -938,10 +938,13 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
   mountGlobalRoutes(app, options, authMw);
   // Centralized error handling
   app.onError((err, c) => {
-    console.error(`[API Error] ${c.req.method} ${c.req.path}:`, err);
+    const status = (err as any)?.statusCode || (err as any)?.status || 500;
+    if (status >= 500) {
+      console.error(`[API Error] ${c.req.method} ${c.req.path}:`, err);
+    }
     return c.json(
-      { error: err.message || "Internal server error", code: "INTERNAL_ERROR" },
-      500,
+      { error: err.message || "Internal server error", code: status >= 500 ? "INTERNAL_ERROR" : "BAD_REQUEST" },
+      status as any,
     );
   });
 

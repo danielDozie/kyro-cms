@@ -117,7 +117,7 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         try {
           where = JSON.parse(decodeURIComponent(whereParam));
         } catch (e) {
-          throw new ApiError(400, "Invalid where clause JSON");
+          throw new ApiError(400, "Invalid JSON in where clause");
         }
       }
 
@@ -148,7 +148,7 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       });
     });
 
-    // GET /api/:collection/:id/versions - List versions for a document
+    // GET /api/:collection/:id/versions - List versions or compare 2 versions
     app.get(`${basePath}/:id/versions`, async (c) => {
       const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
       const access = await checkCollectionAccess(
@@ -168,6 +168,37 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const id = c.req.param("id");
       const page = parseInt(c.req.query("page") || "1");
       const limit = Math.min(parseInt(c.req.query("limit") || "30"), 100);
+      const compareA = c.req.query("compareA");
+      const compareB = c.req.query("compareB");
+
+      if (compareA && compareB && typeof (db as any).findVersionByID === "function") {
+        try {
+          const vA = await (db as any).findVersionByID({ collection: slug, versionId: compareA, tenantId: ctxTenantID });
+          const vB = await (db as any).findVersionByID({ collection: slug, versionId: compareB, tenantId: ctxTenantID });
+          if (!vA || !vB) {
+            throw new ApiError(404, "One or both comparison versions were not found");
+          }
+          const dataA = typeof vA.data === "string" ? JSON.parse(vA.data) : (vA.data || {});
+          const dataB = typeof vB.data === "string" ? JSON.parse(vB.data) : (vB.data || {});
+          const diffs: any[] = [];
+          const allKeys = new Set([...Object.keys(dataA), ...Object.keys(dataB)]);
+          for (const key of allKeys) {
+            if (["id", "createdAt", "updatedAt", "publishedAt"].includes(key)) continue;
+            if (JSON.stringify(dataA[key]) !== JSON.stringify(dataB[key])) {
+              diffs.push({
+                field: key,
+                oldValue: dataA[key] ?? null,
+                newValue: dataB[key] ?? null,
+              });
+            }
+          }
+          return c.json({ diffs, versionA: vA, versionB: vB });
+        } catch (e) {
+          if (e instanceof ApiError) throw e;
+          console.warn(`[compareVersions] Error comparing versions for ${slug}/${id}:`, e);
+          return c.json({ diffs: [] });
+        }
+      }
 
       let docs: any[] = [];
       let totalDocs = 0;
@@ -197,6 +228,62 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         data: docs,
         meta: { total: totalDocs, page, limit, totalPages: Math.ceil(totalDocs / limit) || 1 },
       });
+    });
+
+    // POST /api/:collection/:id/versions - Fallback action handler for restore
+    app.post(`${basePath}/:id/versions`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "update",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const id = c.req.param("id");
+      const body = await c.req.json().catch(() => ({}));
+      const versionId = body.versionId;
+
+      if (body.action === "restore" && versionId && typeof (db as any).findVersionByID === "function") {
+        const versionRec = await (db as any).findVersionByID({ collection: slug, versionId, tenantId: ctxTenantID });
+        if (!versionRec) {
+          throw new ApiError(404, `Version '${versionId}' not found`);
+        }
+        const versionData = typeof versionRec.data === "string" ? JSON.parse(versionRec.data) : versionRec.data;
+        const { id: _ignoreId, createdAt: _ignoreCreated, updatedAt: _ignoreUpdated, ...restoreFields } = versionData;
+
+        if (collection.versions && typeof (db as any).createVersion === "function") {
+          await (db as any).createVersion({
+            collection: slug,
+            documentId: id,
+            data: restoreFields,
+            status: restoreFields.status || "published",
+            autosave: false,
+            createdBy: ctxUser?.id,
+            changeDescription: `Restored from version ${versionRec.version || versionId}`,
+            tenantId: ctxTenantID,
+          });
+        }
+
+        const restored = await db.update({
+          collection: slug,
+          id,
+          data: restoreFields,
+          tenantId: ctxTenantID,
+        });
+
+        const sanitized = sanitizeDoc(restored);
+        return c.json({ doc: sanitized, data: sanitized, message: "Version restored successfully" });
+      }
+
+      throw new ApiError(400, "Invalid action for version management");
     });
 
     // GET /api/:collection/:id/versions/:versionId - Get specific version
@@ -255,13 +342,49 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const versionId = c.req.param("versionId");
 
       if (typeof (db as any).restoreVersion === "function") {
-        const restored = await (db as any).restoreVersion({
+        try {
+          const restored = await (db as any).restoreVersion({
+            collection: slug,
+            documentId: id,
+            versionId,
+            tenantId: ctxTenantID,
+          });
+          return c.json({ doc: restored, data: restored, message: "Version restored successfully" });
+        } catch (e) {
+          console.warn("[restoreVersion] Adapter restore failed, falling back to manual restore:", e);
+        }
+      }
+
+      if (typeof (db as any).findVersionByID === "function") {
+        const versionRec = await (db as any).findVersionByID({ collection: slug, versionId, tenantId: ctxTenantID });
+        if (!versionRec) {
+          throw new ApiError(404, `Version '${versionId}' not found`);
+        }
+        const versionData = typeof versionRec.data === "string" ? JSON.parse(versionRec.data) : versionRec.data;
+        const { id: _ignoreId, createdAt: _ignoreCreated, updatedAt: _ignoreUpdated, ...restoreFields } = versionData;
+
+        if (collection.versions && typeof (db as any).createVersion === "function") {
+          await (db as any).createVersion({
+            collection: slug,
+            documentId: id,
+            data: restoreFields,
+            status: restoreFields.status || "published",
+            autosave: false,
+            createdBy: ctxUser?.id,
+            changeDescription: `Restored from version ${versionRec.version || versionId}`,
+            tenantId: ctxTenantID,
+          });
+        }
+
+        const restored = await db.update({
           collection: slug,
-          documentId: id,
-          versionId,
+          id,
+          data: restoreFields,
           tenantId: ctxTenantID,
         });
-        return c.json({ doc: restored, data: restored, message: "Version restored successfully" });
+
+        const sanitized = sanitizeDoc(restored);
+        return c.json({ doc: sanitized, data: sanitized, message: "Version restored successfully" });
       }
 
       throw new ApiError(501, "Version restoration not supported by database adapter");
@@ -359,6 +482,24 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         tenantId: ctxTenantID,
       });
 
+      // Save initial version if versioning is configured
+      if (collection.versions && typeof (db as any).createVersion === "function") {
+        try {
+          await (db as any).createVersion({
+            collection: slug,
+            documentId: (created as any)?.id || body.id,
+            data: created,
+            status: body.status || "published",
+            autosave: false,
+            createdBy: ctxUser?.id,
+            changeDescription: body.changeDescription || "Initial version",
+            tenantId: ctxTenantID,
+          });
+        } catch (e) {
+          console.warn(`[createVersion] Failed creating initial version for ${slug}:`, e);
+        }
+      }
+
       // Execute afterChange collection hooks
       if (collection.hooks?.afterChange && collection.hooks.afterChange.length > 0) {
         const pipeline = new HookPipeline(collection.hooks.afterChange);
@@ -394,6 +535,10 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
 
       const id = c.req.param("id");
       let body = await c.req.json();
+      const url = new URL(c.req.url);
+      const isAutosave = url.searchParams.get("autosave") === "true" || c.req.header("x-autosave") === "true" || body.autosave === true;
+      const isDraft = url.searchParams.get("draft") === "true" || c.req.header("x-draft") === "true" || body.draft === true;
+      const isDraftEnabled = collection.versions?.drafts === true;
 
       // Execute beforeChange collection hooks
       if (collection.hooks?.beforeChange && collection.hooks.beforeChange.length > 0) {
@@ -409,15 +554,55 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         });
       }
 
-      const updated = await db.update({
-        collection: slug,
-        id,
-        data: body,
-        tenantId: ctxTenantID,
-      });
+      let updated: any;
+      if (isDraftEnabled && isDraft) {
+        if (typeof (db as any).createVersion === "function") {
+          await (db as any).createVersion({
+            collection: slug,
+            documentId: id,
+            data: body,
+            status: "draft",
+            autosave: isAutosave,
+            createdBy: ctxUser?.id,
+            changeDescription: body.changeDescription || (isAutosave ? "Auto-saved draft" : "Draft snapshot"),
+            tenantId: ctxTenantID,
+          });
+        }
+        updated = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
+      } else {
+        const existing = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
+        if (!existing) {
+          throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+        }
+        const mergedData = { ...existing, ...body };
 
-      if (!updated) {
-        throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+        if (collection.versions && typeof (db as any).createVersion === "function") {
+          try {
+            await (db as any).createVersion({
+              collection: slug,
+              documentId: id,
+              data: mergedData,
+              status: body.status || (existing as any).status || "published",
+              autosave: isAutosave,
+              createdBy: ctxUser?.id,
+              changeDescription: body.changeDescription || (isAutosave ? "Auto-saved" : "Updated snapshot"),
+              tenantId: ctxTenantID,
+            });
+          } catch (e) {
+            console.warn(`[createVersion] Failed creating version for ${slug}/${id}:`, e);
+          }
+        }
+
+        updated = await db.update({
+          collection: slug,
+          id,
+          data: body,
+          tenantId: ctxTenantID,
+        });
+
+        if (!updated) {
+          throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+        }
       }
 
       // Execute afterChange collection hooks
