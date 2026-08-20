@@ -97,7 +97,7 @@ const description =
       <form id="settings-form">
         <input type="hidden" id="form-slug" value={slug} />
         <SettingsPage
-          client:load
+          client:only="react"
           config={config}
           globalSlug={slug}
           layout={hasVersioning ? "split" : "single"}

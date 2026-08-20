@@ -4629,6 +4629,10 @@
           "name": "fields",
           "type": "array",
           "label": "Form Fields",
+          "admin": {
+            "collapsible": true,
+            "initCollapsed": true
+          },
           "fields": [
             {
               "name": "fieldName",
@@ -4747,6 +4751,7 @@
     {
       "slug": "media",
       "label": "Media Library",
+      "timestamps": true,
       "admin": {
         "useAsTitle": "title",
         "defaultColumns": [
@@ -5169,6 +5174,7 @@
       "slug": "menu",
       "label": "Menu",
       "singularLabel": "Menu Item",
+      "timestamps": true,
       "admin": {
         "useAsTitle": "title",
         "defaultColumns": [

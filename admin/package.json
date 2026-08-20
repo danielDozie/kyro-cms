@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/admin",
-  "version": "0.12.68",
+  "version": "0.12.69",
   "engines": {
     "node": ">=22"
   },
@@ -107,6 +107,7 @@
     "astro": "^7.1.1",
     "astro-loading-indicator": "^0.9.0",
     "dotenv": "^17.4.2",
+    "events": "^3.3.0",
     "graphiql": "^5.2.2",
     "i18next": "^26.3.5",
     "i18next-browser-languagedetector": "^8.2.1",

@@ -97,7 +97,7 @@ import SettingsPageAstro from "../settings/[slug].astro";
           <div class="mx-auto space-y-6 pb-12 px-0 md:px-0">
             <form id="doc-form">
               <AutoForm
-                client:load
+                client:only="react"
                 config={config}
                 collectionSlug={collection}
                 documentId={id && id !== "new" ? id : undefined}

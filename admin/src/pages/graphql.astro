@@ -18,7 +18,7 @@ const initialQuery = params.get("query") || "";
   <div class="flex-1 overflow-hidden h-[calc(100vh-64px)] md:h-[calc(100vh-80px)]">
     {graphqlEnabled ? (
       <GraphQLPlayground
-        client:load
+        client:only="react"
         endpoint={`${apiPath}/graphql`}
         initialQuery={initialQuery}
       />

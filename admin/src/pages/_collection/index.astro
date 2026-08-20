@@ -63,7 +63,7 @@ if (!isSettings) {
   <AdminLayout title={config.label || collection || "Collection"}>
     <div class="flex-1 overflow-y-auto">
       <ListView
-        client:load
+        client:only="react"
         collection={config}
         collectionSlug={collection}
         initialDocs={docs}
