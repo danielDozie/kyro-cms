@@ -37,9 +37,7 @@ npx @kyro-cms/create my-app --db sqlite --template blog --yes
    - `.env.example` with configuration hints
    - Welcome page and project structure
 
-3. **Installation** - Runs `npm install`
-
-4. **Git Init** - Initializes git repository with first commit
+3. **Git Init** - Initializes git repository with first commit
 
 ## What you get
 

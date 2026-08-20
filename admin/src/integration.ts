@@ -229,12 +229,16 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
               {
                 name: "kyro-cjs-shim",
                 enforce: "pre" as const,
-                resolveId(id: string) {
+                resolveId(id: string, _importer: any, options?: { ssr?: boolean }) {
                   if (id.includes('react/compiler-runtime')) {
                     return "\0react-compiler-runtime";
                   }
                   if (id === 'debug' || id.includes('debug/src/browser.js')) {
                     return "\0debug-browser";
+                  }
+                  // Only shim events on client-side; in SSR, let Node use native node:events
+                  if (!options?.ssr && (id === 'events' || id === 'node:events')) {
+                    return "\0events-browser";
                   }
                 },
                 load(id: string) {
@@ -267,6 +271,68 @@ debug.enabled = function() { return false; };
 debug.default = debug;
 module.exports = debug;
 export default debug;
+`;
+                  }
+                  if (id === "\0events-browser") {
+                    return `
+export class EventEmitter {
+  constructor() {
+    this._events = Object.create(null);
+  }
+  on(event, listener) {
+    (this._events[event] = this._events[event] || []).push(listener);
+    return this;
+  }
+  addListener(event, listener) {
+    return this.on(event, listener);
+  }
+  once(event, listener) {
+    const g = (...args) => {
+      this.off(event, g);
+      listener.apply(this, args);
+    };
+    g.listener = listener;
+    return this.on(event, g);
+  }
+  off(event, listener) {
+    const list = this._events[event];
+    if (!list) return this;
+    const idx = list.findIndex(l => l === listener || l.listener === listener);
+    if (idx !== -1) list.splice(idx, 1);
+    return this;
+  }
+  removeListener(event, listener) {
+    return this.off(event, listener);
+  }
+  removeAllListeners(event) {
+    if (event) delete this._events[event];
+    else this._events = Object.create(null);
+    return this;
+  }
+  emit(event, ...args) {
+    const list = this._events[event];
+    if (!list || !list.length) return false;
+    [...list].forEach(listener => {
+      try { listener.apply(this, args); } catch (e) { console.error(e); }
+    });
+    return true;
+  }
+  listeners(event) {
+    return this._events[event] ? [...this._events[event]] : [];
+  }
+  rawListeners(event) {
+    return this.listeners(event);
+  }
+  listenerCount(event) {
+    return (this._events[event] || []).length;
+  }
+  eventNames() {
+    return Object.keys(this._events);
+  }
+  setMaxListeners() { return this; }
+  getMaxListeners() { return 10; }
+}
+export default EventEmitter;
 `;
                   }
                 },

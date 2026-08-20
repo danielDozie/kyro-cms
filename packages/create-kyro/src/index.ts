@@ -23,7 +23,16 @@ function generatePassword(length = 24): string {
   return password;
 }
 
-const VERSION = '0.12.69';
+function getPackageManager(): string {
+  const userAgent = process.env.npm_config_user_agent;
+  if (!userAgent) return 'npm';
+  if (userAgent.startsWith('pnpm')) return 'pnpm';
+  if (userAgent.startsWith('bun')) return 'bun';
+  if (userAgent.startsWith('yarn')) return 'yarn';
+  return 'npm';
+}
+
+const VERSION = '0.12.70';
 
 async function main() {
   logger.intro('create-kyro', VERSION);
@@ -40,9 +49,9 @@ async function main() {
 
   const s = spinner();
 
-  s.start('Step 1/4: Creating project directory...');
+  s.start('Step 1/3: Creating project directory...');
   mkdirSync(projectDir, { recursive: true });
-  s.message('Step 2/4: Generating configuration files...');
+  s.message('Step 2/3: Generating configuration files...');
 
   const pkg = generatePackageJson(answers);
   writeFileSync(
@@ -58,18 +67,7 @@ async function main() {
 
   generateProjectFiles(answers, projectDir, { adminEmail: answers.adminEmail, adminPassword });
 
-  s.message('Step 3/4: Installing dependencies (this may take a minute)...');
-  try {
-    await execAsync('npm install', {
-      cwd: projectDir,
-      env: { ...process.env, npm_config_loglevel: 'warn' }
-    });
-  } catch (error) {
-    s.stop('Failed to install dependencies');
-    process.exit(1);
-  }
-
-  s.message('Step 4/4: Initializing git repository...');
+  s.message('Step 3/3: Initializing git repository...');
   try {
     await execAsync('git init && git add . && git commit -m "Initial commit - created with create-kyro"', {
       cwd: projectDir
@@ -80,12 +78,16 @@ async function main() {
 
   s.stop('Project initialization complete!');
 
+  const pkgManager = getPackageManager();
+  const runCmd = pkgManager === 'npm' ? 'npm run' : pkgManager;
+
   console.log('\n=========================================');
   console.log('🎉 Kyro CMS App Created Successfully!');
   console.log('=========================================');
   console.log(`\nNext steps:`);
   console.log(`  1. cd ${answers.projectName}`);
-  console.log(`  2. pnpm dev (or npm run dev)\n`);
+  console.log(`  2. ${pkgManager} install`);
+  console.log(`  3. ${runCmd} dev\n`);
   console.log('🔑 Super Admin Credentials (Local):');
   console.log(`  Email:    ${answers.adminEmail}`);
   console.log(`  Password: ${adminPassword}`);
