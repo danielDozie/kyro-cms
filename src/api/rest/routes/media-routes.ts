@@ -20,10 +20,13 @@ export function mountMediaRoutes(
 
   const getMedia = async () => {
     if (mediaServiceInitError) {
-      throw mediaServiceInitError;
+      mediaServiceInitError = null; // Reset so retry can succeed after reconnect
     }
     if (!mediaService) {
       try {
+        if (typeof (db as any)?.connect === "function") {
+          await (db as any).connect();
+        }
         let dialect: any = "sqlite";
         if ('dialect' in db && db.dialect === "postgres") {
           dialect = "postgres";
@@ -117,76 +120,7 @@ export function mountMediaRoutes(
     return c.json({ message: "Folder deleted" });
   });
 
-  app.delete("/api/media/:id", async (c) => {
-    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
-    if (!ctxUser) throw new ApiError(401, "Authentication required");
-    const service = await getMedia();
-    const id = c.req.param("id");
-    const origin = new URL(c.req.url).origin;
-    await service.delete(id, origin);
-    return c.json({ success: true });
-  });
-
-  app.get("/api/media/:id", async (c) => {
-    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
-    if (!ctxUser) throw new ApiError(401, "Authentication required");
-    const service = await getMedia();
-    const id = c.req.param("id");
-    const origin = new URL(c.req.url).origin;
-    const doc = await service.findById(id, origin);
-    if (!doc) throw new ApiError(404, "Media not found");
-    return c.json(doc);
-  });
-
-  app.patch("/api/media/:id", async (c) => {
-    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
-    if (!ctxUser) throw new ApiError(401, "Authentication required");
-    const service = await getMedia();
-    const id = c.req.param("id");
-    const body = await c.req.json();
-    const origin = new URL(c.req.url).origin;
-    const updatableFields = ["folder", "metadata", "title", "alt", "caption", "originalName"];
-    const updates: any = {};
-    for (const field of updatableFields) {
-      if (body[field] !== undefined) {
-        updates[field] = body[field];
-      }
-    }
-    if (Object.keys(updates).length > 0) {
-      const updated = await service.update(id, updates, origin);
-      return c.json({ doc: updated });
-    }
-    throw new ApiError(400, "No valid fields to update");
-  });
-
-  app.get("/api/media/test", async (c) => {
-    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
-    if (!ctxUser) throw new ApiError(401, "Authentication required");
-    const service = await getMedia();
-    return c.json({
-      status: service ? "initialized" : "failed",
-      serviceType: service?.constructor?.name,
-    });
-  });
-
-  app.get("/api/media/file/:key{.+$}", async (c) => {
-    const key = c.req.param("key");
-    const bucket = (globalThis as any).STORAGE_BUCKET;
-    if (bucket) {
-      const object = await bucket.get(key);
-      if (!object) return c.notFound();
-      
-      const headers = new Headers();
-      object.writeHttpMetadata(headers);
-      headers.set("etag", object.httpEtag);
-      return new Response(object.body as any, { headers });
-    }
-    return c.notFound();
-  });
-
   app.get("/api/media/resize", async (c) => {
-    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
-    if (!ctxUser) throw new ApiError(401, "Authentication required");
     const url = c.req.query("url");
     const w = parseInt(c.req.query("w") || "0");
     const h = parseInt(c.req.query("h") || "0");
@@ -200,7 +134,7 @@ export function mountMediaRoutes(
     if (!url) throw new ApiError(400, "URL is required");
     const service = await getMedia();
     const storage: any = (service as any).storage;
-    if (storage.name !== "local") {
+    if (!storage || storage.name !== "local") {
       return c.redirect(url);
     }
     const uploadDir = storage.config?.uploadDir || DEFAULT_UPLOAD_DIR;
@@ -258,5 +192,72 @@ export function mountMediaRoutes(
     c.header("Content-Type", `image/${outFormat}`);
     c.header("Cache-Control", "public, max-age=31536000, immutable");
     return c.body(outputBuffer as any);
+  });
+
+  app.get("/api/media/file/:key{.+$}", async (c) => {
+    const key = c.req.param("key");
+    const bucket = (globalThis as any).STORAGE_BUCKET;
+    if (bucket) {
+      const object = await bucket.get(key);
+      if (!object) return c.notFound();
+      
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      headers.set("etag", object.httpEtag);
+      return new Response(object.body as any, { headers });
+    }
+    return c.notFound();
+  });
+
+  app.get("/api/media/test", async (c) => {
+    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+    if (!ctxUser) throw new ApiError(401, "Authentication required");
+    const service = await getMedia();
+    return c.json({
+      status: service ? "initialized" : "failed",
+      serviceType: service?.constructor?.name,
+    });
+  });
+
+  app.get("/api/media/:id", async (c) => {
+    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+    if (!ctxUser) throw new ApiError(401, "Authentication required");
+    const service = await getMedia();
+    const id = c.req.param("id");
+    const origin = new URL(c.req.url).origin;
+    const doc = await service.findById(id, origin);
+    if (!doc) throw new ApiError(404, "Media not found");
+    return c.json(doc);
+  });
+
+  app.patch("/api/media/:id", async (c) => {
+    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+    if (!ctxUser) throw new ApiError(401, "Authentication required");
+    const service = await getMedia();
+    const id = c.req.param("id");
+    const body = await c.req.json();
+    const origin = new URL(c.req.url).origin;
+    const updatableFields = ["folder", "metadata", "title", "alt", "caption", "originalName"];
+    const updates: any = {};
+    for (const field of updatableFields) {
+      if (body[field] !== undefined) {
+        updates[field] = body[field];
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      const updated = await service.update(id, updates, origin);
+      return c.json({ doc: updated });
+    }
+    throw new ApiError(400, "No valid fields to update");
+  });
+
+  app.delete("/api/media/:id", async (c) => {
+    const { user: ctxUser } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+    if (!ctxUser) throw new ApiError(401, "Authentication required");
+    const service = await getMedia();
+    const id = c.req.param("id");
+    const origin = new URL(c.req.url).origin;
+    await service.delete(id, origin);
+    return c.json({ success: true });
   });
 }

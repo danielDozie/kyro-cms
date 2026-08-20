@@ -60,21 +60,31 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       }
       this.client = new MongoClient(this.connectionString);
       await this.client.connect();
+    } else if (this.client && typeof this.client.connect === "function") {
+      try {
+        await this.client.connect();
+      } catch (e) {
+        // Already connected or connect in progress
+      }
     }
-    this.db = this.client.db(this.database);
-    this.connected = true;
-
+    if (this.client) {
+      this.db = this.client.db(this.database);
+      this.connected = true;
+    }
   }
 
   async disconnect(): Promise<void> {
     if (this.client) {
       await this.client.close();
       this.connected = false;
-
     }
   }
 
   private getMongoCollection(slug: string): any {
+    if (!this.db && this.client) {
+      this.db = this.client.db(this.database);
+      this.connected = true;
+    }
     if (!this.db) {
       throw new Error('MongoDB not connected');
     }

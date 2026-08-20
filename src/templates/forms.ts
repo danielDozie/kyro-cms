@@ -45,6 +45,10 @@ export const formsCollection: CollectionConfig = {
       name: "fields",
       type: "array",
       label: "Form Fields",
+      admin: {
+        collapsible: true,
+        initCollapsed: true,
+      },
       fields: [
         {
           name: "fieldName",

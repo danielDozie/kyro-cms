@@ -363,6 +363,11 @@ export const useAutoFormStore = create<AutoFormStore>()(
           hasUnsavedChanges: false,
           dirtyFields: new Set<string>(),
           activeTab: 0,
+          view: "edit",
+          compareMode: false,
+          compareSelected: [],
+          compareDiffs: [],
+          previewUrl: null,
         });
       },
 
@@ -377,19 +382,16 @@ export const useAutoFormStore = create<AutoFormStore>()(
         delete cleanLastSaved.undefined;
         delete cleanLastSaved["undefined"];
 
-        const state = get();
-        if (
-          state.formData === cleanData &&
-          state.lastSavedData === cleanLastSaved &&
-          !state.hasUnsavedChanges
-        ) {
-          return;
-        }
         set({
           formData: cleanData,
           lastSavedData: cleanLastSaved,
           hasUnsavedChanges: false,
           dirtyFields: new Set<string>(),
+          view: "edit",
+          activeTab: 0,
+          compareMode: false,
+          compareSelected: [],
+          compareDiffs: [],
         });
       },
 

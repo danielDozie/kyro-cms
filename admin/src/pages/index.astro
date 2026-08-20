@@ -77,19 +77,19 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
           type="text"
           id="header-search-input"
           placeholder="Search anything..."
-          class="w-full bg-[var(--kyro-surface-accent)] border border-transparent rounded-2xl py-3 pl-16 pr-8 text-md font-medium focus:outline-none focus:bg-[var(--kyro-surface)] focus:border-[var(--kyro-border)] transition-all shadow-inner text-[var(--kyro-text-primary)] placeholder-[var(--kyro-text-muted)]"
+          class="w-full bg-[var(--kyro-surface-accent)] border border-transparent rounded-lg py-3 pl-16 pr-8 text-md font-medium focus:outline-none focus:bg-[var(--kyro-surface)] focus:border-[var(--kyro-border)] transition-all shadow-inner text-[var(--kyro-text-primary)] placeholder-[var(--kyro-text-muted)]"
           autocomplete="off"
         />
         <div
           id="header-search-results"
-          class="hidden absolute top-full left-0 right-0 mt-2 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-xl shadow-xl max-h-80 overflow-y-auto z-50"
+          class="hidden absolute top-full left-0 right-0 mt-2 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg shadow-xl max-h-80 overflow-y-auto z-50 p-1.5"
         >
         </div>
       </div>
-      <div class="flex p-1.5 bg-[var(--kyro-surface-accent)] rounded-2xl">
+      <div class="flex p-1 bg-[var(--kyro-surface-accent)] rounded-lg">
         <button
           id="cmd-k-btn"
-          class="flex items-center gap-3 px-8 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
+          class="flex items-center gap-3 px-8 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-lg font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
         >
           <span>⌘ K</span>
         </button>
@@ -279,24 +279,52 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
         function renderResults(results) {
           var html = "";
           if (!results || results.length === 0) {
-            html = '<div class="p-4 text-center text-[var(--kyro-text-secondary)] opacity-60">No documents found</div>';
+            html = '<div class="p-4 text-center text-sm text-[var(--kyro-text-secondary)] opacity-60">No documents found</div>';
           } else {
-            for (var i = 0; i < Math.min(results.length, 6); i++) {
+            for (var i = 0; i < Math.min(results.length, 8); i++) {
               var r = results[i];
               var href = adminPath + "/" + r.collection + "/" + r.id;
               if (r.collection === "users") {
                 href = adminPath + "/users/" + r.id;
               }
+
+              // Prefer human-readable name/label/title instead of raw ID
+              var displayTitle = r.title;
+              if (!displayTitle || displayTitle === r.id || /^[0-9a-fA-F-]{20,}$/.test(displayTitle)) {
+                if (r.doc) {
+                  displayTitle =
+                    r.doc.name ||
+                    r.doc.label ||
+                    r.doc.title ||
+                    r.doc.email ||
+                    r.doc.fullName ||
+                    r.doc.username ||
+                    r.doc.heading ||
+                    r.doc.slug ||
+                    r.doc.filename ||
+                    r.title ||
+                    "Untitled";
+                }
+              }
+
+              var collectionBadge = r.label || r.collection || "Document";
+
               html +=
                 '<a href="' +
                 href +
-                '" class="flex items-center justify-between px-4 py-3 hover:bg-[var(--kyro-surface-accent)] transition-colors">';
+                '" class="flex items-center justify-between px-3.5 py-2.5 rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-colors group">';
               html +=
-                '<div class="flex flex-col"><span class="font-bold text-sm text-[var(--kyro-text-primary)]">' +
-                (r.title || "Untitled") +
-                "</span>";
-              html += '<span class="text-[10px] font-bold  tracking-widest opacity-40">' + r.label + "</span></div>";
-              html += '<span class="text-xs text-[var(--kyro-text-muted)]">View</span></a>';
+                '<div class="flex flex-col min-w-0 pr-3">' +
+                '<span class="font-semibold text-sm text-[var(--kyro-text-primary)] truncate group-hover:text-[var(--kyro-primary)] transition-colors">' +
+                displayTitle +
+                "</span>" +
+                '<span class="text-[10px] font-bold tracking-wider uppercase opacity-45 mt-0.5">' +
+                collectionBadge +
+                "</span>" +
+                "</div>";
+              html +=
+                '<span class="text-xs font-medium text-[var(--kyro-text-muted)] group-hover:text-[var(--kyro-primary)] transition-colors flex-shrink-0">View →</span>' +
+                "</a>";
             }
           }
           searchResults.innerHTML = html;

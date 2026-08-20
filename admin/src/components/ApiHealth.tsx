@@ -223,7 +223,6 @@ export function ApiHealth() {
       <PageHeader
         title={t("tooltips.apiHealth", { defaultValue: "API Health" })}
         description="Real-time status and diagnostics for the Kyro CMS API"
-        icon={Activity}
         actions={
           <button
             onClick={refresh}

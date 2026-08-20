@@ -367,6 +367,81 @@ export class LocalAdapter extends AbstractBaseAdapter {
     };
   }
 
+  private buildWhere(where: Record<string, any>, tableName: string): { clause: string; params: any[] } {
+    const parts: string[] = [];
+    const params: any[] = [];
+
+    for (const [rawKey, value] of Object.entries(where)) {
+      const key = rawKey.toUpperCase();
+      if ((key === "AND" || key === "OR") && Array.isArray(value)) {
+        const subParts: string[] = [];
+        for (const sub of value) {
+          if (typeof sub === "object" && sub !== null) {
+            const subRes = this.buildWhere(sub, tableName);
+            if (subRes.clause) {
+              subParts.push(`(${subRes.clause})`);
+              params.push(...subRes.params);
+            }
+          }
+        }
+        if (subParts.length > 0) {
+          parts.push(`(${subParts.join(` ${key} `)})`);
+        }
+        continue;
+      }
+
+      const colSql = this.resolveCol(tableName, rawKey);
+
+      if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+        if (value.equals !== undefined) {
+          parts.push(`${colSql} = ?`);
+          params.push(value.equals);
+        }
+        if (value.not_equals !== undefined) {
+          parts.push(`${colSql} != ?`);
+          params.push(value.not_equals);
+        }
+        if (value.in !== undefined && Array.isArray(value.in)) {
+          if (value.in.length === 0) {
+            parts.push("1 = 0");
+          } else {
+            parts.push(`${colSql} IN (${value.in.map(() => "?").join(", ")})`);
+            params.push(...value.in);
+          }
+        }
+        if (value.contains !== undefined) {
+          parts.push(`LOWER(${colSql}) LIKE LOWER(?)`);
+          params.push(`%${value.contains}%`);
+        }
+        if (value.like !== undefined) {
+          parts.push(`LOWER(${colSql}) LIKE LOWER(?)`);
+          params.push(value.like);
+        }
+        if (value.greater_than !== undefined) {
+          parts.push(`${colSql} > ?`);
+          params.push(value.greater_than);
+        }
+        if (value.greater_than_equal !== undefined) {
+          parts.push(`${colSql} >= ?`);
+          params.push(value.greater_than_equal);
+        }
+        if (value.less_than !== undefined) {
+          parts.push(`${colSql} < ?`);
+          params.push(value.less_than);
+        }
+        if (value.less_than_equal !== undefined) {
+          parts.push(`${colSql} <= ?`);
+          params.push(value.less_than_equal);
+        }
+      } else if (value !== undefined) {
+        parts.push(`${colSql} = ?`);
+        params.push(value);
+      }
+    }
+
+    return { clause: parts.join(" AND "), params };
+  }
+
   async find<T>(args: FindArgs): Promise<FindResult<T>> {
     const {
       collection: slug,
@@ -375,6 +450,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
       limit = 10,
       page = 1,
       tenantId,
+      select,
       draft = false,
     } = args;
     const parsed = this.parseGlobalsSlug(slug);
@@ -408,37 +484,22 @@ export class LocalAdapter extends AbstractBaseAdapter {
       params.push(tenantId);
     }
 
-      for (const [key, value] of Object.entries(effectiveWhere)) {
-        if (key === "AND" || key === "OR") continue;
-        const colSql = this.resolveCol(tableName, key);
-
-        if (typeof value === "object" && value !== null) {
-          if (value.equals !== undefined) {
-            conditions.push(`${colSql} = ?`);
-            params.push(value.equals);
-          }
-          if (value.in !== undefined) {
-            conditions.push(`${colSql} IN (${value.in.map(() => "?").join(", ")})`);
-            params.push(...value.in);
-          }
-          if (value.not_equals !== undefined) {
-            conditions.push(`${colSql} != ?`);
-            params.push(value.not_equals);
-          }
-        } else {
-          conditions.push(`${colSql} = ?`);
-          params.push(value);
-        }
+    if (effectiveWhere && Object.keys(effectiveWhere).length > 0) {
+      const whereRes = this.buildWhere(effectiveWhere, tableName);
+      if (whereRes.clause) {
+        conditions.push(`(${whereRes.clause})`);
+        params.push(...whereRes.params);
       }
+    }
 
-      if (conditions.length > 0) {
-        sql += ` WHERE ${conditions.join(" AND ")}`;
-      }
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(" AND ")}`;
+    }
 
-      const rawSort = sort || "-createdAt";
-      const sortField = this.resolveCol(tableName, rawSort);
-      const sortDir = rawSort.startsWith("-") ? "DESC" : "ASC";
-      sql += ` ORDER BY ${sortField} ${sortDir}`;
+    const rawSort = sort || "-createdAt";
+    const sortField = this.resolveCol(tableName, rawSort);
+    const sortDir = rawSort.startsWith("-") ? "DESC" : "ASC";
+    sql += ` ORDER BY ${sortField} ${sortDir}`;
 
     const countSql = sql.replace("SELECT *", "SELECT COUNT(*) as count");
     const countResult = this.db.prepare(countSql).get(...params) as {
@@ -672,11 +733,24 @@ export class LocalAdapter extends AbstractBaseAdapter {
 
     const tableName = parsed.tableName;
     let sql = `SELECT COUNT(*) as count FROM ${tableName}`;
+    const conditions: string[] = [];
     const params: any[] = [];
 
     if (tenantId && (config as CollectionConfig).tenantScoped) {
-      sql += ` WHERE tenant_id = ?`;
+      conditions.push(`tenant_id = ?`);
       params.push(tenantId);
+    }
+
+    if (args.where && Object.keys(args.where).length > 0) {
+      const whereRes = this.buildWhere(args.where, tableName);
+      if (whereRes.clause) {
+        conditions.push(`(${whereRes.clause})`);
+        params.push(...whereRes.params);
+      }
+    }
+
+    if (conditions.length > 0) {
+      sql += ` WHERE ${conditions.join(" AND ")}`;
     }
 
     const result = this.db.prepare(sql).get(...params) as { count: number };

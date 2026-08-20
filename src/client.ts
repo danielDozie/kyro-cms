@@ -87,3 +87,13 @@ export {
 
 // Utility Exports (Browser Safe)
 export { createAuditContext } from "./auth/security/context.js";
+export {
+  FIELD_DEFINITION_KEYS,
+  isFieldOverrideDefinition,
+  flattenFieldOverrides,
+  updateFieldByPath,
+  applyBlocksOverrides,
+  applyTabsOverrides,
+  applyCollectionOverrides,
+  applyGlobalOverrides,
+} from "./utils/schemaOverrides.js";

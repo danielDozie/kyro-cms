@@ -7,13 +7,14 @@ import type {
   SelectField as SelectFieldType,
   DateField as DateFieldType,
   CodeField as CodeFieldType,
+  JSONField as JSONFieldType,
   UploadField as UploadFieldType,
   RelationshipField as RelationshipFieldType,
   BlocksField as BlocksFieldType,
   MarkdownField as MarkdownFieldType,
 } from "@kyro-cms/core/client";
 import { UploadField } from "./fields/UploadField";
-import { CodeField } from "./fields";
+import { CodeField, JSONField } from "./fields";
 import NumberField from "./fields/NumberField";
 import CheckboxField from "./fields/CheckboxField";
 import SelectField from "./fields/SelectField";
@@ -135,6 +136,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           error={error}
         />
       );
+    case "radio":
     case "select":
       return (
         <SelectField
@@ -188,6 +190,16 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           value={(value as string) ?? undefined}
           onChange={onChangeKeystroke as (value: string) => void}
           disabled={disabled}
+          error={error}
+        />
+      );
+    case "json":
+      return (
+        <JSONField
+          field={field as JSONFieldType}
+          value={value}
+          onChange={onChangeKeystroke}
+          disabled={disabled || field.admin?.readOnly === true}
           error={error}
         />
       );
@@ -309,6 +321,66 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             />
           </div>
         </FieldLayout>
+      );
+    case "row":
+      return (
+        <div className="kyro-form-row flex flex-col md:flex-row gap-4 md:gap-6 items-start md:items-end w-full">
+          {((field as any).fields || []).map((f: Field) => (
+            <div
+              key={f.name}
+              className="flex-1 w-full"
+              style={f.admin?.width ? { width: f.admin.width as string, flex: "none" } : {}}
+            >
+              <FieldRenderer
+                field={f}
+                value={formData ? formData[f.name] : undefined}
+                onChange={(val) => {
+                  if (formData) {
+                    onChange({ ...formData, [f.name]: val });
+                  } else {
+                    onChange(val);
+                  }
+                }}
+                disabled={disabled}
+                error={error}
+                formData={formData}
+                siblingData={siblingData}
+                collectionSlug={collectionSlug}
+                globalSlug={globalSlug}
+              />
+            </div>
+          ))}
+        </div>
+      );
+    case "collapsible":
+      return (
+        <details className="kyro-collapsible rounded-lg border border-[var(--kyro-border)] p-4 space-y-4">
+          <summary className="cursor-pointer font-medium text-sm text-[var(--kyro-text-primary)] select-none">
+            {field.label || field.name || "Details"}
+          </summary>
+          <div className="pt-3 space-y-4">
+            {((field as any).fields || []).map((f: Field) => (
+              <FieldRenderer
+                key={f.name}
+                field={f}
+                value={formData ? formData[f.name] : undefined}
+                onChange={(val) => {
+                  if (formData) {
+                    onChange({ ...formData, [f.name]: val });
+                  } else {
+                    onChange(val);
+                  }
+                }}
+                disabled={disabled}
+                error={error}
+                formData={formData}
+                siblingData={siblingData}
+                collectionSlug={collectionSlug}
+                globalSlug={globalSlug}
+              />
+            ))}
+          </div>
+        </details>
       );
     default:
       return (

@@ -145,6 +145,11 @@ function AutoFormInner({
     onActionError,
   });
 
+  useEffect(() => {
+    setView("edit");
+    useAutoFormStore.getState().setActiveTab(0);
+  }, [collectionSlug, globalSlug, documentId, setView]);
+
   const menuRef = useRef<HTMLDivElement>(null);
   const scheduleRef = useRef<HTMLDivElement>(null);
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
@@ -1116,7 +1121,7 @@ function AutoFormInner({
           />
         </>
       )}
-      <main className="w-full pt-6 md:pt-0">
+      <main className="w-full flex-1 flex flex-col min-h-0 pt-6 md:pt-0">
         <ErrorBoundary>
           {view === "edit" && (
             <AutoFormEditView

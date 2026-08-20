@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { verify } from "hono/jwt";
+import { verify, sign } from "hono/jwt";
 import type { KyroAppOptions } from "../kyro-app.js";
 import {
   ensureGlobalAccess,
@@ -39,9 +39,11 @@ export function mountGlobalRoutes(
       const kyroToken = url.searchParams.get("kyroToken");
 
       let previewAllowed = false;
-      if (draftParam === "true" && kyroToken && authSecret) {
+      const jwtSecret = authSecret || process.env.KYRO_AUTH_SECRET || process.env.AUTH_SECRET || "kyro-preview-secret";
+
+      if (draftParam === "true" && kyroToken && jwtSecret) {
         try {
-          const decoded = await verify(kyroToken, authSecret, "HS256");
+          const decoded = await verify(kyroToken, jwtSecret, "HS256");
           if (decoded && decoded.type === "preview" && decoded.collection === `_globals_${globalConfig.slug}`) {
             previewAllowed = true;
           }
@@ -79,6 +81,61 @@ export function mountGlobalRoutes(
       await populateRelationships([doc], globalConfig.fields, db as BaseAdapter, registry, 1, depth);
       const sanitized = sanitizeDoc(doc);
       return c.json({ doc: sanitized, data: sanitized });
+    });
+
+    // POST /api/globals/:slug/preview-url
+    app.post(`${basePath}/preview-url`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID } =
+        await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+
+      await ensureGlobalAccess(
+        globalConfig,
+        "read",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        enablePublicAccess,
+      );
+
+      const body = await c.req.json().catch(() => ({}));
+      const doc = body || {};
+
+      let token: string | undefined;
+      const jwtSecret = authSecret || process.env.KYRO_AUTH_SECRET || process.env.AUTH_SECRET || "kyro-preview-secret";
+      if (jwtSecret) {
+        try {
+          token = await sign(
+            {
+              type: "preview",
+              collection: `_globals_${globalConfig.slug}`,
+              exp: Math.floor(Date.now() / 1000) + 60 * 60,
+            },
+            jwtSecret,
+            "HS256"
+          );
+        } catch (e) {
+          console.warn("Failed to sign global preview token:", e);
+        }
+      }
+
+      let previewUrl = "";
+      if (typeof globalConfig.admin?.preview === "function") {
+        try {
+          previewUrl = await globalConfig.admin.preview(doc, { req: c.req.raw, token });
+        } catch (err) {
+          console.error(`[Kyro Preview] Error in custom preview function for global ${globalConfig.slug}:`, err);
+        }
+      }
+
+      if (!previewUrl) {
+        previewUrl = `/${globalConfig.slug}`;
+        if (token) {
+          const separator = previewUrl.includes("?") ? "&" : "?";
+          previewUrl += `${separator}draft=true&kyroToken=${token}`;
+        }
+      }
+
+      return c.json({ url: previewUrl });
     });
 
     // GET /api/globals/:slug/versions - List versions or compare 2 versions for a global

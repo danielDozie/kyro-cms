@@ -7,6 +7,7 @@ import type { CollectionConfig } from "../registry/types.js";
 export const mediaCollection: CollectionConfig = {
   slug: "media",
   label: "Media Library",
+  timestamps: true,
 
   admin: {
     useAsTitle: "title",

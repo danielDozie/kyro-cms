@@ -141,7 +141,7 @@ export const MarkdownField: React.FC<MarkdownFieldProps> = ({
             <span className="kyro-form-label-required">*</span>
           )}
         </label>
-        <div className="h-[200px] bg-[var(--kyro-surface)] animate-pulse rounded-md border border-[var(--kyro-border)]" />
+        <div className="h-[200px] bg-[var(--kyro-surface)] animate-pulse rounded-lg border border-[var(--kyro-border)]" />
       </div>
     );
   }

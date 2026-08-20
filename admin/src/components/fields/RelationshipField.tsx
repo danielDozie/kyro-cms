@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Search, X, ChevronDown, Loader2, GripVertical } from "../ui/icons";
 import { apiGet, buildSearchQuery } from "../../lib/api";
+import { useClickOutside } from "../../hooks/useClickOutside";
 import { EmptyState } from "../ui/EmptyState";
 import {
   DndContext,
@@ -192,46 +193,52 @@ export function RelationshipField({
     fetchSelectedDocs(ids);
   }, [extractIds, fetchSelectedDocs]);
 
-  const fetchOptions = useCallback((query: string = "") => {
-    setLoading(true);
-    const searchFields = ["title", "name", "label", "email"];
-    const url = `/api/${activeRelation}?${buildSearchQuery(query, searchFields)}`;
+  const fetchOptions = useCallback(
+    (query: string = "") => {
+      setLoading(true);
+      const searchFields = ["title", "name", "label", "email", "slug", "filename"];
+      const url = `/api/${activeRelation}?${buildSearchQuery(query, searchFields)}`;
 
-    apiGet<{ docs?: Record<string, unknown>[] }>(url)
-      .then((data) => {
-        setOptions((prev) => {
-          const existingIds = new Set(prev.map((o) => o.id));
-          const newDocs: ResolvedDoc[] = (data.docs || []).filter(
-            (d) => !existingIds.has(d.id as string),
-          ).map((d) => ({ ...d, id: d.id as string }));
-          return [...prev, ...newDocs];
+      apiGet<{ docs?: Record<string, unknown>[]; data?: Record<string, unknown>[] }>(url)
+        .then((data) => {
+          const rawDocs = data.docs || data.data || [];
+          const newDocs: ResolvedDoc[] = rawDocs.map((d) => ({
+            ...d,
+            id: String(d.id),
+          }));
+          setOptions(newDocs);
+          setLoading(false);
+        })
+        .catch(() => {
+          setLoading(false);
         });
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }, [activeRelation]);
+    },
+    [activeRelation]
+  );
 
   useEffect(() => {
     if (isOpen) {
-      setOptions([]);
-      fetchOptions(search);
+      const timer = setTimeout(() => {
+        fetchOptions(search);
+      }, 200);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, activeRelation]);
+  }, [isOpen, search, activeRelation, fetchOptions]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const filteredOptions = useMemo(() => {
+    if (!search || !search.trim()) return options;
+    const q = search.trim().toLowerCase();
+    return options.filter((opt) => {
+      const lbl = getLabel(opt).toLowerCase();
+      const id = String(opt.id || "").toLowerCase();
+      const slug = String(opt.slug || "").toLowerCase();
+      return lbl.includes(q) || id.includes(q) || slug.includes(q);
+    });
+  }, [options, search]);
+
+  useClickOutside(containerRef, () => {
+    if (isOpen) setIsOpen(false);
+  });
 
   const getValueId = (val: unknown): string => {
     if (typeof val === "object" && val !== null) {
@@ -456,11 +463,11 @@ export function RelationshipField({
               <div className="p-4 text-center text-sm text-[var(--kyro-text-muted)]">
                 Loading...
               </div>
-            ) : options.length === 0 ? (
+            ) : filteredOptions.length === 0 ? (
               <EmptyState title={t("tooltips.noResultsFound", { defaultValue: "No results found" })} />
             ) : (
               <div className="py-1">
-                {options.map((opt) => (
+                {filteredOptions.map((opt) => (
                   <button
                     key={opt.id}
                     type="button"

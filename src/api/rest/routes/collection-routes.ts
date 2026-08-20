@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { verify } from "hono/jwt";
+import { verify, sign } from "hono/jwt";
 import type { KyroAppOptions } from "../kyro-app.js";
 import {
   checkCollectionAccess,
@@ -78,10 +78,11 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const draftParam = url.searchParams.get("draft");
       const kyroToken = url.searchParams.get("kyroToken");
       let previewAllowed = false;
+      const jwtSecret = authSecret || process.env.KYRO_AUTH_SECRET || process.env.AUTH_SECRET || "kyro-preview-secret";
 
-      if (draftParam === "true" && kyroToken && authSecret) {
+      if (draftParam === "true" && kyroToken && jwtSecret) {
         try {
-          const decoded = await verify(kyroToken, authSecret, "HS256");
+          const decoded = await verify(kyroToken, jwtSecret, "HS256");
           if (decoded && decoded.type === "preview" && decoded.collection === collection.slug) {
             previewAllowed = true;
           }
@@ -112,12 +113,40 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const depth = parseInt(url.searchParams.get("depth") || "0");
       const select = url.searchParams.get("select")?.split(",") || undefined;
       const whereParam = url.searchParams.get("where");
-      let where;
+      let where: Record<string, any> | undefined;
       if (whereParam) {
         try {
           where = JSON.parse(decodeURIComponent(whereParam));
         } catch (e) {
           throw new ApiError(400, "Invalid JSON in where clause");
+        }
+      }
+
+      const searchParam = url.searchParams.get("search") || url.searchParams.get("q");
+      if (searchParam && searchParam.trim()) {
+        const queryTerm = searchParam.trim();
+        const searchableFields = (collection.fields || [])
+          .filter(
+            (f) =>
+              f.name &&
+              f.name !== "id" &&
+              (f.type === "text" ||
+                f.type === "email" ||
+                f.type === "textarea" ||
+                f.type === "select" ||
+                f.type === "radio" ||
+                f.indexed) &&
+              !f.admin?.hidden,
+          )
+          .map((f) => f.name!);
+
+        if (searchableFields.length > 0) {
+          const searchOr = searchableFields.map((f) => ({ [f]: { contains: queryTerm } }));
+          if (where) {
+            where = { AND: [where, { OR: searchOr }] };
+          } else {
+            where = { OR: searchOr };
+          }
         }
       }
 
@@ -390,6 +419,77 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       throw new ApiError(501, "Version restoration not supported by database adapter");
     });
 
+    // POST /api/:collection/preview-url - Generate preview URL for draft/live viewing
+    app.post(`${basePath}/preview-url`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "read",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      const body = await c.req.json().catch(() => ({}));
+      let doc: Record<string, any> = body || {};
+
+      if (doc.id && !doc.slug) {
+        try {
+          const existing = await db.findByID({ collection: collection.slug, id: doc.id, tenantId: ctxTenantID });
+          if (existing) {
+            doc = { ...existing, ...doc };
+          }
+        } catch {
+          // fallback to body
+        }
+      }
+
+      let token: string | undefined;
+      const jwtSecret = authSecret || process.env.KYRO_AUTH_SECRET || process.env.AUTH_SECRET || "kyro-preview-secret";
+      if (jwtSecret) {
+        try {
+          token = await sign(
+            {
+              type: "preview",
+              collection: collection.slug,
+              id: doc.id,
+              exp: Math.floor(Date.now() / 1000) + 60 * 60,
+            },
+            jwtSecret,
+            "HS256"
+          );
+        } catch (e) {
+          console.warn("Failed to sign preview token:", e);
+        }
+      }
+
+      let previewUrl = "";
+      if (typeof collection.admin?.preview === "function") {
+        try {
+          previewUrl = await collection.admin.preview(doc, { req: c.req.raw, token });
+        } catch (err) {
+          console.error(`[Kyro Preview] Error in custom preview function for ${collection.slug}:`, err);
+        }
+      }
+
+      if (!previewUrl) {
+        const identifier = doc.slug || doc.id || "";
+        previewUrl = identifier ? `/${collection.slug}/${identifier}` : `/${collection.slug}`;
+        if (token) {
+          const separator = previewUrl.includes("?") ? "&" : "?";
+          previewUrl += `${separator}draft=true&kyroToken=${token}`;
+        }
+      }
+
+      return c.json({ url: previewUrl });
+    });
+
     // GET /api/:collection/:id - Single document
     app.get(`${basePath}/:id`, async (c) => {
       const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
@@ -397,10 +497,11 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const draftParam = url.searchParams.get("draft");
       const kyroToken = url.searchParams.get("kyroToken");
       let previewAllowed = false;
+      const jwtSecret = authSecret || process.env.KYRO_AUTH_SECRET || process.env.AUTH_SECRET || "kyro-preview-secret";
 
-      if (draftParam === "true" && kyroToken && authSecret) {
+      if (draftParam === "true" && kyroToken && jwtSecret) {
         try {
-          const decoded = await verify(kyroToken, authSecret, "HS256");
+          const decoded = await verify(kyroToken, jwtSecret, "HS256");
           if (decoded && decoded.type === "preview" && decoded.collection === collection.slug) {
             previewAllowed = true;
           }

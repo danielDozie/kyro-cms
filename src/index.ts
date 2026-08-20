@@ -4,7 +4,7 @@
 // ============================================================================
 
 // Main Factory
-export { Kyro, createKyro, createKyroHandler, applyCollectionOverrides } from "./createKyro.js";
+export { Kyro, createKyro, createKyroHandler } from "./createKyro.js";
 
 // Email Engine & Templates
 export * from "./email/index.js";
@@ -399,5 +399,15 @@ export { generateKyroAstroTypes } from "./typegen.js";
 export { kyroEnvSchema, type KyroEnvSchemaOptions } from "./env.js";
 export { isEdgeRuntime } from "./utils/runtime.js";
 export { Logger, logger, type LogLevel } from "./utils/logger.js";
+export {
+  FIELD_DEFINITION_KEYS,
+  isFieldOverrideDefinition,
+  flattenFieldOverrides,
+  updateFieldByPath,
+  applyBlocksOverrides,
+  applyTabsOverrides,
+  applyCollectionOverrides,
+  applyGlobalOverrides,
+} from "./utils/schemaOverrides.js";
 
 

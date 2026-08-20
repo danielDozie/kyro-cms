@@ -21,6 +21,7 @@ import { useUIStore, toast } from "../lib/stores";
 import { Modal, ModalContent, ModalActions } from "./ui/Modal";
 import { PageHeader } from "./ui/PageHeader";
 import { Badge } from "./ui/Badge";
+import { SkeletonGrid } from "./ui/Shimmer";
 import { useTranslation } from "react-i18next";
 
 // @ts-ignore
@@ -47,17 +48,24 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
 
-  const loadKeys = async () => {
+  const loadKeys = async (active = true) => {
     try {
+      setLoading(true);
       const data = await apiGet("/api/keys");
-      setKeys(data);
+      if (active) setKeys(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
+    } finally {
+      if (active) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadKeys();
+    let active = true;
+    loadKeys(active);
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleGenerateKey = async () => {
@@ -117,12 +125,10 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
       <PageHeader
         title={t("tooltips.developerCenter", { defaultValue: "Developer Center" })}
         description="Provision access keys and explore the headless API ecosystem."
-        icon={Code2}
         actions={[
           {
             label: "Generate Key",
             onClick: handleGenerateKey,
-            icon: Key,
           },
         ]}
       />
@@ -136,9 +142,10 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
           </div>
 
           <div className="space-y-4">
-            {keys.length === 0 ? (
+            {loading ? (
+              <SkeletonGrid count={2} />
+            ) : keys.length === 0 ? (
               <div className="p-12 text-center rounded-[2rem] border-2 border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/30">
-                <Lock className="w-10 h-10 mx-auto mb-4 opacity-20" />
                 <p className="text-sm text-[var(--kyro-text-secondary)] opacity-50">No API keys found. Generate one to get started.</p>
               </div>
             ) : (
@@ -150,9 +157,6 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2.5 bg-[var(--kyro-surface-accent)] rounded-xl group-hover:bg-[var(--kyro-primary)]/10 transition-colors">
-                          <Key className="w-5 h-5 text-[var(--kyro-text-secondary)] group-hover:text-[var(--kyro-primary)] transition-colors" />
-                        </div>
                         <h3 className="text-lg font-bold group-hover:text-[var(--kyro-primary)] transition-colors truncate">
                           {key.name}
                         </h3>

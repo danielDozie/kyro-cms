@@ -43,8 +43,8 @@ function formatCurrency(n: number, currency = "USD") {
 
 function SkeletonCard() {
   return (
-    <div className="p-5 rounded-2xl border border-[var(--kyro-border)] animate-pulse" style={{ background: "var(--kyro-surface-accent)" }}>
-      <div className="w-10 h-10 rounded-xl mb-3" style={{ background: "var(--kyro-bg-secondary)" }} />
+    <div className="p-5 rounded-lg border border-[var(--kyro-border)] animate-pulse" style={{ background: "var(--kyro-surface-accent)" }}>
+      <div className="w-10 h-10 rounded-lg mb-3" style={{ background: "var(--kyro-bg-secondary)" }} />
       <div className="h-7 w-20 rounded mb-2" style={{ background: "var(--kyro-bg-secondary)" }} />
       <div className="h-3 w-28 rounded" style={{ background: "var(--kyro-bg-secondary)" }} />
     </div>
@@ -201,8 +201,8 @@ export const RevenueChart: React.FC = () => {
 
   if (loading)
     return (
-      <div className="mt-6 p-6 rounded-2xl border animate-pulse" style={{ background: "var(--kyro-surface-accent)", borderColor: "var(--kyro-border)" }}>
-        <div className="h-72 rounded-xl" style={{ background: "var(--kyro-bg-secondary)" }} />
+      <div className="mt-6 p-6 rounded-lg border animate-pulse" style={{ background: "var(--kyro-surface-accent)", borderColor: "var(--kyro-border)" }}>
+        <div className="h-72 rounded-lg" style={{ background: "var(--kyro-bg-secondary)" }} />
       </div>
     );
 
@@ -268,7 +268,7 @@ export const RevenueChart: React.FC = () => {
         <div className="h-72 w-full">
           {!hasChartData ? (
             <div
-              className="flex flex-col items-center justify-center w-full h-full rounded-xl border border-dashed text-sm"
+              className=" flex flex-col items-center justify-center w-full h-full rounded-lg border border-dashed text-sm"
               style={{ background: "var(--kyro-bg-secondary)", borderColor: "var(--kyro-border)", color: "var(--kyro-text-muted)" }}
             >
               <svg className="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -516,8 +516,8 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
       gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
       value: productCount,
-      label: "Products / Menu Items",
-      subtext: "Active inventory & menu items",
+      label: "Products",
+      subtext: "Active inventory",
       visible: isAdmin || permissions?.collections?.products?.read === true,
     },
     {

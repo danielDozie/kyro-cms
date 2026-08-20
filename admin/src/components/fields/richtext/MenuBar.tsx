@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { marked } from "marked";
 import { useAutoFormStore } from "../../../lib/autoform-store";
+import { useClickOutside } from "../../../hooks/useClickOutside";
 import { projectConfig } from "virtual:kyro-plugins";
 import {
   Bold,
@@ -78,15 +79,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({
     (p: any) => p.name === "ai-assistant"
   ) ?? false;
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuBarRef.current && !menuBarRef.current.contains(event.target as Node)) {
-        setActiveDropdown(null);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useClickOutside(menuBarRef, () => {
+    if (activeDropdown) setActiveDropdown(null);
+  });
 
   if (!editor) {
     return null;

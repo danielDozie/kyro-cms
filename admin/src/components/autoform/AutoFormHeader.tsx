@@ -4,6 +4,7 @@ import { Dropdown, DropdownItem, DropdownSeparator } from "../ui/Dropdown";
 import { SplitButton } from "../ui/SplitButton";
 import type { SplitButtonStatus } from "../ui/SplitButton";
 import { useAutoFormStore } from "../../lib/autoform-store";
+import { useClickOutside } from "../../hooks/useClickOutside";
 import { adminPath as ADMIN_BASE } from "../../lib/paths";
 import { useTranslation } from "react-i18next";
 
@@ -69,17 +70,9 @@ export function AutoFormHeader({
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (scheduleRef.current && !scheduleRef.current.contains(e.target as Node)) {
-        setShowSchedulePicker(false);
-      }
-    };
-    if (showSchedulePicker) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [showSchedulePicker]);
+  useClickOutside(scheduleRef, () => {
+    if (showSchedulePicker) setShowSchedulePicker(false);
+  });
 
   const docTitle = String(
     (formData.tabs as { title?: string })?.title ||
@@ -474,7 +467,7 @@ export function AutoFormHeader({
             <button
               type="button"
               onClick={() => setShowPreview(!showPreview)}
-              className={`kyro-btn p-2.5 rounded-xl transition-all flex items-center gap-2 ${showPreview ? "shadow-lg" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-bg-secondary)]"}`}
+              className={`kyro-btn p-2.5 rounded-lg transition-all flex items-center gap-2 ${showPreview ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] border border-[var(--kyro-border)]" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-bg-secondary)]"}`}
               title={t("tooltips.livePreview", { defaultValue: "Live Preview" })}
             >
               <ExternalLink className="w-4 h-4" />

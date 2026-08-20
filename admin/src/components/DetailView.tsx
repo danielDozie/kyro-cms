@@ -173,10 +173,6 @@ export function DetailView({
           setSaveStatus("idle");
         }, 2000);
 
-        if (showPreview) {
-          refreshPreviewUrl(savedData);
-        }
-
       } catch (e: any) {
         setSaveStatus("error");
         if (!isAutosave) {
@@ -299,36 +295,9 @@ export function DetailView({
       }
     });
   };
-  const refreshPreviewUrl = async (docData: any = data) => {
-    try {
-      const endpoint = mode === "global" ? `/api/globals/${slug}/preview-url` : `/api/${slug}/preview-url`;
-      console.log("[Kyro Preview] Calling endpoint:", endpoint, "with data keys:", Object.keys(docData || {}), "documentId:", documentId);
-      const res = await apiPost(endpoint, { ...docData, id: documentId }, { autoToast: false });
-      console.log("[Kyro Preview] Response:", JSON.stringify(res));
-      if (res && (res as any).url) {
-        console.log("[Kyro Preview] Setting previewUrl:", (res as any).url);
-        setPreviewUrl((res as any).url);
-      } else {
-        console.warn("[Kyro Preview] No url in response:", res);
-      }
-    } catch (e: any) {
-      console.error("[Kyro Preview] Error:", e.message, e);
-      toast.error(e.message || "Failed to generate preview URL");
-    }
-  };
-
-  useEffect(() => {
-    if (showPreview) {
-      refreshPreviewUrl(data);
-    }
-  }, [showPreview]);
 
   const togglePreview = () => {
-    const nextState = !showPreview;
-    setShowPreview(nextState);
-    if (nextState) {
-      refreshPreviewUrl(data);
-    }
+    setShowPreview(!showPreview);
   };
   if (loading) {
     return (
@@ -399,14 +368,12 @@ export function DetailView({
 
       <div
         className={
-          showPreview
-            ? "w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 pt-4 md:pt-0 h-[calc(100vh-140px)]"
-            : isSingleLayout
-              ? "w-full pt-4 md:pt-8"
-              : "w-full mx-auto grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 md:gap-8 pt-4 md:pt-0"
+          showPreview || isSingleLayout
+            ? "w-full pt-4 md:pt-8"
+            : "w-full mx-auto grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 md:gap-8 pt-4 md:pt-0"
         }
       >
-        <div className={`space-y-4 md:space-y-8 min-w-0 ${showPreview ? "overflow-y-auto pr-2 pb-20" : ""}`}>
+        <div className="space-y-4 md:space-y-8 min-w-0">
           <div className="surface-tile p-4 md:p-8">
             <div className="flex items-center justify-between mb-8 px-1">
               <h2 className="text-[10px] font-bold  tracking-[0.2em] opacity-40">
@@ -430,7 +397,7 @@ export function DetailView({
               documentStatus={status}
               justSaved={justSaved}
             />
-            {isSingleLayout && (
+            {isSingleLayout && !showPreview && (
               <div className="mt-8 pt-8 border-t border-[var(--kyro-border)] flex justify-end gap-3">
                 {mode === "collection" && documentId && (
                   <button
@@ -453,36 +420,6 @@ export function DetailView({
             )}
           </div>
         </div>
-
-        {showPreview && (
-          <div className="surface-tile flex flex-col overflow-hidden h-full border border-[var(--kyro-border)] rounded-xl animate-in fade-in slide-in-from-right-4 duration-500 shadow-xl bg-white dark:bg-black">
-            <div className="bg-[var(--kyro-surface-accent)] border-b border-[var(--kyro-border)] p-2 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 pl-2">
-                <div className="w-3 h-3 rounded-full bg-red-400/80"></div>
-                <div className="w-3 h-3 rounded-full bg-amber-400/80"></div>
-                <div className="w-3 h-3 rounded-full bg-green-400/80"></div>
-              </div>
-              <div className="text-[10px] font-mono opacity-50 truncate max-w-[60%] bg-[var(--kyro-bg)] px-3 py-1 rounded">
-                {previewUrl || t("detailView.generatingPreview", { defaultValue: "Generating preview URL..." })}
-              </div>
-              <div className="w-16"></div>
-            </div>
-            <div className="flex-1 bg-white relative">
-              {!previewUrl ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Spinner className="w-6 h-6 text-[var(--kyro-primary)]" />
-                </div>
-              ) : (
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-full border-0 bg-white"
-                  title={t("tooltips.preview", { defaultValue: "Preview" })}
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                />
-              )}
-            </div>
-          </div>
-        )}
 
         {!isSingleLayout && !showPreview && (
           <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">

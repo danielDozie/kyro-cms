@@ -82,8 +82,8 @@ export function DashboardQuickSections({
       id: "profile",
       label: "Edit Account Profile",
       description: "Manage your personal profile and account details",
-      href: `${adminPath}/profile`,
-      visible: true, // Everyone logged in can view their profile
+      href: user?.id ? `${adminPath}/users/${user.id}` : `${adminPath}/users`,
+      visible: !!user,
     },
     {
       id: "media",
@@ -97,7 +97,7 @@ export function DashboardQuickSections({
       label: "Order History",
       description: "View past orders and purchases",
       href: `${adminPath}/orders`,
-      visible: !!collections["orders"] && (isAdmin || canReadCollection("orders")),
+      visible: !!collections["orders"] && canReadCollection("orders"),
     },
     {
       id: "users",
@@ -119,6 +119,34 @@ export function DashboardQuickSections({
       description: "Monitor user actions, auth attempts and system logs",
       href: `${adminPath}/audit`,
       visible: isAdmin || canReadCollection("audit_logs"),
+    },
+    {
+      id: "keys",
+      label: "API Keys",
+      description: "Generate and manage programmatic API keys",
+      href: `${adminPath}/keys`,
+      visible: isAdmin,
+    },
+    {
+      id: "webhooks",
+      label: "Webhooks",
+      description: "Configure event-driven webhook subscriptions",
+      href: `${adminPath}/webhooks`,
+      visible: isAdmin,
+    },
+    {
+      id: "rest",
+      label: "REST API Explorer",
+      description: "Test and inspect CMS API endpoints",
+      href: `${adminPath}/rest-playground`,
+      visible: isAdmin,
+    },
+    {
+      id: "graphql",
+      label: "GraphQL Playground",
+      description: "Interactive schema query editor and docs",
+      href: `${adminPath}/graphql`,
+      visible: isAdmin,
     },
     {
       id: "health",

@@ -77,7 +77,9 @@ export function useAutoFormState({
       needsResetRef.current = false;
       resetForm();
     }
-  }, [resetForm]);
+    store.setView("edit");
+    store.setActiveTab(0);
+  }, [currentContextKey, globalSlug, collectionSlug, resetForm]);
 
   const localSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const serverSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -437,6 +439,11 @@ const persistBrowserDraft = useCallback(
   }
 
   // Auto-generate metaTitle
+  const currentTitle = formData.title;
+  const currentMetaTitle = formData.metaTitle;
+  const currentLastMetaTitle = formData._lastMetaTitle;
+  const currentSlug = formData.slug;
+
   useEffect(() => {
     if (!config?.fields) return;
     const fields = config.fields as Record<string, unknown>[];
@@ -446,8 +453,8 @@ const persistBrowserDraft = useCallback(
     const titleValue = resolveFieldValue(fields, formData, "title");
     const titleStr = titleValue ? String(titleValue) : "";
 
-    if (titleStr && (!formData.metaTitle || formData.metaTitle === formData._lastMetaTitle)) {
-      if (formData.metaTitle !== titleStr) {
+    if (titleStr && (!currentMetaTitle || currentMetaTitle === currentLastMetaTitle)) {
+      if (currentMetaTitle !== titleStr) {
         useAutoFormStore.setState((state) => ({
           formData: {
             ...state.formData,
@@ -457,7 +464,7 @@ const persistBrowserDraft = useCallback(
         }));
       }
     }
-  }, [formData, config?.fields]);
+  }, [currentTitle, currentMetaTitle, currentLastMetaTitle, config?.fields]);
 
   interface FieldConfig {
     name?: string;
@@ -481,7 +488,7 @@ const persistBrowserDraft = useCallback(
 
     if (isSlugLocked && typeof sourceValue === "string" && sourceValue) {
       const newSlug = slugifyText(sourceValue);
-      if (newSlug && newSlug !== formData.slug) {
+      if (newSlug && newSlug !== currentSlug) {
         useAutoFormStore.setState((state) => ({
           formData: {
             ...state.formData,
@@ -490,7 +497,7 @@ const persistBrowserDraft = useCallback(
         }));
       }
     }
-  }, [formData, isSlugLocked, config?.fields]);
+  }, [currentTitle, isSlugLocked, currentSlug, config?.fields]);
 
   // Auto-save effect — only starts timers on keystroke-originated changes.
   // Local save fires after 1.5s of inactivity, server save after 8s.
@@ -582,6 +589,43 @@ const persistBrowserDraft = useCallback(
   useEffect(() => {
     if (globalSlug || formData.id) fetchVersions();
   }, [formData.id, globalSlug, fetchVersions]);
+
+  const previewFetchKeyRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!store.showPreview) {
+      previewFetchKeyRef.current = "";
+      return;
+    }
+    if (!collectionSlug && !globalSlug) return;
+
+    const docId = documentId || (formData?.id as string | undefined) || "";
+    const docSlug = (formData?.slug as string | undefined) || "";
+    const fetchKey = `${globalSlug || collectionSlug}:${docId}:${docSlug}`;
+
+    if (previewFetchKeyRef.current === fetchKey && useAutoFormStore.getState().previewUrl) return;
+    previewFetchKeyRef.current = fetchKey;
+
+    const endpoint = globalSlug
+      ? `/api/globals/${globalSlug}/preview-url`
+      : `/api/${collectionSlug}/preview-url`;
+
+    fetchWithAuth(resolveUrl(endpoint), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...formData, id: docId }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res: { url?: string } | null) => {
+        if (res?.url) {
+          useAutoFormStore.getState().setPreviewUrl(res.url);
+        }
+      })
+      .catch((e) => {
+        console.error("[Kyro Preview] Failed to fetch preview URL:", e);
+        previewFetchKeyRef.current = "";
+      });
+  }, [store.showPreview, collectionSlug, globalSlug, documentId, formData?.id, formData?.slug, formData?.title, formData?.name]);
 
   // Derived status values the UI can use for badges and button state
   const documentStatus: 'draft' | 'published' | 'archived' | undefined = (() => {

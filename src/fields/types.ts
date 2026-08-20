@@ -42,6 +42,9 @@ export interface FieldAdmin {
   action?: string;
   method?: string;
   inline?: boolean;
+  compact?: boolean;
+  collapsible?: boolean;
+  initCollapsed?: boolean;
   pickerMode?: "drawer" | "dropdown";
   condition?:
     | ((

@@ -160,7 +160,6 @@ export function UserManagement() {
       <PageHeader
         title={t("tooltips.identityAccess", { defaultValue: "Identity & Access" })}
         description="Manage the core administrative team and security permissions."
-        icon={Users}
         action={{
           label: "New User",
           onClick: () => {
@@ -168,7 +167,6 @@ export function UserManagement() {
             setCreateError("");
             setShowCreateModal(true);
           },
-          icon: UserPlus,
         }}
       />
 

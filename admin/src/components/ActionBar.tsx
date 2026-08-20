@@ -4,6 +4,7 @@ import { DropdownItem, DropdownSeparator } from "./ui/Dropdown";
 import { SplitButton } from "./ui/SplitButton";
 import { Spinner } from "./ui/Spinner";
 import { useAutoFormStore } from "../lib/autoform-store";
+import { useClickOutside } from "../hooks/useClickOutside";
 import { useTranslation } from "react-i18next";
 
 export type DocumentStatus = "draft" | "published" | "scheduled" | "archived";
@@ -66,13 +67,9 @@ export function ActionBar({
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  useClickOutside(moreRef, () => {
+    if (moreOpen) setMoreOpen(false);
+  });
 
   const getSaveStatusText = () => {
     if (saveStatus === "saving") return "Saving...";

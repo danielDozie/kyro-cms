@@ -4,6 +4,7 @@ export const menuCollection: CollectionConfig = {
   slug: "menu",
   label: "Menu",
   singularLabel: "Menu Item",
+  timestamps: true,
   admin: {
     useAsTitle: "title",
     defaultColumns: ["title", "menuLocation"],

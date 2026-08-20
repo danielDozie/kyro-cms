@@ -183,13 +183,17 @@ export function buildSearchQuery(
   fields: string[],
   limit: number = 50,
 ): string {
-  if (!search || fields.length === 0) {
+  if (!search || !search.trim()) {
     return `limit=${limit}`;
   }
-  const searchQuery = fields
-    .map((f) => `where[${f}][contains]=${encodeURIComponent(search)}`)
-    .join("&");
-  return `${searchQuery}&limit=${limit}`;
+  const cleanSearch = search.trim();
+  if (fields && fields.length > 0) {
+    const whereObj = {
+      OR: fields.map((f) => ({ [f]: { contains: cleanSearch } })),
+    };
+    return `where=${encodeURIComponent(JSON.stringify(whereObj))}&q=${encodeURIComponent(cleanSearch)}&search=${encodeURIComponent(cleanSearch)}&limit=${limit}`;
+  }
+  return `q=${encodeURIComponent(cleanSearch)}&search=${encodeURIComponent(cleanSearch)}&limit=${limit}`;
 }
 
 export function buildCollectionUrl(

@@ -11,6 +11,13 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@kyro-cms/core": [
+        "../src/index.ts"
+      ],
+      "@kyro-cms/core/*": [
+        "../src/*",
+        "../src/*/index.ts"
       ]
     }
   },

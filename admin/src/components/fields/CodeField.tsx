@@ -151,7 +151,7 @@ export const CodeField: React.FC<CodeFieldProps> = ({
           <div className="h-5 w-24 rounded bg-[var(--kyro-surface-accent)] animate-pulse" />
           <div className="h-5 w-16 rounded bg-[var(--kyro-surface-accent)] animate-pulse" />
         </div>
-        <div className="h-[280px] rounded-xl bg-[var(--kyro-surface-accent)] animate-pulse" />
+        <div className="h-[280px] rounded-lg bg-[var(--kyro-surface-accent)] animate-pulse" />
       </div>
     );
   }

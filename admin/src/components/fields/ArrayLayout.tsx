@@ -19,8 +19,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useTranslation } from "react-i18next";
 
-const SIMPLE_TYPES = new Set(["text", "number", "checkbox", "select", "radio", "color", "email", "password", "url", "id"]);
-
 function extractLabelFromObj(obj: unknown): string | null {
   if (!obj || typeof obj !== "object") return null;
   const o = obj as Record<string, unknown>;
@@ -30,6 +28,7 @@ function extractLabelFromObj(obj: unknown): string | null {
     (tabs?.title as string) ||
     (o.name as string) ||
     (o.label as string) ||
+    (o.fieldName as string) ||
     (o.email as string) ||
     (o.filename as string) ||
     (o.slug as string);
@@ -60,9 +59,10 @@ interface ArrayLayoutProps {
 }
 
 function isCompactArray(field: Field): boolean {
-  const subFields = (field as Field & { fields?: Field[] }).fields || [];
-  if (subFields.length === 0 || subFields.length > 4) return false;
-  return subFields.every((f: Field) => SIMPLE_TYPES.has(f.type));
+  // Collapsible accordion is the standard default behavior.
+  // Compact inline rendering is only used if explicitly opted-in via admin: { compact: true }.
+  const admin = (field as any).admin;
+  return admin?.compact === true;
 }
 
 // Sortable item wrapper
@@ -70,7 +70,7 @@ interface SortableArrayItemProps {
   id: string;
   index: number;
   isOpen: boolean;
-  setOpenIndex: (index: number | null) => void;
+  onToggle: () => void;
   item: Record<string, unknown>;
   field: Field;
   renderField: (
@@ -89,7 +89,7 @@ function SortableArrayItem({
   id,
   index,
   isOpen,
-  setOpenIndex,
+  onToggle,
   item,
   field,
   renderField,
@@ -154,28 +154,37 @@ function SortableArrayItem({
     );
   }
 
+  const label = getItemLabel(item) || getFallbackLabel(field, index);
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`border border-[var(--kyro-border)] rounded-[var(--kyro-radius-md)] bg-[var(--kyro-surface-accent)]/10 overflow-hidden`}
+      className={`border border-[var(--kyro-border)] rounded-lg bg-[var(--kyro-surface)] overflow-hidden shadow-xs transition-all ${isOpen ? " " : "hover:border-[var(--kyro-border-accent)]"
+        }`}
     >
-      <div className="flex items-center gap-2 px-4 py-3 bg-[var(--kyro-surface-accent)]/20 border-b border-[var(--kyro-border)]">
+      <div
+        onClick={onToggle}
+        className={`flex items-center gap-2 px-3.5 py-2.5 bg-[var(--kyro-bg-secondary)]/50 cursor-pointer select-none transition-colors hover:bg-[var(--kyro-surface-accent)]/30 ${isOpen ? "border-b border-[var(--kyro-border)]" : ""
+          }`}
+      >
         <div
           {...attributes}
           {...listeners}
-          className="p-1 cursor-grab active:cursor-grabbing text-[var(--kyro-text-muted)] hover:bg-[var(--kyro-surface-accent)] rounded flex-shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          className="p-1 cursor-grab active:cursor-grabbing text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] rounded flex-shrink-0"
+          title="Drag to reorder"
         >
           <GripVertical className="w-3.5 h-3.5" />
         </div>
-        
-        <span className="text-xs font-bold text-[var(--kyro-text-muted)] min-w-[18px]">
+
+        <span className="text-[11px] font-bold text-[var(--kyro-text-muted)] min-w-[18px]">
           {index + 1}
         </span>
-        
-        <div className="flex-1 min-w-0">
-          <span className="text-xs font-medium text-[var(--kyro-text-primary)] truncate block">
-            {getItemLabel(item) || getFallbackLabel(field, index)}
+
+        <div className="flex-1 min-w-0 pr-2">
+          <span className="text-xs font-semibold text-[var(--kyro-text-primary)] truncate block">
+            {label}
           </span>
         </div>
 
@@ -183,7 +192,10 @@ function SortableArrayItem({
           <button
             type="button"
             disabled={disabled}
-            onClick={onRemove}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
             className="text-[var(--kyro-text-muted)] hover:text-[var(--kyro-error)] transition-colors disabled:opacity-30 p-1 rounded hover:bg-[var(--kyro-surface-accent)]"
             title={t("tooltips.remove", { defaultValue: "Remove" })}
           >
@@ -191,16 +203,20 @@ function SortableArrayItem({
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
-          
+
           <button
             type="button"
-            onClick={() => setOpenIndex(isOpen ? null : index)}
-            className="p-1 rounded hover:bg-[var(--kyro-surface-accent)] transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            className="p-1 text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] rounded hover:bg-[var(--kyro-surface-accent)] transition-colors"
+            title={isOpen ? "Collapse" : "Expand"}
           >
             {isOpen ? (
-              <ChevronUp className="w-4 h-4 text-[var(--kyro-text-muted)]" />
+              <ChevronUp className="w-4 h-4" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[var(--kyro-text-muted)]" />
+              <ChevronDown className="w-4 h-4" />
             )}
           </button>
         </div>
@@ -228,9 +244,37 @@ export function ArrayLayout({
   const firstField = fields[0];
   const labelField = firstField?.name || "user";
   const isRelationship = firstField?.type === "relationship";
-  const [openIndex, setOpenIndex] = React.useState<number | null>(0);
+
+  // By default, only the first item is open (or none if initCollapsed: true)
+  const [openIndices, setOpenIndices] = React.useState<Set<number>>(() => {
+    if ((field as any).admin?.initCollapsed) {
+      return new Set();
+    }
+    return new Set([0]);
+  });
+
   const [relLabels, setRelLabels] = React.useState<Record<string, string>>({});
   const fetchedRelIds = React.useRef<Set<string>>(new Set());
+
+  const toggleItemOpen = React.useCallback((index: number) => {
+    setOpenIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  }, []);
+
+  const expandAll = React.useCallback(() => {
+    setOpenIndices(new Set(items.map((_, idx) => idx)));
+  }, [items]);
+
+  const collapseAll = React.useCallback(() => {
+    setOpenIndices(new Set());
+  }, []);
 
   // Sync stable IDs and heal bad data
   React.useEffect(() => {
@@ -253,20 +297,22 @@ export function ArrayLayout({
         }
         return item;
       });
+
     if (needsUpdate) {
       onChange(updated);
     }
-  }, [value, onChange]);
+  }, [items, onChange]);
 
+  // Fetch relationship labels
   React.useEffect(() => {
     const fieldsTyped = (field as Field & { fields?: Field[] }).fields || [];
-    items.forEach((item) => {
-      if (!item || typeof item !== "object") return;
-      fieldsTyped.forEach((f) => {
-        if (f.type === "relationship" && f.name) {
-          const val = item[f.name];
-          if (!val) return;
+    const relFields = fieldsTyped.filter((f) => f.type === "relationship");
 
+    items.forEach((item) => {
+      relFields.forEach((f) => {
+        if (!f.name || !f.relationTo) return;
+        const val = item[f.name];
+        if (val) {
           let id = "";
           let rel = Array.isArray(f.relationTo) ? f.relationTo[0] : f.relationTo;
 
@@ -294,7 +340,7 @@ export function ArrayLayout({
                   setRelLabels((prev) => ({ ...prev, [id]: label }));
                 }
               })
-              .catch(() => {});
+              .catch(() => { });
           }
         }
       });
@@ -302,9 +348,19 @@ export function ArrayLayout({
   }, [items, field]);
 
   function getItemLabel(item: Record<string, unknown>): string {
-    for (const key of ["label", "title", "name", "externalUrl", "url"]) {
-      const val = item[key];
-      if (val && typeof val === "string" && val.trim() !== "") return val;
+    const rawLabel =
+      (item.fieldName as string) ||
+      (item.label as string) ||
+      (item.title as string) ||
+      (item.name as string) ||
+      (item.externalUrl as string) ||
+      (item.url as string);
+
+    if (rawLabel && typeof rawLabel === "string" && rawLabel.trim() !== "") {
+      const typeBadge = item.inputType || item.type;
+      return typeBadge && typeof typeBadge === "string"
+        ? `${rawLabel} (${typeBadge})`
+        : rawLabel;
     }
 
     const fieldsTyped = (field as Field & { fields?: Field[] }).fields || [];
@@ -428,16 +484,37 @@ export function ArrayLayout({
     );
   }
 
+  const allExpanded = items.length > 0 && openIndices.size === items.length;
+
   return (
     <div className="kyro-form-field">
-      <label className="kyro-form-label">{field.label || field.name}</label>
+      {/* Header with Title, Count Badge, and Expand/Collapse All */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <label className="kyro-form-label !mb-0">{field.label || field.name}</label>
+          <span className="text-[11px] px-2 py-0.5 rounded-full font-medium bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] border border-[var(--kyro-border)]">
+            {items.length} {items.length === 1 ? "item" : "items"}
+          </span>
+        </div>
+
+        {!compact && items.length > 1 && (
+          <button
+            type="button"
+            onClick={allExpanded ? collapseAll : expandAll}
+            className="text-[11px] font-medium text-[var(--kyro-text-muted)] hover:text-[var(--kyro-primary)] transition-colors px-2 py-0.5 rounded hover:bg-[var(--kyro-surface-accent)]"
+          >
+            {allExpanded ? "Collapse all" : "Expand all"}
+          </button>
+        )}
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         {compact ? (
-          <div className="kyro-form-array kyro-form-array--compact border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/10 rounded-lg p-3">
+          <div className="kyro-form-array kyro-form-array--compact border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/10 rounded-xl p-3">
             <SortableContext
               items={itemIds}
               strategy={verticalListSortingStrategy}
@@ -448,7 +525,7 @@ export function ArrayLayout({
                   id={item.id as string || item._key as string || `idx-${index}`}
                   index={index}
                   isOpen={false}
-                  setOpenIndex={() => {}}
+                  onToggle={() => { }}
                   item={item}
                   field={field}
                   renderField={renderField}
@@ -466,7 +543,7 @@ export function ArrayLayout({
             </SortableContext>
             <button
               type="button"
-              className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-md text-xs font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
+              className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
               disabled={disabled}
               onClick={() => onChange([...items, { id: Math.random().toString(36).substr(2, 9) }])}
             >
@@ -474,46 +551,53 @@ export function ArrayLayout({
             </button>
           </div>
         ) : (
-          <div className="kyro-form-array border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/30 rounded-md p-3 space-y-4">
+          <div className="kyro-form-array border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/20 rounded-lg p-3 space-y-3">
             <SortableContext
               items={itemIds}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
-                {(items as Record<string, unknown>[]).map((item, index) => {
-                  const isOpen = openIndex === index;
-                  return (
-                    <SortableArrayItem
-                      key={item.id as string || item._key as string || index}
-                      id={item.id as string || item._key as string || `idx-${index}`}
-                      index={index}
-                      isOpen={isOpen}
-                      setOpenIndex={setOpenIndex}
-                      item={item}
-                      field={field}
-                      renderField={renderField}
-                      onChangeItem={(newItem) => {
-                        const newItems = [...items];
-                        newItems[index] = newItem;
-                        onChange(newItems);
-                      }}
-                      onRemove={() => onChange(items.filter((_: unknown, i: number) => i !== index))}
-                      disabled={disabled}
-                      compact={false}
-                      getItemLabel={getItemLabel}
-                    />
-                  );
-                })}
+                {items.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-[var(--kyro-text-muted)] italic">
+                    No items added yet. Click below to add an item.
+                  </div>
+                ) : (
+                  (items as Record<string, unknown>[]).map((item, index) => {
+                    const isOpen = openIndices.has(index);
+                    return (
+                      <SortableArrayItem
+                        key={item.id as string || item._key as string || index}
+                        id={item.id as string || item._key as string || `idx-${index}`}
+                        index={index}
+                        isOpen={isOpen}
+                        onToggle={() => toggleItemOpen(index)}
+                        item={item}
+                        field={field}
+                        renderField={renderField}
+                        onChangeItem={(newItem) => {
+                          const newItems = [...items];
+                          newItems[index] = newItem;
+                          onChange(newItems);
+                        }}
+                        onRemove={() => onChange(items.filter((_: unknown, i: number) => i !== index))}
+                        disabled={disabled}
+                        compact={false}
+                        getItemLabel={getItemLabel}
+                      />
+                    );
+                  })
+                )}
               </div>
             </SortableContext>
             <button
               type="button"
-              className="w-full py-3 border-2 border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] transition-all disabled:opacity-50"
+              className="w-full py-2.5 border-2 border-dashed border-[var(--kyro-border)] rounded-xl text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)] transition-all disabled:opacity-50"
               disabled={disabled}
               onClick={() => {
                 const newId = Math.random().toString(36).substr(2, 9);
+                const nextIndex = items.length;
                 onChange([...items, { id: newId }]);
-                setOpenIndex(items.length);
+                setOpenIndices((prev) => new Set(prev).add(nextIndex));
               }}
             >
               + Add Item

@@ -245,7 +245,7 @@ export function mountSystemRoutes(
 
       try {
         const orConditions: Record<string, any>[] = searchableFields.map((field) => ({
-          [field]: { like: `%${query}%` }
+          [field]: { contains: query }
         }));
 
         const searchResult = await db.find({
@@ -260,8 +260,34 @@ export function mountSystemRoutes(
         for (const doc of searchResult.docs as any[]) {
           const titleField =
             collection.admin?.useAsTitle ||
-            searchableFields.find((f) => f === "title" || f === "name" || f === "heading" || f === "slug");
-          const title = titleField ? (resolveDocField(collection.fields, doc, titleField) ?? doc.id) : doc.id;
+            searchableFields.find(
+              (f) =>
+                f === "title" ||
+                f === "name" ||
+                f === "label" ||
+                f === "heading" ||
+                f === "email" ||
+                f === "fullName" ||
+                f === "username" ||
+                f === "slug" ||
+                f === "filename"
+            );
+          let title = titleField ? resolveDocField(collection.fields, doc, titleField) : null;
+          if (!title || title === doc.id || /^[0-9a-fA-F-]{20,}$/.test(String(title))) {
+            const fallback =
+              doc.name ||
+              doc.label ||
+              doc.title ||
+              doc.email ||
+              doc.fullName ||
+              doc.username ||
+              doc.heading ||
+              doc.slug ||
+              doc.filename ||
+              title ||
+              doc.id;
+            title = fallback;
+          }
 
           results.push({
             collection: collection.slug,

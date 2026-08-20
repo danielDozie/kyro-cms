@@ -938,7 +938,7 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
   mountGlobalRoutes(app, options, authMw);
   // Centralized error handling
   app.onError((err, c) => {
-    const status = (err as any)?.statusCode || (err as any)?.status || 500;
+    const status = Number((err as any)?.statusCode || (err as any)?.status || 500);
     if (status >= 500) {
       console.error(`[API Error] ${c.req.method} ${c.req.path}:`, err);
     }

@@ -39,116 +39,25 @@ const builtinStoragePlugins: KyroPlugin[] = [
   cloudinaryStoragePlugin,
 ];
 
+export {
+  FIELD_DEFINITION_KEYS,
+  isFieldOverrideDefinition,
+  flattenFieldOverrides,
+  updateFieldByPath,
+  applyBlocksOverrides,
+  applyTabsOverrides,
+  applyCollectionOverrides,
+  applyGlobalOverrides,
+} from "./utils/schemaOverrides.js";
+
+import {
+  applyCollectionOverrides,
+  applyGlobalOverrides,
+} from "./utils/schemaOverrides.js";
+
 // ============================================================================
 // Kyro Instance
 // ============================================================================
-
-function updateFieldByPath(
-  fields: any[],
-  path: string,
-  updates: Record<string, any>,
-): boolean {
-  const parts = path.split(".");
-  if (parts.length === 0) return false;
-
-  const currentPart = parts[0];
-  const remainingPath = parts.slice(1).join(".");
-
-  for (const field of fields) {
-    if (field.name === currentPart) {
-      if (remainingPath) {
-        if (field.fields && Array.isArray(field.fields)) {
-          return updateFieldByPath(field.fields, remainingPath, updates);
-        }
-
-        if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
-          for (const tab of field.tabs) {
-            if (tab.fields && Array.isArray(tab.fields)) {
-              if (updateFieldByPath(tab.fields, remainingPath, updates)) {
-                return true;
-              }
-            }
-          }
-          return false;
-        }
-
-        if (field.type === "blocks" && field.blocks && Array.isArray(field.blocks)) {
-          const blockSlug = remainingPath.split(".")[0];
-          const restOfPath = remainingPath.split(".").slice(1).join(".");
-          if (!restOfPath) return false;
-
-          for (const block of field.blocks) {
-            if (block.slug === blockSlug && block.fields && Array.isArray(block.fields)) {
-              return updateFieldByPath(block.fields, restOfPath, updates);
-            }
-          }
-          return false;
-        }
-
-        if (field.type === "array" && field.fields && Array.isArray(field.fields)) {
-          return updateFieldByPath(field.fields, remainingPath, updates);
-        }
-        return false;
-      } else {
-        // Target field found! Apply updates in-place.
-        Object.assign(field, updates);
-        return true;
-      }
-    }
-
-    // Check flat structural wrappers (unnamed tabs, rows, collapsibles) in the same pass
-    const isFlatStructuralField =
-      !field.name ||
-      field.type === "tabs" ||
-      field.type === "row" ||
-      field.type === "collapsible";
-
-    if (isFlatStructuralField) {
-      if (field.fields && Array.isArray(field.fields)) {
-        if (updateFieldByPath(field.fields, path, updates)) return true;
-      }
-      if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
-        for (const tab of field.tabs) {
-          if (tab.fields && Array.isArray(tab.fields)) {
-            if (updateFieldByPath(tab.fields, path, updates)) return true;
-          }
-        }
-      }
-    }
-  }
-
-  // Target was not found in existing fields; if terminal, append it
-  if (!remainingPath) {
-    fields.push({
-      name: currentPart,
-      ...updates,
-    });
-    return true;
-  }
-
-  return false;
-}
-
-export function applyCollectionOverrides(
-  collections: CollectionConfig[],
-  overrides?: Record<string, any>,
-): void {
-  if (!overrides) return;
-  for (const col of collections) {
-    const override = overrides[col.slug];
-    if (override) {
-      const { fields: fieldOverrides, ...adminOverrides } = override;
-      col.admin = { ...col.admin, ...adminOverrides };
-
-      // Apply field-level overrides
-      if (fieldOverrides && col.fields && Array.isArray(col.fields)) {
-        for (const [fieldPath, fieldUpdates] of Object.entries(fieldOverrides)) {
-          updateFieldByPath(col.fields, fieldPath, fieldUpdates as any);
-        }
-      }
-    }
-  }
-}
 
 export class Kyro {
   public registry: Registry;
@@ -183,9 +92,12 @@ export class Kyro {
       }
     }
 
-    // Apply collection overrides to collections before registering them
+    // Apply collection and global overrides before registering them
     if (config.collections && config.admin?.collectionOverrides) {
       applyCollectionOverrides(config.collections, config.admin.collectionOverrides);
+    }
+    if (config.globals && config.admin?.globalOverrides) {
+      applyGlobalOverrides(config.globals, config.admin.globalOverrides);
     }
 
     // Register collections

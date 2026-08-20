@@ -77,10 +77,9 @@ export function PluginsManager() {
         <PageHeader
           title={t("tooltips.plugins", { defaultValue: "Plugins" })}
           description="Extend Kyro CMS with modular features and integrations."
-          icon={Blocks}
         />
         <div className="flex items-center justify-center p-12">
-          <RefreshCw className="w-6 h-6 animate-spin text-[var(--kyro-text-secondary)] opacity-40" />
+          <div className="w-6 h-6 border-2 border-[var(--kyro-primary)] border-t-transparent rounded-full animate-spin text-[var(--kyro-text-secondary)] opacity-40" />
         </div>
       </div>
     );
@@ -91,12 +90,10 @@ export function PluginsManager() {
       <PageHeader
         title={t("tooltips.plugins", { defaultValue: "Plugins" })}
         description="Extend Kyro CMS with modular features and integrations."
-        icon={Blocks}
         actions={[
           {
             label: "Marketplace",
             onClick: () => (navigate("/admin/marketplace")),
-            icon: Plus,
           },
         ]}
       />

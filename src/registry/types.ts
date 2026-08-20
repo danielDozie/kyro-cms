@@ -27,16 +27,40 @@ export interface AdminConfig {
   layout?: "split" | "single";
 }
 
-/**
- * Field overrides allow modifying specific field properties by path.
- * Path uses dot notation: "fieldName" or "groupField.arrayField.targetField"
- * Commonly used to extend relationship fields with additional collections.
- */
 export interface FieldOverrides {
-  [fieldPath: string]: {
-    relationTo?: string | string[];
-    [key: string]: any;
+  [fieldPath: string]: any;
+}
+
+export interface CollectionOverrideConfig extends Partial<AdminConfig> {
+  label?: string;
+  singularLabel?: string;
+  labelPlural?: string;
+  labels?: { singular?: string; plural?: string };
+  hidden?: boolean;
+  timestamps?: boolean;
+  versions?: {
+    drafts?: boolean;
+    maxPerDoc?: number;
+    autosave?: boolean;
   };
+  seo?: boolean | Record<string, any>;
+  access?: CollectionAccess;
+  hooks?: CollectionHooks;
+  fields?: FieldOverrides;
+  blocks?: Record<string, any> | any[];
+  tabs?: Record<string, any> | any[];
+  [key: string]: any;
+}
+
+export interface GlobalOverrideConfig extends Partial<AdminConfig> {
+  label?: string;
+  hidden?: boolean;
+  access?: GlobalAccess;
+  hooks?: GlobalHooks;
+  fields?: FieldOverrides;
+  blocks?: Record<string, any> | any[];
+  tabs?: Record<string, any> | any[];
+  [key: string]: any;
 }
 
 export interface UploadConfig {
@@ -48,7 +72,7 @@ export interface UploadConfig {
   crop?: boolean;
   focalPoint?: boolean;
   formatOptions?: {
-    format: "webp" | "png" | "jpg";
+    format: "webp" | "png" | "jpg" | "avif";
     options?: Record<string, unknown>;
   };
   resizeOptions?: Record<string, any>;
@@ -62,7 +86,7 @@ export interface ImageSize {
   crop?: string;
   position?: string;
   formatOptions?: {
-    format: "webp" | "png" | "jpg";
+    format: "webp" | "png" | "jpg" | "avif";
   };
   generateImageName?: (doc: any) => string;
 }
@@ -354,17 +378,17 @@ export interface KyroConfig {
   storage?: StorageProvider;
   plugins?: import("../plugins/index.js").KyroPlugin[];
   auth?:
-    | boolean
-    | {
-        secret?: string;
-        tokenExpiration?: number;
-        cookie?: {
-          secure?: boolean;
-          sameSite?: "strict" | "lax" | "none";
-          domain?: string;
-        };
-        checkSession?: boolean; // NEW - control session checking
-      };
+  | boolean
+  | {
+    secret?: string;
+    tokenExpiration?: number;
+    cookie?: {
+      secure?: boolean;
+      sameSite?: "strict" | "lax" | "none";
+      domain?: string;
+    };
+    checkSession?: boolean; // NEW - control session checking
+  };
   authAdapter?: any; // NEW - pass auth adapter directly
   cors?: {
     origins?: string[];
@@ -381,10 +405,8 @@ export interface KyroConfig {
     disable?: boolean;
     indexRoute?: string;
     components?: Record<string, any>;
-    collectionOverrides?: Record<
-      string,
-      Partial<AdminConfig> & { fields?: FieldOverrides }
-    >;
+    collectionOverrides?: Record<string, CollectionOverrideConfig>;
+    globalOverrides?: Record<string, GlobalOverrideConfig>;
   };
   upload?: {
     limits?: {

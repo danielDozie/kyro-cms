@@ -1,4 +1,9 @@
-import type { CollectionConfig, GlobalConfig } from "@kyro-cms/core/client";
+import {
+  type CollectionConfig,
+  type GlobalConfig,
+  applyCollectionOverrides,
+  applyGlobalOverrides,
+} from "@kyro-cms/core/client";
 import type { AdminConfig } from "./core-types";
 import {
   blogCollections,
@@ -11,6 +16,7 @@ import {
   allGlobalSettings,
   coreGlobalSettings,
 } from "@kyro-cms/core/templates";
+
 import { projectConfig } from "virtual:kyro-plugins";
 type ConfigCollectionInput =
   | CollectionConfig[]
@@ -76,127 +82,29 @@ const defaultCollectionIcons: Record<string, string> = {
   "form-entries": "Inbox",
 };
 
-/**
- * Recursively find and update a field by its dot-notation path.
- * Example: "menu.menu_item.internal_target" navigates through nested field structures.
- */
-function updateFieldByPath(
-  fields: any[],
-  path: string,
-  updates: Record<string, any>,
-): boolean {
-  const parts = path.split(".");
-  if (parts.length === 0) return false;
 
-  const currentPart = parts[0];
-  const remainingPath = parts.slice(1).join(".");
-
-  for (const field of fields) {
-    if (field.name === currentPart) {
-      if (remainingPath) {
-        // Continue traversing nested fields
-        if (field.fields && Array.isArray(field.fields)) {
-          return updateFieldByPath(field.fields, remainingPath, updates);
-        }
-
-        // For tabs fields, traverse into all tabs
-        if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
-          for (const tab of field.tabs) {
-            if (tab.fields && Array.isArray(tab.fields)) {
-              if (updateFieldByPath(tab.fields, remainingPath, updates)) {
-                return true;
-              }
-            }
-          }
-          return false;
-        }
-
-        // For blocks fields, the next path segment is the block slug
-        if (field.type === "blocks" && field.blocks && Array.isArray(field.blocks)) {
-          const blockSlug = remainingPath.split(".")[0];
-          const restOfPath = remainingPath.split(".").slice(1).join(".");
-          if (!restOfPath) return false;
-
-          for (const block of field.blocks) {
-            if (block.slug === blockSlug && block.fields && Array.isArray(block.fields)) {
-              return updateFieldByPath(block.fields, restOfPath, updates);
-            }
-          }
-          return false;
-        }
-
-        // For array fields, look in the nested fields
-        if (field.type === "array" && field.fields && Array.isArray(field.fields)) {
-          return updateFieldByPath(field.fields, remainingPath, updates);
-        }
-        return false;
-      } else {
-        // Found the target field, apply updates
-        Object.assign(field, updates);
-        return true;
-      }
-    }
-  }
-
-  // Pass through structural flat wrappers (unnamed tabs, rows, collapsibles)
-  for (const field of fields) {
-    const isFlatStructuralField =
-      !field.name ||
-      field.type === "tabs" ||
-      field.type === "row" ||
-      field.type === "collapsible";
-
-    if (isFlatStructuralField) {
-      if (field.fields && Array.isArray(field.fields)) {
-        if (updateFieldByPath(field.fields, path, updates)) return true;
-      }
-      if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
-        for (const tab of field.tabs) {
-          if (tab.fields && Array.isArray(tab.fields)) {
-            if (updateFieldByPath(tab.fields, path, updates)) return true;
-          }
-        }
-      }
-    }
-  }
-
-  // Target field does not exist in this container.
-  // If there is no remaining path, this is the terminal target container — append the new field here!
-  if (!remainingPath) {
-    fields.push({
-      name: currentPart,
-      ...updates,
-    });
-    return true;
-  }
-
-  return false;
-}
 
 function applyCollectionAdminOverrides(
   collections: Record<string, CollectionConfig>,
-  overrides?: Record<
-    string,
-    Partial<AdminConfig> & { fields?: Record<string, any> }
-  >,
+  overrides?: Record<string, any>,
 ): void {
   for (const [slug, col] of Object.entries(collections)) {
     const defaultIcon = defaultCollectionIcons[slug];
-    const override = overrides?.[slug];
     if (defaultIcon && !col.admin?.icon) {
       col.admin = { ...col.admin, icon: defaultIcon };
     }
-    if (override) {
-      const { fields: fieldOverrides, ...adminOverrides } = override;
-      col.admin = { ...col.admin, ...adminOverrides };
+  }
+  if (overrides) {
+    applyCollectionOverrides(Object.values(collections), overrides);
+  }
+}
 
-      // Apply field-level overrides
-      if (fieldOverrides && col.fields && Array.isArray(col.fields)) {
-        for (const [fieldPath, fieldUpdates] of Object.entries(fieldOverrides)) {
-          updateFieldByPath(col.fields, fieldPath, fieldUpdates);
-        }
-      }
-    }
+function applyGlobalAdminOverrides(
+  globals: Record<string, GlobalConfig>,
+  overrides?: Record<string, any>,
+): void {
+  if (overrides) {
+    applyGlobalOverrides(Object.values(globals), overrides);
   }
 }
 
@@ -274,6 +182,7 @@ const projectCfg = loadProjectConfig() || { collections: [], globals: [] };
 
 const rawConfig = createProjectAdminConfig(projectCfg);
 applyCollectionAdminOverrides(rawConfig.collections, (projectCfg.collectionOverrides as Record<string, any>) || {});
+applyGlobalAdminOverrides(rawConfig.globals, (projectCfg.globalOverrides as Record<string, any>) || {});
 
 export const adminConfig = rawConfig;
 export const collections = adminConfig.collections;

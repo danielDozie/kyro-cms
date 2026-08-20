@@ -60,23 +60,20 @@ export function ApiKeysManager() {
       <PageHeader
         title={t("tooltips.apiKeys", { defaultValue: "API Keys" })}
         description="Programmatic tokens for secure system integration and REST API access."
-        icon={Key}
         actions={
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setShowHelpModal(true)}
-              className="px-4 py-2.5 bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] rounded-xl font-bold text-xs border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] hover:text-[var(--kyro-text-primary)] transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] rounded-xl font-bold text-xs border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] hover:text-[var(--kyro-text-primary)] transition-colors"
             >
-              <Info className="w-4 h-4" />
               <span>Integration Guide</span>
             </button>
             <button
               type="button"
               onClick={() => { setNewKeyName(""); setCreateError(""); setIsCreateModalOpen(true); }}
-              className="px-5 py-2.5 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-xs hover:opacity-95 transition-opacity flex items-center gap-2"
+              className="px-5 py-2.5 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-xs hover:opacity-95 transition-opacity"
             >
-              <Plus className="w-4 h-4" />
               <span>Create Access Key</span>
             </button>
           </div>

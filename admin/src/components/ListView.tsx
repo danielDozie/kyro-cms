@@ -275,8 +275,29 @@ function ListViewInner({
       });
 
       const where: Record<string, any> = {};
-      if (debouncedSearch && titleField) {
-        where[titleField] = { contains: debouncedSearch };
+      if (debouncedSearch && debouncedSearch.trim()) {
+        const cleanTerm = debouncedSearch.trim();
+        params.append("search", cleanTerm);
+        params.append("q", cleanTerm);
+
+        const searchableCols = allFields
+          .filter(
+            (f) =>
+              f.name &&
+              (f.type === "text" ||
+                f.type === "email" ||
+                f.type === "textarea" ||
+                f.type === "select" ||
+                f.name === titleField)
+          )
+          .map((f) => f.name)
+          .slice(0, 8);
+
+        if (searchableCols.length > 0) {
+          where.OR = searchableCols.map((col) => ({ [col]: { contains: cleanTerm } }));
+        } else if (titleField) {
+          where[titleField] = { contains: cleanTerm };
+        }
       }
       if (Object.keys(where).length > 0) {
         params.append("where", JSON.stringify(where));

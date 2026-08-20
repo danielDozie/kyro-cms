@@ -9654,6 +9654,7 @@
     }
   ],
   "collectionOverrides": {},
+  "globalOverrides": {},
   "plugins": [
     {
       "name": "ai-assistant"

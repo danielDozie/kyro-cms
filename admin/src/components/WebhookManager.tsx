@@ -23,6 +23,7 @@ import {
 import { useUIStore, toast } from "../lib/stores";
 import { Modal, ModalContent, ModalActions } from "./ui/Modal";
 import { Badge } from "./ui/Badge";
+import { SkeletonGrid } from "./ui/Shimmer";
 import { PageHeader } from "./ui/PageHeader";
 import { useTranslation } from "react-i18next";
 
@@ -268,7 +269,6 @@ export function WebhookManager() {
       <PageHeader
         title={t("tooltips.webhooks", { defaultValue: "Webhooks" })}
         description="Get notified when your content changes."
-        icon={Webhook}
         actions={[
           {
             label: "New webhook",
@@ -276,12 +276,10 @@ export function WebhookManager() {
               resetCreateModal();
               setShowCreateModal(true);
             },
-            icon: Plus,
           },
           {
             label: "Guide",
             onClick: () => setShowHelpModal(true),
-            icon: Info,
             variant: "outline"
           }
         ]}
@@ -290,9 +288,6 @@ export function WebhookManager() {
       {/* Info Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-6">
         <div className="flex flex-col md:flex-row items-center gap-6 relative z-10">
-          <div className="p-3 bg-[var(--kyro-primary)]/10 rounded-xl">
-            <Zap className="w-6 h-6 text-[var(--kyro-primary)]" />
-          </div>
           <div className="flex-1 text-center md:text-left">
             <p className="text-sm text-[var(--kyro-text-secondary)] opacity-70 max-w-2xl leading-relaxed">
               Receive instant HTTP notifications when events happen in your CMS.
@@ -315,9 +310,7 @@ export function WebhookManager() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center p-20 opacity-50 text-sm text-[var(--kyro-text-secondary)]">
-            Loading webhooks...
-          </div>
+          <SkeletonGrid count={2} />
         ) : webhooks.length === 0 ? (
           <div className="p-16 text-center rounded-2xl border border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface)]/50">
             <div className="w-16 h-16 mx-auto mb-5 bg-[var(--kyro-primary)]/10 rounded-2xl flex items-center justify-center">

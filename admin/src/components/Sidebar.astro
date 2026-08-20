@@ -334,20 +334,17 @@ function isActive(item: NavItem): boolean {
         if (isCollapsed) {
           section.setAttribute("data-collapsed", "true");
           if (itemsContainer) itemsContainer.classList.add("hidden");
-        }
-
-        const activeItem = section.querySelector(".active-nav-item");
-        if (activeItem && isCollapsed) {
+        } else {
           section.removeAttribute("data-collapsed");
           if (itemsContainer) itemsContainer.classList.remove("hidden");
-          localStorage.setItem(`kyro-sidebar-collapsed-${label}`, "false");
         }
 
         // Remove old listeners to prevent duplicates
         const newToggleBtn = toggleBtn?.cloneNode(true);
         if (toggleBtn && newToggleBtn && toggleBtn.parentNode) {
           toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
-          newToggleBtn.addEventListener("click", () => {
+          newToggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
             const currentlyCollapsed = section.getAttribute("data-collapsed") === "true";
             if (currentlyCollapsed) {
               section.removeAttribute("data-collapsed");

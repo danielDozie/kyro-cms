@@ -20,7 +20,7 @@ Kyro turns a single TypeScript config into a full CMS backend for Astro, includi
 
 - **REST, GraphQL, tRPC, and WebSocket APIs** from the same collection schema
 - **Local SQLite development** plus production-ready PostgreSQL and MongoDB adapters
-- **Auto-generated admin UI** with forms, media, auth, and drafts
+- **Auto-generated admin UI** with forms, media, auth, live preview, and draft workflows
 - **End-to-end type safety** powered by Zod and TypeScript
 - **Plugin-friendly architecture** for custom hooks, fields, and dashboard extensions
 

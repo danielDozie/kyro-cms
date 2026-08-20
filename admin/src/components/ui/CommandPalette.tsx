@@ -205,16 +205,35 @@ export function CommandPalette({
     },
   ].filter((a) => a.visible);
 
-  const docResultItems: { id: string; label: string; type: string; collection: string; label2?: string; docId: string; icon: typeof File; doc?: Record<string, unknown> }[] = searchResults.map((result, idx) => ({
-    id: `doc-${result.collection}-${result.id}`,
-    label: result.title,
-    type: "document",
-    collection: result.collection,
-    label2: result.label,
-    docId: result.id,
-    icon: File,
-    doc: result.doc,
-  }));
+  const docResultItems: { id: string; label: string; type: string; collection: string; label2?: string; docId: string; icon: typeof File; doc?: Record<string, unknown> }[] = searchResults.map((result, idx) => {
+    let displayTitle = result.title;
+    if (!displayTitle || displayTitle === result.id || /^[0-9a-fA-F-]{20,}$/.test(displayTitle)) {
+      if (result.doc) {
+        displayTitle =
+          (result.doc.name as string) ||
+          (result.doc.label as string) ||
+          (result.doc.title as string) ||
+          (result.doc.email as string) ||
+          (result.doc.fullName as string) ||
+          (result.doc.username as string) ||
+          (result.doc.heading as string) ||
+          (result.doc.slug as string) ||
+          (result.doc.filename as string) ||
+          result.title ||
+          "Untitled";
+      }
+    }
+    return {
+      id: `doc-${result.collection}-${result.id}`,
+      label: displayTitle || "Untitled",
+      type: "document",
+      collection: result.collection,
+      label2: result.label,
+      docId: result.id,
+      icon: File,
+      doc: result.doc,
+    };
+  });
 
   const allItems =
     query.length >= 2
@@ -288,7 +307,7 @@ export function CommandPalette({
       />
 
       {/* Palette Body */}
-      <div className="relative w-full max-w-2xl bg-[var(--kyro-surface)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300 ring-1 ring-white/10 border border-white/5">
+      <div className="relative w-full max-w-2xl bg-[var(--kyro-surface)] rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300 ring-1 ring-white/10 border border-white/5">
         <div className="flex items-center px-6 py-5 border-b border-[var(--kyro-border)]">
           {loading ? (
             <Loader2 className="w-5 h-5 text-[var(--kyro-text-secondary)] opacity-50 mr-4 animate-spin" />
@@ -310,10 +329,10 @@ export function CommandPalette({
           </div>
         </div>
 
-        <div className="max-h-[400px] overflow-y-auto py-4">
+        <div className="max-h-[400px] overflow-y-auto py-3">
           {filteredItems.length > 0 ? (
-            <div className="space-y-1 px-4">
-              <p className="px-4 text-[10px] font-bold  tracking-[0.2em] opacity-40 mb-4">
+            <div className="space-y-1 px-3">
+              <p className="px-3 text-[10px] font-bold tracking-[0.2em] opacity-40 mb-3">
                 {getSectionLabel()}
               </p>
               {filteredItems.map((item, index) => (
@@ -321,14 +340,14 @@ export function CommandPalette({
                   key={item.id}
                   onClick={() => handleSelect(item)}
                   onMouseEnter={() => setSelectedIndex(index)}
-                  className={`flex items-center justify-between px-4 py-4 rounded-2xl cursor-pointer ${index === selectedIndex
-                    ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] shadow-xl shadow-[var(--kyro-primary)]"
+                  className={`flex items-center justify-between px-3.5 py-3 rounded-lg cursor-pointer transition-colors ${index === selectedIndex
+                    ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] shadow-md shadow-[var(--kyro-primary)]/20"
                     : "hover:bg-[var(--kyro-bg-secondary)] text-[var(--kyro-text-secondary)]"
                     }`}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div
-                      className={`p-2 rounded-xl ${index === selectedIndex ? "bg-white/20" : "bg-[var(--kyro-bg-secondary)] border border-[var(--kyro-border)]"}`}
+                      className={`p-1.5 rounded-lg ${index === selectedIndex ? "bg-white/20" : "bg-[var(--kyro-bg-secondary)] border border-[var(--kyro-border)]"}`}
                     >
                       <item.icon className="w-4 h-4" />
                     </div>

@@ -1,7 +1,7 @@
 import { autoInstall } from "../../utils/auto-install.js";
 import { AbstractBaseAdapter } from '../base.js';
 import { sanitizeDoc } from "../../utils/sanitize.js";
-import { sql, eq, and, or, desc, ne, inArray, like, gt, gte, lt, lte } from 'drizzle-orm';
+import { sql, eq, and, or, desc, ne, inArray, like, ilike, gt, gte, lt, lte } from 'drizzle-orm';
 import {
   pgTable,
   uuid,
@@ -1015,7 +1015,10 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       conditions.push(eq(table.tenantId, tenantId));
     }
 
-    for (let [key, value] of Object.entries(where)) {
+    for (let [rawKey, value] of Object.entries(where)) {
+      const key = rawKey;
+      const upperKey = key.toUpperCase();
+
       if (key === 'id' && this.dialect === 'postgres') {
         if (typeof value === 'string') {
           value = formatUuid(value);
@@ -1028,7 +1031,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
           }
         }
       }
-      if (key === 'AND' && Array.isArray(value)) {
+      if (upperKey === 'AND' && Array.isArray(value)) {
         const andConditions = value
           .map((sub: any) => this.buildWhereClause(sub, config, table))
           .flat()
@@ -1036,7 +1039,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         if (andConditions.length > 0) {
           conditions.push(and(...andConditions));
         }
-      } else if (key === 'OR' && Array.isArray(value)) {
+      } else if (upperKey === 'OR' && Array.isArray(value)) {
         const orConditions = value
           .map((sub: any) => this.buildWhereClause(sub, config, table))
           .flat()
@@ -1045,20 +1048,48 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
           conditions.push(or(...orConditions));
         }
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        const col = table[key];
+        const col =
+          table[key] ||
+          table[key.replace(/-/g, "_")] ||
+          table[key.replace(/([A-Z])/g, "_$1").toLowerCase()] ||
+          (key === "created_at" ? table.createdAt : undefined) ||
+          (key === "createdAt" ? table.created_at : undefined) ||
+          (key === "updated_at" ? table.updatedAt : undefined) ||
+          (key === "updatedAt" ? table.updated_at : undefined);
         if (!col) continue;
 
         if (value.equals !== undefined) conditions.push(eq(col, value.equals));
         if (value.not_equals !== undefined) conditions.push(ne(col, value.not_equals));
-        if (value.in && Array.isArray(value.in)) conditions.push(inArray(col, value.in));
-        if (value.like !== undefined) conditions.push(like(col, value.like));
-        if (value.contains !== undefined) conditions.push(like(col, `%${value.contains}%`));
+        if (value.in && Array.isArray(value.in)) {
+          if (value.in.length === 0) {
+            conditions.push(sql`1 = 0`);
+          } else {
+            conditions.push(inArray(col, value.in));
+          }
+        }
+        if (value.like !== undefined) {
+          if (this.dialect === 'postgres') {
+            conditions.push(ilike(col, value.like));
+          } else {
+            conditions.push(like(col, value.like));
+          }
+        }
+        if (value.contains !== undefined) {
+          if (this.dialect === 'postgres') {
+            conditions.push(ilike(col, `%${value.contains}%`));
+          } else {
+            conditions.push(like(col, `%${value.contains}%`));
+          }
+        }
         if (value.greater_than !== undefined) conditions.push(gt(col, value.greater_than));
         if (value.greater_than_equal !== undefined) conditions.push(gte(col, value.greater_than_equal));
         if (value.less_than !== undefined) conditions.push(lt(col, value.less_than));
         if (value.less_than_equal !== undefined) conditions.push(lte(col, value.less_than_equal));
       } else {
-        const col = table[key];
+        const col =
+          table[key] ||
+          table[key.replace(/-/g, "_")] ||
+          table[key.replace(/([A-Z])/g, "_$1").toLowerCase()];
         if (col) conditions.push(eq(col, value));
       }
     }

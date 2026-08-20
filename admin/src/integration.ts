@@ -115,6 +115,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
                 collections: serialize(cfg?.collections) || [],
                 globals: serialize(cfg?.globals) || [],
                 collectionOverrides: serialize(cfg?.admin?.collectionOverrides) || {},
+                globalOverrides: serialize(cfg?.admin?.globalOverrides) || {},
                 plugins: (cfg?.plugins || []).map((p: any) => ({
                   name: p.name,
                   adminEntry: p.adminEntry

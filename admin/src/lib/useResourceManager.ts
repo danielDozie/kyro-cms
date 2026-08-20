@@ -18,6 +18,33 @@ export function useResourceManager<T extends { id: string }>(
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { confirm } = useUIStore();
 
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+    apiGet<any>(options.endpoint)
+      .then((response) => {
+        if (!mounted) return;
+        const data = Array.isArray(response) ? response : response.docs || [];
+        const transformed = options.transformLoad ? options.transformLoad(data) : data;
+        setItems(transformed);
+        options.onSuccess?.("load", transformed);
+      })
+      .catch((e: unknown) => {
+        if (!mounted) return;
+        const message = e instanceof Error ? e.message : "Failed to load resources";
+        setError(message);
+        options.onError?.("load", e as Error);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [options.endpoint, options.transformLoad]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -27,18 +54,14 @@ export function useResourceManager<T extends { id: string }>(
       const transformed = options.transformLoad ? options.transformLoad(data) : data;
       setItems(transformed);
       options.onSuccess?.("load", transformed);
-} catch (e: unknown) {
-       const message = e instanceof Error ? e.message : "Failed to load resources";
-       setError(message);
-       options.onError?.("load", e as Error);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to load resources";
+      setError(message);
+      options.onError?.("load", e as Error);
     } finally {
       setLoading(false);
     }
   }, [options.endpoint, options.transformLoad]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const remove = useCallback((id: string, resourceName = "item") => {
     confirm({
