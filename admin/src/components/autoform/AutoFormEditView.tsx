@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import { useState, useEffect } from "react";
 import type { CollectionConfig, GlobalConfig, Field } from "@kyro-cms/core/client";
 import { useAutoFormStore } from "../../lib/autoform-store";

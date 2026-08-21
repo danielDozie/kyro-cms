@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React from "react";
 import { SlidePanel } from "./ui/SlidePanel";
 import { Spinner } from "./ui/Spinner";

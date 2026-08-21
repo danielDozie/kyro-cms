@@ -1,3 +1,4 @@
+import "../../../lib/i18n";
 import React, { useState, useRef, useEffect } from "react";
 import { marked } from "marked";
 import { useAutoFormStore } from "../../../lib/autoform-store";

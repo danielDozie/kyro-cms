@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useMemo } from "react";
 import { Modal } from "./Modal";
 import * as LucideIcons from "lucide-react";

@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { useResourceManager } from "../lib/useResourceManager";

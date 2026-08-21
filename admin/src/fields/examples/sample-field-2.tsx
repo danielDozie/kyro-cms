@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React from "react";
 import type { FieldEditorProps } from "../types.ts";
 import { registerField } from "../registry.tsx";

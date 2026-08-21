@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import { pluginViews } from "../lib/virtual-kyro-plugins";
 import React, { useState, useEffect, Suspense } from "react";
 import {

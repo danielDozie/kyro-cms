@@ -118,7 +118,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
             Rate limiting, audit logs, and account lockout settings
           </p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
           {canSeeAudit && (
             <a
               href={`${adminPath}/audit`}

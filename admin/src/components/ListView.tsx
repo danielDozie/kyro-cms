@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import { Search, Filter, Columns3, X, Trash2, Archive, ChevronUp, Edit2 } from "./ui/icons";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Spinner } from "./ui/Spinner";
@@ -14,7 +15,6 @@ import { Badge } from "./ui/Badge";
 import { Pagination } from "./ui/Pagination";
 import { useTranslation } from "react-i18next";
 import { useIsMounted } from "../hooks/useIsMounted";
-import "../lib/i18n";
 
 import type { CollectionConfig, Field } from "@kyro-cms/core";
 import { resolveFieldValue } from "../lib/resolve-field-value";

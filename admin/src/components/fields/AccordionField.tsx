@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useCallback } from "react";
 import { ChevronDown, ChevronUp, Plus, X } from "../ui/icons";
 import { useTranslation } from "react-i18next";

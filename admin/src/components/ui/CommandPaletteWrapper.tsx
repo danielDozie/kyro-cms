@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { CommandPalette } from "./CommandPalette";
 import { ConfirmModal } from "./Modal";

@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import { Search } from "./ui/icons";
 import React, { useState, useEffect, useCallback } from "react";
 import { fetchWithAuth } from "../lib/api";

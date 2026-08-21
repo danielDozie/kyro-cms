@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React from "react";
 import { ChevronRight, X } from "../ui/icons";
 import { useBlockActions } from "../fields/extensions/blocksStore";

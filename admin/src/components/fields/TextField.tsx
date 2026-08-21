@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import type { TextField as TextFieldType } from "@kyro-cms/core/client";
 import FieldLayout from "./FieldLayout";
 import { useAutoFormStore } from "../../lib/autoform-store";

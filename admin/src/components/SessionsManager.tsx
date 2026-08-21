@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { apiGet, apiDelete } from "../lib/api";
 import { PageHeader } from "./ui/PageHeader";

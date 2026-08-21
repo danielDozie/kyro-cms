@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/ai",
-  "version": "0.12.70",
+  "version": "0.12.71",
   "description": "AI Plugins for Kyro CMS powered by Vercel AI SDK",
   "type": "module",
   "main": "./dist/index.js",
@@ -38,12 +38,12 @@
   "peerDependencies": {
     "@kyro-cms/admin": "workspace:*",
     "@kyro-cms/core": "workspace:*",
-    "react": "^18.0.0"
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@kyro-cms/admin": "workspace:*",
     "@kyro-cms/core": "workspace:*",
-    "@types/react": "^18.0.0",
+    "@types/react": "^19.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   },

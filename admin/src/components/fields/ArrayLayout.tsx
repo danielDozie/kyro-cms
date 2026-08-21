@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React from "react";
 import type { Field } from "@kyro-cms/core/client";
 import RelationshipField from "./RelationshipField";

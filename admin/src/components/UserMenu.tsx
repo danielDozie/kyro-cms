@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { Dropdown, DropdownItem, DropdownSeparator } from "./ui/Dropdown";
 import { User, Shield, Key, Webhook, Clock, FileText, ExternalLink, HelpCircle, LogOut, Terminal, Zap } from "./ui/icons";

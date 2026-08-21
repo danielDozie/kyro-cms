@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { apiGet, apiPatch } from "../lib/api";
 import { toast } from "../lib/stores";

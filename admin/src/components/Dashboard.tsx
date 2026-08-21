@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { LayoutDashboard, FileText, Image as ImageIcon, Users, Plus, ArrowUpRight, Activity, Clock as ClockIcon, ArrowRight } from "./ui/icons";
 import { useAuthStore } from "../lib/stores";

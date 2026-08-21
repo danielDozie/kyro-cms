@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { apiGet, apiPatch, apiPost, apiDelete } from "../lib/api";
 import type {
@@ -17,7 +18,6 @@ import { SplitButton } from "./ui/SplitButton";
 import { Lock, FileText, ChevronLeft, Save } from "lucide-react";
 import { navigate } from "../lib/navigate";
 import { useTranslation } from "react-i18next";
-import "../lib/i18n";
 import { adminPath } from "../lib/paths";
 import { resolveFieldValue } from "../lib/resolve-field-value";
 

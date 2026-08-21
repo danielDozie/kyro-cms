@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import { Search, Check, Server, Filter } from "./ui/icons";
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";

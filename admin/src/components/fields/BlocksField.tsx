@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useStore } from "zustand";
 import { BlocksContext, createBlocksStore, createNewBlock, type BlocksStoreApi, useBlockActions } from "./extensions/blocksStore";

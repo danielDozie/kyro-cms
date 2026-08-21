@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/astro",
-  "version": "0.12.70",
+  "version": "0.12.71",
   "description": "Astro 5+ integration, Content Layer loaders, Actions, Middleware, Dev Toolbar widget, and Zero-JS components for Kyro CMS",
   "type": "module",
   "main": "./dist/index.js",

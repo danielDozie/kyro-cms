@@ -20,6 +20,14 @@ Official Documentation: https://kyro-cms.com
 
 - **`npm run dev`**: Start the Astro & Kyro dev server
 - **`npm run build`**: Build for production
+- **`pnpm publish:packages`**: Publish packages to npm
+
+---
+
+## 📦 Versioning & Release Guidelines
+
+- **Targeted Version Bumps ONLY**: When updating versions, **only bump packages that have had active changes/modifications**. Never blanket-bump unchanged packages across the monorepo.
+- **Selective Documentation**: Only update `changelog.md` and `upgrade-guide.md` in `kyro-docs` for the specific packages/features modified.
 
 ---
 

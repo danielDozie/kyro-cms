@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { Search, Loader2, X } from "../ui/icons";
 import { apiGet, buildSearchQuery } from "../../lib/api";

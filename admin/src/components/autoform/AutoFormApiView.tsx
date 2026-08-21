@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React from "react";
 import { useAutoFormStore } from "../../lib/autoform-store";
 import { useTranslation } from "react-i18next";

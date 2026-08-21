@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import { useState, useEffect } from "react";
 import { apiGet, apiPatch, apiDelete } from "../../lib/api";
 import { useUIStore, useAuthStore, toast } from "../../lib/stores";

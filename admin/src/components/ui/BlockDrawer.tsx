@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { type ReactNode } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { SlidePanel } from "./SlidePanel";

@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import { useState, useRef, useEffect } from "react";
 import { IconSend, IconClock, IconUndo, IconCopy, IconEye, IconTrash2, IconMoreVertical, ClipboardPaste, ClipboardCopy } from "./ui/icons";
 import { DropdownItem, DropdownSeparator } from "./ui/Dropdown";

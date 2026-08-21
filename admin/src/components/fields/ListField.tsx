@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React from "react";
 import { Plus, GripVertical } from "../ui/icons";
 import {

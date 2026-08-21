@@ -219,6 +219,21 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
                 }
               },
               {
+                name: "kyro-i18n-auto-init",
+                enforce: "pre" as const,
+                transform(code: string, id: string) {
+                  if (
+                    (id.includes('@kyro-cms/admin') || id.includes('/admin/src/')) &&
+                    code.includes('useTranslation') &&
+                    !code.includes('/i18n') &&
+                    !id.endsWith('i18n.ts')
+                  ) {
+                    const i18nPath = path.resolve(new URL(".", import.meta.url).pathname, "./lib/i18n.ts");
+                    return `import "${i18nPath}";\n` + code;
+                  }
+                },
+              },
+              {
                 name: "kyro-admin-tsx-loader",
                 enforce: "pre" as const,
                 config(_config: any) {

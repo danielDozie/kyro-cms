@@ -32,7 +32,7 @@ function getPackageManager(): string {
   return 'npm';
 }
 
-const VERSION = '0.12.70';
+const VERSION = '0.12.71';
 
 async function main() {
   logger.intro('create-kyro', VERSION);

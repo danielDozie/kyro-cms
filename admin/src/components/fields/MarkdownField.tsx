@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import type { MarkdownField as MarkdownFieldType } from "@kyro-cms/core/client";
 import { useTranslation } from "react-i18next";

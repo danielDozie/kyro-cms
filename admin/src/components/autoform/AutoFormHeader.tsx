@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronRight, ExternalLink, Check } from "../ui/icons";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../ui/Dropdown";

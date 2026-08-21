@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUIStore, toast } from "../lib/stores";
 import { apiPath } from "../lib/paths";

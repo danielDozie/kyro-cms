@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { apiGet } from "../lib/api";
 import {

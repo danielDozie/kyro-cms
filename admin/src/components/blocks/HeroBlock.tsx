@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React from "react";
 import type { BlockData } from "@kyro-cms/core/client";
 import {

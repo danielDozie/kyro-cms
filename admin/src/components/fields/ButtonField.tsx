@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React from "react";
 import { ExternalLink } from "../ui/icons";
 import { useTranslation } from "react-i18next";

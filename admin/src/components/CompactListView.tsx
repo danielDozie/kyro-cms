@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import { Search, Plus, Archive, ChevronRight } from "./ui/icons";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Shimmer } from "./ui/Shimmer";
@@ -6,7 +7,6 @@ import { apiGet, withCacheBust } from "../lib/api";
 import { useAuthStore } from "../lib/stores";
 import { adminPath as ADMIN_BASE } from "../lib/paths";
 import { useTranslation } from "react-i18next";
-import "../lib/i18n";
 import type { CollectionConfig, Field } from "@kyro-cms/core";
 import { resolveFieldValue } from "../lib/resolve-field-value";
 import { useAutoFormStore } from "../lib/autoform-store";

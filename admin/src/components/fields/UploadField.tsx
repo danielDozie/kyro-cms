@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Image as ImageIcon, Film, FileText, Music, File, X, Loader2, Check } from "../ui/icons";

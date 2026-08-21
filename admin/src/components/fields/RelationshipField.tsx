@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Search, X, ChevronDown, Loader2, GripVertical } from "../ui/icons";
 import { apiGet, buildSearchQuery } from "../../lib/api";

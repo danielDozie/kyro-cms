@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useState } from "react";
 import { apiPost, apiPatch } from "../../lib/api";
 import { useTranslation } from "react-i18next";

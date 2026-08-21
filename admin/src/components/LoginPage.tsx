@@ -1,3 +1,4 @@
+import "../lib/i18n";
 import { useState, useEffect } from "react";
 import { apiGet, apiPost } from "../lib/api";
 import { ThemeProvider, type ThemeMode } from "./ThemeProvider";

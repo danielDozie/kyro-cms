@@ -1,3 +1,4 @@
+import "../../lib/i18n";
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useEditor, EditorContent } from "@tiptap/react";
