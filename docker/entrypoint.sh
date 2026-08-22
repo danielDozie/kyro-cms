@@ -9,7 +9,7 @@ echo "======================================================================"
 echo "⚡ Starting Kyro CMS Core Engine"
 echo "   Project:    ${KYRO_PROJECT_NAME:-Kyro Instance}"
 echo "   Project ID: ${KYRO_PROJECT_ID:-standalone}"
-echo "   Port:       ${PORT:-3000}"
+echo "   Port:       ${PORT:-4321}"
 echo "======================================================================"
 
 # 1. Wait for Database if DATABASE_URL is configured
@@ -39,5 +39,5 @@ if [ ! -f "/app/.initialized" ]; then
 fi
 
 # 4. Launch Kyro CMS Engine
-echo "✨ Kyro CMS Engine ready on 0.0.0.0:${PORT:-3000}"
+echo "✨ Kyro CMS Engine ready on 0.0.0.0:${PORT:-4321}"
 exec "$@"

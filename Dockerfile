@@ -3,12 +3,16 @@
 # Target: ghcr.io/kyro-cms/core:latest
 # ==============================================================================
 
-FROM node:22-alpine AS builder
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
-RUN apk add --no-cache libc6-compat curl bash
-# Pin to pnpm v9 — v10 made ERR_PNPM_IGNORED_BUILDS a fatal error for native
-# modules (esbuild, sharp, ssh2, etc.). v9 treats it as a warning only.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    build-essential \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN npm install -g pnpm@9
 
 COPY . .
@@ -16,10 +20,14 @@ RUN pnpm install --no-frozen-lockfile
 # Build root core engine and admin workspace dashboard
 RUN pnpm -r build || (pnpm build && pnpm --filter @kyro-cms/admin build) || true
 
-FROM node:22-alpine AS runner
+FROM node:22-bookworm-slim AS runner
 
 WORKDIR /app
-RUN apk add --no-cache libc6-compat curl bash postgresql-client
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
