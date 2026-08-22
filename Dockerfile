@@ -10,6 +10,15 @@ RUN apk add --no-cache libc6-compat curl bash
 RUN npm install -g pnpm@latest
 
 COPY . .
+# Approve native module build scripts required by pnpm v10+
+# (esbuild, sharp, ssh2, cpu-features, workerd require post-install compilation)
+RUN node -e " \
+  const fs = require('fs'); \
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); \
+  pkg.pnpm = pkg.pnpm || {}; \
+  pkg.pnpm.onlyBuiltDependencies = ['cpu-features','esbuild','sharp','ssh2','workerd']; \
+  fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2)); \
+"
 RUN pnpm install --no-frozen-lockfile
 # Build root core engine and admin workspace dashboard
 RUN pnpm -r build || (pnpm build && pnpm --filter @kyro-cms/admin build) || true
