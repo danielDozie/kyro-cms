@@ -187,6 +187,7 @@ const posts = await api["posts"].find.query({ page: 1, limit: 10 });
 - `docs/architecture.md` — how Kyro works under the hood
 - `docs/api.md` — API protocols and usage patterns
 - `docs/database.md` — supported adapters and configuration
+- [ROADMAP.md](file:///Users/macbook/Dev/Web/Astro/kyro-cms/ROADMAP.md) — product & innovation roadmap
 
 ---
 
