@@ -1,4 +1,4 @@
-# create-kyro
+# @kyro-cms/create
 
 Interactive scaffolding for Kyro CMS projects.
 
@@ -6,17 +6,21 @@ Interactive scaffolding for Kyro CMS projects.
 
 ```bash
 pnpm create @kyro-cms@latest
+# or
+npm create @kyro-cms@latest
+# or
+bun create @kyro-cms@latest
 ```
 
 Or directly:
 
 ```bash
-npx @kyro-cms/create
+npx @kyro-cms/create@latest
 ```
 
 ### Non-Interactive Setup (CI/CD & Headless Environments)
 
-`create-kyro` includes automatic Non-TTY terminal detection (`!process.stdout.isTTY`) and manual option scanning. Pass parameters directly to bypass stdin prompts in background jobs or automated deployment scripts:
+`@kyro-cms/create` includes automatic Non-TTY terminal detection (`!process.stdout.isTTY`) and manual option scanning. Pass parameters directly to bypass stdin prompts in background jobs or automated deployment scripts:
 
 ```bash
 npx @kyro-cms/create my-app --db sqlite --template blog --yes

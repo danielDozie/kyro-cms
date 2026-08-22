@@ -1,5 +1,5 @@
 /**
- * create-kyro headless API
+ * @kyro-cms/create headless API
  * ─────────────────────────────────────────────────────────────────────────────
  * Programmatic interface for scaffolding a Kyro CMS project without any
  * interactive prompts.  Designed to be called from deploy-button servers,

@@ -1,7 +1,7 @@
 {
   "name": "@kyro-cms/field-locations",
-  "version": "0.12.71",
-  "description": "Pre-built geographic SelectFields for Kyro CMS",
+  "version": "0.12.72",
+  "description": "Locations field extension for Kyro CMS with Mapbox, Google Maps, OpenStreetMap, MapLibre GL, and Photon geocoding support",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

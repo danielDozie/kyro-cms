@@ -32,10 +32,10 @@ function getPackageManager(): string {
   return 'npm';
 }
 
-const VERSION = '0.12.71';
+const VERSION = '0.12.72';
 
 async function main() {
-  logger.intro('create-kyro', VERSION);
+  logger.intro('@kyro-cms/create', VERSION);
 
   const answers = await promptUser();
   const projectDir = answers.targetDir ? resolve(answers.targetDir) : resolve(process.cwd(), answers.projectName);
@@ -69,7 +69,7 @@ async function main() {
 
   s.message('Step 3/3: Initializing git repository...');
   try {
-    await execAsync('git init && git add . && git commit -m "Initial commit - created with create-kyro"', {
+    await execAsync('git init && git add . && git commit -m "Initial commit - created with @kyro-cms/create"', {
       cwd: projectDir
     });
   } catch {
