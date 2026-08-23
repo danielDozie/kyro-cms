@@ -174,33 +174,37 @@ export function CustomerDashboard({ collections, userName, userAvatar }: Custome
             <div className="py-10 text-center text-xs text-[var(--kyro-text-muted)]">No orders found</div>
           ) : (
             <div className="divide-y divide-[var(--kyro-border)]">
-              {orders.map((order) => (
-                <a
-                  key={order.id}
-                  href={`${adminPath}/orders/${order.id}`}
-                  className="flex items-center justify-between px-6 py-3.5 hover:bg-[var(--kyro-surface-accent)] transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] flex items-center justify-center text-[var(--kyro-text-secondary)]">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                      </svg>
+              {orders.map((order: any) => {
+                const orderId = String(order.id || order._id || order.slug || "");
+                if (!orderId || orderId === "[object Object]") return null;
+                return (
+                  <a
+                    key={orderId}
+                    href={`${adminPath}/orders/${encodeURIComponent(orderId)}`}
+                    className="flex items-center justify-between px-6 py-3.5 hover:bg-[var(--kyro-surface-accent)] transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] flex items-center justify-center text-[var(--kyro-text-secondary)]">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-[var(--kyro-text-primary)]">Order #{orderId.slice(-6)}</p>
+                        <p className="text-[10px] text-[var(--kyro-text-muted)]">{order.createdAt ? timeAgo(order.createdAt) : "—"}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-[var(--kyro-text-primary)]">Order #{order.id?.slice(-6) || order.id}</p>
-                      <p className="text-[10px] text-[var(--kyro-text-muted)]">{order.createdAt ? timeAgo(order.createdAt) : "—"}</p>
+                    <div className="flex items-center gap-4">
+                      {typeof order.total === "number" && (
+                        <span className="text-xs font-semibold text-[var(--kyro-text-primary)]">{formatCurrency(order.total)}</span>
+                      )}
+                      <span className="px-2 py-0.5 text-[10px] font-medium rounded border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] capitalize">
+                        {order.status || "pending"}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {typeof order.total === "number" && (
-                      <span className="text-xs font-semibold text-[var(--kyro-text-primary)]">{formatCurrency(order.total)}</span>
-                    )}
-                    <span className="px-2 py-0.5 text-[10px] font-medium rounded border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] capitalize">
-                      {order.status || "pending"}
-                    </span>
-                  </div>
-                </a>
-              ))}
+                  </a>
+                );
+              })}
             </div>
           )}
         </div>

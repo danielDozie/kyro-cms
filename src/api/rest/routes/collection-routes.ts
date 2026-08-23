@@ -7,6 +7,7 @@ import {
 } from "../utils/api-helpers.js";
 import { populateRelationships } from "../../../utils/populate.js";
 import { sanitizeDoc } from "../../../utils/sanitize.js";
+import { maskRestrictedFields } from "../../../utils/field-helpers.js";
 import { ApiError } from "../../../utils/errors.js";
 import { HookPipeline } from "../../../hooks/HookPipeline.js";
 import type { BaseAdapter } from "../../../registry/types.js";
@@ -69,6 +70,93 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       }));
 
       return c.json({ data: options });
+    });
+
+    // ALL /api/:collection/semantic-search
+    app.all(`${basePath}/semantic-search`, async (c) => {
+      const { user: ctxUser, tenantId: ctxTenantID, apiKeyContext } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+      const access = await checkCollectionAccess(
+        collection,
+        "read",
+        c.req.raw,
+        ctxUser,
+        ctxTenantID,
+        apiKeyContext,
+        enablePublicAccess,
+        defaultCollectionAccess,
+      );
+      if (!access.allowed) {
+        throw new ApiError((access.status || 403) as number, access.error || "Access denied");
+      }
+
+      let queryVector: number[] = [];
+      let queryText = "";
+      let limit = 10;
+      let threshold = 0.4;
+
+      if (c.req.method === "POST") {
+        const body = await c.req.json().catch(() => ({}));
+        queryVector = body.vector || [];
+        queryText = body.q || body.query || "";
+        limit = body.limit ? parseInt(String(body.limit)) : 10;
+        threshold = body.threshold ? parseFloat(String(body.threshold)) : 0.4;
+      } else {
+        const url = new URL(c.req.url);
+        queryText = url.searchParams.get("q") || url.searchParams.get("query") || "";
+        limit = parseInt(url.searchParams.get("limit") || "10");
+        threshold = parseFloat(url.searchParams.get("threshold") || "0.4");
+      }
+
+      const findRes = await db.find({
+        collection: slug,
+        limit: 200,
+        tenantId: ctxTenantID,
+      });
+
+      const docs = findRes.docs || [];
+      const embeddingFields = collection.fields.filter((f: any) => f.type === "embedding");
+      const embFieldName = embeddingFields[0]?.name || "embedding";
+
+      const scoredDocs = docs.map((doc: any) => {
+        const docVector = doc[embFieldName];
+        let score = 0;
+        if (Array.isArray(docVector) && Array.isArray(queryVector) && queryVector.length > 0) {
+          let dotProduct = 0;
+          let normA = 0;
+          let normB = 0;
+          for (let i = 0; i < Math.min(docVector.length, queryVector.length); i++) {
+            dotProduct += docVector[i] * queryVector[i];
+            normA += docVector[i] * docVector[i];
+            normB += queryVector[i] * queryVector[i];
+          }
+          score = normA && normB ? dotProduct / (Math.sqrt(normA) * Math.sqrt(normB)) : 0;
+        } else if (queryText) {
+          const title = String(doc.title || doc.name || "").toLowerCase();
+          const content = String(doc.content || doc.description || "").toLowerCase();
+          const q = queryText.toLowerCase();
+          if (title.includes(q)) score = 0.9;
+          else if (content.includes(q)) score = 0.7;
+          else score = 0.1;
+        }
+        return { doc, score };
+      });
+
+      const matched = await Promise.all(
+        scoredDocs
+          .filter((item) => item.score >= threshold)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, limit)
+          .map(async (item) => {
+            const masked = await maskRestrictedFields(item.doc, collection.fields, ctxUser, c.req.raw, "read");
+            return { ...masked, _similarity: Math.round(item.score * 1000) / 1000 };
+          })
+      );
+
+      return c.json({
+        docs: matched,
+        totalDocs: matched.length,
+        query: queryText || undefined,
+      });
     });
 
     // GET /api/:collection - List

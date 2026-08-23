@@ -17,6 +17,7 @@ export const customersCollection: CollectionConfig = {
       "updatedAt",
     ],
     description: "Customer accounts",
+    icon: "Users",
   },
   fields: [
     {

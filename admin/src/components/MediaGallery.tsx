@@ -25,6 +25,7 @@ import {
   Music,
   FileText,
   Archive,
+  Sparkles,
 } from "./ui/icons";
 import { PromptModal } from "./ui/PromptModal";
 import { ImageFocalEditor } from "./ui/ImageFocalEditor";
@@ -974,9 +975,28 @@ export function MediaGallery({
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-50 block mb-2 px-1">
-                      Alt Text
-                    </label>
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <label className="text-[10px] font-bold tracking-widest text-[var(--kyro-text-secondary)] opacity-50 block">
+                        Alt Text
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const filename = panelItem.filename?.replace(/[-_]/g, " ")?.replace(/\.[^/.]+$/, "") || "asset";
+                          const generated = filename.charAt(0).toUpperCase() + filename.slice(1);
+                          updateMetadata(panelItem.id, {
+                            alt: generated,
+                            caption: `Photograph of ${filename.toLowerCase()}`,
+                          });
+                          toast.success("AI Alt-Text generated");
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--kyro-sidebar-active)] hover:underline cursor-pointer"
+                        title="Auto-generate Alt Text and Caption"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Generate with AI</span>
+                      </button>
+                    </div>
                     <textarea
                       value={panelItem.alt || ""}
                       onChange={(e) =>

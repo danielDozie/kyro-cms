@@ -10,6 +10,7 @@ export const formsCollection: CollectionConfig = {
     useAsTitle: "name",
     defaultColumns: ["name", "slug", "updatedAt"],
     description: "Reusable form definitions",
+    icon: "FileInput",
   },
   fields: [
     {

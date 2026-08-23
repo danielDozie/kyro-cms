@@ -10,6 +10,7 @@ export const formEntriesCollection: CollectionConfig = {
     useAsTitle: "id",
     defaultColumns: ["id", "form", "createdAt", "ipAddress"],
     description: "Form submission entries",
+    icon: "Inbox",
   },
   access: {
     create: () => true,

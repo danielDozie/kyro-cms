@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import type { KyroPubSub, KyroEvent } from './pubsub.js';
+import { PresenceManager } from './presence.js';
 
 // ============================================================================
 // WebSocket Server
@@ -28,6 +29,7 @@ export interface WSClient {
   tenantId?: string;
   connectedAt: Date;
   lastActivity: Date;
+  activeDocKey?: string;
 }
 
 export class KyroWSServer {
@@ -36,6 +38,7 @@ export class KyroWSServer {
   private pubsub: KyroPubSub;
   private options: WSServerOptions;
   private pingTimer?: NodeJS.Timer;
+  public readonly presence: PresenceManager = new PresenceManager();
 
   constructor(options: WSServerOptions) {
     this.options = options;
@@ -135,6 +138,27 @@ export class KyroWSServer {
         break;
       case 'ping':
         this.sendToClient(client, { type: 'pong', timestamp: new Date().toISOString() });
+        break;
+      case 'presence:join':
+        this.handlePresenceJoin(client, message);
+        break;
+      case 'presence:leave':
+        this.handlePresenceLeave(client, message);
+        break;
+      case 'presence:cursor':
+        this.handlePresenceCursor(client, message);
+        break;
+      case 'presence:lock':
+        this.handlePresenceLock(client, message);
+        break;
+      case 'presence:unlock':
+        this.handlePresenceUnlock(client, message);
+        break;
+      case 'presence:comment':
+        this.handlePresenceComment(client, message);
+        break;
+      case 'presence:snapshot':
+        this.handlePresenceSnapshot(client, message);
         break;
       default:
         this.sendToClient(client, {
@@ -280,14 +304,160 @@ export class KyroWSServer {
     });
   }
 
+  private handlePresenceJoin(client: WSClient, message: any): void {
+    const { docKey, user } = message;
+    if (!docKey || !user || !user.id) {
+      this.sendToClient(client, { type: 'error', error: 'docKey and user object with id are required for presence:join' });
+      return;
+    }
+
+    client.activeDocKey = docKey;
+    const users = this.presence.join(docKey, user);
+    const channel = `presence:${docKey}`;
+
+    // Auto-subscribe client to room presence channel
+    if (!client.subscriptions.has(channel)) {
+      const unsubscribe = this.pubsub.subscribe(channel, (data: any) => {
+        this.sendToClient(client, { type: 'event', channel, data, timestamp: new Date().toISOString() });
+      });
+      client.subscriptions.set(channel, { channel, unsubscribe });
+    }
+
+    this.sendToClient(client, {
+      type: 'presence:joined',
+      docKey,
+      users,
+      snapshot: this.presence.getSnapshot(docKey),
+    });
+
+    // Broadcast updated presence to other participants
+    this.pubsub.publish(channel, {
+      type: 'presence:users_changed',
+      docKey,
+      users,
+    });
+  }
+
+  private handlePresenceLeave(client: WSClient, message: any): void {
+    const { docKey, userId } = message;
+    if (!docKey || !userId) return;
+
+    const { remainingUsers, releasedLocks } = this.presence.leave(docKey, userId);
+    client.activeDocKey = undefined;
+
+    const channel = `presence:${docKey}`;
+    this.pubsub.publish(channel, {
+      type: 'presence:users_changed',
+      docKey,
+      users: remainingUsers,
+      releasedLocks,
+    });
+
+    this.sendToClient(client, { type: 'presence:left', docKey, success: true });
+  }
+
+  private handlePresenceCursor(client: WSClient, message: any): void {
+    const { docKey, userId, cursor } = message;
+    if (!docKey || !userId || !cursor) return;
+
+    const cursorState = this.presence.updateCursor(docKey, userId, cursor);
+    const channel = `presence:${docKey}`;
+    this.pubsub.publish(channel, {
+      type: 'presence:cursor_moved',
+      docKey,
+      cursor: cursorState,
+    });
+  }
+
+  private handlePresenceLock(client: WSClient, message: any): void {
+    const { docKey, fieldName, user, ttlMs } = message;
+    if (!docKey || !fieldName || !user || !user.id) {
+      this.sendToClient(client, { type: 'error', error: 'docKey, fieldName, and user are required to acquire lock' });
+      return;
+    }
+
+    const result = this.presence.acquireLock(docKey, fieldName, user, ttlMs);
+    const channel = `presence:${docKey}`;
+
+    if (result.success) {
+      this.pubsub.publish(channel, {
+        type: 'presence:field_locked',
+        docKey,
+        lock: result.lock,
+      });
+      this.sendToClient(client, { type: 'presence:lock_acquired', docKey, lock: result.lock });
+    } else {
+      this.sendToClient(client, {
+        type: 'presence:lock_rejected',
+        docKey,
+        fieldName,
+        currentLock: result.currentLock,
+      });
+    }
+  }
+
+  private handlePresenceUnlock(client: WSClient, message: any): void {
+    const { docKey, fieldName, userId } = message;
+    if (!docKey || !fieldName || !userId) return;
+
+    const success = this.presence.releaseLock(docKey, fieldName, userId);
+    if (success) {
+      const channel = `presence:${docKey}`;
+      this.pubsub.publish(channel, {
+        type: 'presence:field_unlocked',
+        docKey,
+        fieldName,
+        userId,
+      });
+    }
+    this.sendToClient(client, { type: 'presence:unlocked', docKey, fieldName, success });
+  }
+
+  private handlePresenceComment(client: WSClient, message: any): void {
+    const { docKey, comment } = message;
+    if (!docKey || !comment || !comment.id) {
+      this.sendToClient(client, { type: 'error', error: 'docKey and comment payload are required' });
+      return;
+    }
+
+    const created = this.presence.addComment(docKey, comment);
+    const channel = `presence:${docKey}`;
+    this.pubsub.publish(channel, {
+      type: 'presence:comment_added',
+      docKey,
+      comment: created,
+    });
+    this.sendToClient(client, { type: 'presence:comment_created', docKey, comment: created });
+  }
+
+  private handlePresenceSnapshot(client: WSClient, message: any): void {
+    const { docKey } = message;
+    if (!docKey) {
+      this.sendToClient(client, { type: 'error', error: 'docKey is required for snapshot' });
+      return;
+    }
+
+    const snapshot = this.presence.getSnapshot(docKey);
+    this.sendToClient(client, { type: 'presence:snapshot', docKey, snapshot });
+  }
+
   private handleDisconnect(client: WSClient): void {
+    if (client.activeDocKey && client.user?.id) {
+      const { remainingUsers, releasedLocks } = this.presence.leave(client.activeDocKey, client.user.id);
+      this.pubsub.publish(`presence:${client.activeDocKey}`, {
+        type: 'presence:users_changed',
+        docKey: client.activeDocKey,
+        users: remainingUsers,
+        releasedLocks,
+      });
+    }
+
     // Unsubscribe from all channels
     for (const [, subscription] of client.subscriptions) {
       subscription.unsubscribe();
     }
 
     this.clients.delete(client.id);
-
   }
 
   private sendToClient(client: WSClient, data: any): void {

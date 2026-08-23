@@ -21,6 +21,10 @@ export type {
   CollectionConfig,
   GlobalConfig,
   AdminConfig,
+  HierarchyConfig,
+  ProjectConfig,
+  OrganizationConfig,
+  SmartViewConfig,
   UploadConfig,
   ImageSize,
   VersionConfig,
@@ -409,5 +413,17 @@ export {
   applyCollectionOverrides,
   applyGlobalOverrides,
 } from "./utils/schemaOverrides.js";
+
+// Document Hierarchy & Tree Utilities
+export {
+  buildDocumentTree,
+  getBreadcrumbs,
+  getNestedPath,
+  flattenDocumentTree,
+  type HierarchyNode,
+  type BuildTreeOptions,
+} from "./utils/hierarchy.js";
+
+
 
 

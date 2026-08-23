@@ -1,4 +1,51 @@
 {
+  "organizations": [
+    {
+      "id": "org_acme_corp",
+      "name": "Acme Media Global",
+      "slug": "acme-media",
+      "projects": [
+        {
+          "id": "proj_corporate_site",
+          "name": "Corporate Marketing Site",
+          "slug": "corporate-site",
+          "environment": "production",
+          "collections": [
+            "pages",
+            "posts",
+            "categories",
+            "forms"
+          ]
+        },
+        {
+          "id": "proj_global_store",
+          "name": "Global E-Commerce Store",
+          "slug": "global-store",
+          "environment": "staging",
+          "collections": [
+            "products",
+            "orders",
+            "customers",
+            "coupons",
+            "menu"
+          ]
+        },
+        {
+          "id": "proj_developer_docs",
+          "name": "Developer Documentation",
+          "slug": "developer-docs",
+          "environment": "development",
+          "collections": [
+            "pages",
+            "posts",
+            "categories",
+            "form-entries"
+          ]
+        }
+      ]
+    }
+  ],
+  "projects": [],
   "collections": [
     {
       "slug": "posts",
@@ -822,6 +869,11 @@
           }
         }
       ],
+      "hooks": {
+        "afterChange": [
+          null
+        ]
+      },
       "timestamps": true,
       "versions": {
         "drafts": true,

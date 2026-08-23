@@ -235,7 +235,9 @@ export function validateFields(fields: Field[], context: string): string[] {
         if ((!field.options || field.options.length === 0) && !(field as any).dynamicOptions) {
           errors.push(`${context}: ${field.type} field "${fieldName}" has no options defined`);
         } else if (Array.isArray(field.options)) {
-          const values = field.options.map((o: any) => o.value);
+          const values = field.options.map((o: any) =>
+            typeof o === 'object' && o !== null && 'value' in o ? o.value : o
+          );
           const uniqueValues = new Set(values);
           if (values.length !== uniqueValues.size) {
             errors.push(`${context}: ${field.type} field "${fieldName}" has duplicate option values`);

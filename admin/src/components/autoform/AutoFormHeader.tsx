@@ -8,10 +8,12 @@ import { useAutoFormStore } from "../../lib/autoform-store";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { adminPath as ADMIN_BASE } from "../../lib/paths";
 import { useTranslation } from "react-i18next";
+import { CollaboratorAvatars } from "../collaboration/CollaboratorAvatars";
 
 type View = "edit" | "version" | "api";
 
 interface AutoFormHeaderProps {
+  config?: any;
   collectionSlug?: string;
   globalSlug?: string;
   documentStatus: string;
@@ -29,6 +31,7 @@ interface AutoFormHeaderProps {
 }
 
 export function AutoFormHeader({
+  config,
   collectionSlug,
   globalSlug,
   documentStatus,
@@ -75,12 +78,27 @@ export function AutoFormHeader({
     if (showSchedulePicker) setShowSchedulePicker(false);
   });
 
-  const docTitle = String(
+  const useTitleField = config?.admin?.useAsTitle;
+  const rawTitle =
+    (useTitleField && formData[useTitleField] !== undefined && formData[useTitleField] !== null && formData[useTitleField] !== ""
+      ? formData[useTitleField]
+      : null) ||
+    formData.orderNumber ||
+    formData.title ||
+    formData.name ||
+    formData.fullName ||
+    formData.label ||
+    formData.heading ||
+    formData.email ||
+    formData.slug ||
     (formData.tabs as { title?: string })?.title ||
-    (typeof formData.title === "object" ? "" : formData.title) ||
-    (typeof formData.name === "object" ? "" : formData.name) ||
-    "Untitled",
-  );
+    (formData.id ? `Order #${String(formData.id).slice(-6)}` : null) ||
+    "Untitled";
+
+  const docTitle =
+    typeof rawTitle === "object" && rawTitle !== null
+      ? (rawTitle as any).title || (rawTitle as any).name || (rawTitle as any).orderNumber || (rawTitle as any).fullName || "Untitled"
+      : String(rawTitle);
 
   const lastModified = formData.updatedAt
     ? new Date(formData.updatedAt as string).toLocaleString()
@@ -397,13 +415,39 @@ export function AutoFormHeader({
 
       {/* DESKTOP HEADER */}
       <header className="hidden md:flex surface-tile px-8 py-6 items-center justify-between sticky top-0 border-b border-[var(--kyro-border)] mb-4 bg-[var(--kyro-surface)] z-50 backdrop-blur-md rounded-lg">
-        <div className="flex flex-col gap-2 min-w-0">
+        <div className="flex flex-col gap-1.5 min-w-0">
+          {collectionSlug && (
+            <div className="flex items-center gap-1.5 text-xs text-[var(--kyro-text-secondary)] font-medium ml-12">
+              <a
+                href={`${ADMIN_BASE}/${collectionSlug}`}
+                className="hover:text-[var(--kyro-text-primary)] transition-colors capitalize"
+              >
+                {collectionSlug}
+              </a>
+              {Boolean(formData.parent && typeof formData.parent === "object") && (
+                <>
+                  <span className="opacity-40 text-[10px]">/</span>
+                  <a
+                    href={`${ADMIN_BASE}/${collectionSlug}/${(formData.parent as any)?.id || ""}`}
+                    className="hover:text-[var(--kyro-text-primary)] transition-colors"
+                  >
+                    {String((formData.parent as any)?.title || (formData.parent as any)?.name || (formData.parent as any)?.label || (formData.parent as any)?.id || "Parent")}
+                  </a>
+                </>
+              )}
+              <span className="opacity-40 text-[10px]">/</span>
+              <span className="text-[var(--kyro-text-primary)] font-semibold truncate max-w-[220px]">
+                {docTitle}
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-3 flex-wrap min-w-0">
             <a
               href={`${ADMIN_BASE}/${collectionSlug}`}
               className="p-2 border border-[var(--kyro-border)] rounded-xl hover:bg-[var(--kyro-bg-secondary)] transition-colors shrink-0"
+              title={`Back to ${collectionSlug}`}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 rotate-180" />
             </a>
             <h1 className="text-xl font-bold tracking-tighter truncate min-w-0">{docTitle}</h1>
             <span className={`shrink-0 inline-flex items-center gap-1.5 px-2 rounded-full text-[10px] font-regular border ${statusBadgeBg}`}>
@@ -465,6 +509,7 @@ export function AutoFormHeader({
           <div className="h-8 w-px bg-[var(--kyro-border)] mx-2" />
 
           <div className="flex items-center gap-3">
+            <CollaboratorAvatars documentId={formData.id as string} collectionSlug={collectionSlug} />
             <button
               type="button"
               onClick={() => setShowPreview(!showPreview)}

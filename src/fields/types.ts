@@ -43,6 +43,7 @@ export interface FieldAdmin {
   method?: string;
   inline?: boolean;
   compact?: boolean;
+  display?: "receipt" | "table" | "default";
   collapsible?: boolean;
   initCollapsed?: boolean;
   pickerMode?: "drawer" | "dropdown";
@@ -54,6 +55,12 @@ export interface FieldAdmin {
     | DeclarativeCondition;
 }
 
+export interface FieldAccess {
+  read?: (args: { user: any; req?: Request; doc?: any; data?: any; siblingData?: any }) => boolean | Promise<boolean>;
+  update?: (args: { user: any; req?: Request; doc?: any; data?: any; siblingData?: any }) => boolean | Promise<boolean>;
+  create?: (args: { user: any; req?: Request; doc?: any; data?: any; siblingData?: any }) => boolean | Promise<boolean>;
+}
+
 export interface BaseField {
   name: string;
   label?: string;
@@ -62,6 +69,7 @@ export interface BaseField {
   indexed?: boolean;
   defaultValue?: any;
   admin?: FieldAdmin;
+  access?: FieldAccess;
   validate?: (
     value: any,
     options: ValidateOptions,
@@ -319,6 +327,14 @@ export interface IconField extends BaseField {
   type: "icon";
 }
 
+export interface EmbeddingField extends BaseField {
+  type: "embedding";
+  sourceField: string;
+  provider?: "openai" | "cohere" | "groq" | "local-fastembed";
+  model?: string;
+  dimensions?: number;
+}
+
 // ============================================================================
 // Union Type
 // ============================================================================
@@ -351,7 +367,8 @@ export type Field =
   | ButtonField
   | ActionField
   | SecretField
-  | IconField;
+  | IconField
+  | EmbeddingField;
 
 export type FieldType = Field["type"];
 
@@ -413,6 +430,10 @@ export function isIconField(field: Field): field is IconField {
   return field.type === "icon";
 }
 
+export function isEmbeddingField(field: Field): field is EmbeddingField {
+  return field.type === "embedding";
+}
+
 // ============================================================================
 // Field Type List
 // ============================================================================
@@ -438,6 +459,7 @@ export const COMPLEX_FIELD_TYPES = [
   "upload",
   "image",
   "markdown",
+  "embedding",
 ] as const;
 
 export const RELATIONAL_FIELD_TYPES = [

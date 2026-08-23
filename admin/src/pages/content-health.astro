@@ -1,0 +1,8 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import { ContentHealthDashboard } from "../components/ContentHealthDashboard";
+---
+
+<AdminLayout title="Content Health & Quality">
+  <ContentHealthDashboard client:only="react" />
+</AdminLayout>

@@ -149,6 +149,13 @@ export function DashboardQuickSections({
       visible: isAdmin,
     },
     {
+      id: "content-health",
+      label: "Content Health & Quality",
+      description: "Audit SEO tags, image alt-texts & schema validity",
+      href: `${adminPath}/content-health`,
+      visible: isAdmin || isEditor || isAuthor,
+    },
+    {
       id: "health",
       label: "API System Health",
       description: "Real-time API status, memory and database health",

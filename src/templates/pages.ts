@@ -11,6 +11,7 @@ export const pageCollection: CollectionConfig = {
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "status", "updatedAt"],
     description: "Standard web pages",
+    icon: "FileText",
   },
   seo: true,
   fields: [

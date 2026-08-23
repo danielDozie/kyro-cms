@@ -12,6 +12,7 @@ export const couponsCollection: CollectionConfig = {
     useAsTitle: "code",
     defaultColumns: ["code", "type", "value", "active", "expiresAt"],
     description: "Discount codes and promotions",
+    icon: "Ticket",
   },
   fields: [
     { name: "code", type: "text", required: true, label: "Code" },

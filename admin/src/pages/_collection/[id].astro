@@ -107,21 +107,6 @@ import SettingsPageAstro from "../settings/[slug].astro";
           </div>
         </div>
       </div>
-      
-      <script>
-        document.addEventListener('astro:page-load', () => {
-          // Auto-minimize main sidebar when entering the 3-pane layout
-          const sidebar = document.getElementById("kyro-sidebar");
-          const toggleBtn = document.getElementById("sidebar-panel-toggle");
-          
-          if (sidebar && toggleBtn && window.innerWidth >= 768) {
-            const isMin = sidebar.getAttribute("data-minimized") === "true";
-            if (!isMin) {
-              toggleBtn.click();
-            }
-          }
-        }, { once: true });
-      </script>
     </AdminLayout>
   )
 }

@@ -8,6 +8,7 @@ export const menuCollection: CollectionConfig = {
   admin: {
     useAsTitle: "title",
     defaultColumns: ["title", "menuLocation"],
+    icon: "Compass",
   },
   fields: [
     { name: "title", type: "text", label: "Title", required: true },

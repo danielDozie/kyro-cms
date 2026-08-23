@@ -70,7 +70,7 @@ export const productCategoriesCollection: CollectionConfig = {
     useAsTitle: "name",
     defaultColumns: ["name", "slug"],
     description: "Product categories for organizing your catalog",
-    icon: "FolderTree",
+    icon: "Tags",
   },
   fields: [
     {

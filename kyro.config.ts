@@ -2,7 +2,7 @@ import {
   templateCollections,
   allGlobalSettings,
 } from "./src/templates/index.js";
-import { AiAssistantPlugin, AiAutoSeoPlugin } from "@kyro-cms/ai";
+import { AiAssistantPlugin, AiAutoSeoPlugin } from "./packages/kyro-ai/src/index.js";
 import { setDbAdapter, loadSecrets, getAppSecret } from "./src/lib/secret.js";
 import path from "path";
 import fs from "fs";
@@ -80,7 +80,38 @@ if (typeof window === "undefined") {
   }
 }
 
+// Kyro CMS Configuration
 export default {
+  organizations: [
+    {
+      id: "org_acme_corp",
+      name: "Acme Media Global",
+      slug: "acme-media",
+      projects: [
+        {
+          id: "proj_corporate_site",
+          name: "Corporate Marketing Site",
+          slug: "corporate-site",
+          environment: "production",
+          collections: ["pages", "posts", "categories", "forms"],
+        },
+        {
+          id: "proj_global_store",
+          name: "Global E-Commerce Store",
+          slug: "global-store",
+          environment: "staging",
+          collections: ["products", "orders", "customers", "coupons", "menu"],
+        },
+        {
+          id: "proj_developer_docs",
+          name: "Developer Documentation",
+          slug: "developer-docs",
+          environment: "development",
+          collections: ["pages", "posts", "categories", "form-entries"],
+        },
+      ],
+    },
+  ],
   collections: templateCollections["kitchen-sink"],
   globals: allGlobalSettings,
   adapter,

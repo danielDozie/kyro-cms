@@ -15,6 +15,9 @@ export interface AdminConfig {
   description?: string;
   hideAPIURL?: boolean;
   group?: string;
+  folder?: string;
+  parentFolder?: string;
+  treeHierarchy?: boolean;
   icon?: string;
   order?: number;
   preview?: (doc: Record<string, unknown>, options: { req: unknown; token?: string }) => string | Promise<string>;
@@ -25,6 +28,47 @@ export interface AdminConfig {
     limits?: number[];
   };
   layout?: "split" | "single";
+  smartViews?: SmartViewConfig[];
+}
+
+export interface HierarchyConfig {
+  parentField?: string;
+  maxDepth?: number;
+  slugPrefix?: boolean;
+}
+
+export interface ProjectConfig {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  environment?: 'development' | 'staging' | 'production' | string;
+  collections?: string[];
+  globals?: string[];
+  settings?: Record<string, unknown>;
+}
+
+export interface SmartViewConfig {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  filter: Record<string, any>;
+  collections?: string[];
+  description?: string;
+}
+
+export interface OrganizationConfig {
+  id: string;
+  name: string;
+  slug: string;
+  billingEmail?: string;
+  projects?: ProjectConfig[];
+  roles?: Array<{
+    name: string;
+    description?: string;
+    permissions?: string[];
+  }>;
 }
 
 export interface FieldOverrides {
@@ -134,6 +178,8 @@ export interface CollectionConfig {
   tenantField?: string;
   upload?: UploadConfig;
   versions?: VersionConfig;
+  folder?: string;
+  hierarchy?: HierarchyConfig;
   auth?: boolean | AuthConfig;
   graphQL?: {
     singularName?: string;
@@ -155,6 +201,7 @@ export interface CollectionConfig {
 export interface GlobalConfig {
   slug: string;
   label?: string;
+  folder?: string;
   admin?: AdminConfig;
   fields: Field[];
   access?: GlobalAccess;
@@ -374,6 +421,8 @@ export interface AdapterConfig {
 export interface KyroConfig {
   collections?: CollectionConfig[];
   globals?: GlobalConfig[];
+  projects?: ProjectConfig[];
+  organizations?: OrganizationConfig[];
   adapter: BaseAdapter;
   storage?: StorageProvider;
   plugins?: import("../plugins/index.js").KyroPlugin[];
@@ -407,6 +456,7 @@ export interface KyroConfig {
     components?: Record<string, any>;
     collectionOverrides?: Record<string, CollectionOverrideConfig>;
     globalOverrides?: Record<string, GlobalOverrideConfig>;
+    smartViews?: SmartViewConfig[];
   };
   upload?: {
     limits?: {

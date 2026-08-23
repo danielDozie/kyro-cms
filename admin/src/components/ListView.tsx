@@ -1,11 +1,12 @@
 import "../lib/i18n";
-import { Search, Filter, Columns3, X, Trash2, Archive, ChevronUp, Edit2 } from "./ui/icons";
+import { Search, Filter, Columns3, X, Trash2, Archive, ChevronUp, ChevronDown, ChevronRight, Edit2, List, FolderTree, Folder, FileText, CornerDownRight } from "./ui/icons";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Spinner } from "./ui/Spinner";
 import { navigate } from "../lib/navigate";
 import { Shimmer } from "./ui/Shimmer";
 import { Plus } from "./ui/icons";
 import { apiGet, apiDelete, withCacheBust } from "../lib/api";
+import { buildDocumentTree, type HierarchyNode } from "@kyro-cms/core/client";
 
 import { useAuthStore, toast } from "../lib/stores";
 import { useUIStore } from "../lib/stores";
@@ -89,11 +90,13 @@ function ListViewInner({
     }
   };
 
-  const handleEdit = (id: string) => {
+  const handleEdit = (id: string | any) => {
+    const cleanId = typeof id === "object" && id !== null ? String(id.id || id._id || id.value || id) : String(id || "");
+    if (!cleanId || cleanId === "[object Object]") return;
     if (providedOnEdit) {
-      providedOnEdit(id);
+      providedOnEdit(cleanId);
     } else {
-      const href = `${ADMIN_BASE}/${collectionSlug}/${id}`;
+      const href = `${ADMIN_BASE}/${collectionSlug}/${encodeURIComponent(cleanId)}`;
       navigate(href);
     }
   };
@@ -171,6 +174,63 @@ function ListViewInner({
     typeof collection.admin?.useAsTitle === "string"
       ? collection.admin.useAsTitle
       : allFields.find((f) => f.type !== "group" && typeof f.name === "string")?.name;
+
+  const isHierarchical = Boolean(
+    (collection as any).hierarchy ||
+    collection.fields?.some((f: any) => f.name === "parent" || f.hierarchy)
+  );
+
+  const [viewMode, setViewMode] = useState<"table" | "tree">(() => {
+    return isHierarchical && (collection as any).hierarchy?.defaultView === "tree" ? "tree" : "table";
+  });
+
+  const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+
+  const toggleNodeCollapse = (nodeId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCollapsedNodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return next;
+    });
+  };
+
+  const treeData = useMemo(() => {
+    if (!isHierarchical) return [];
+    return buildDocumentTree(docs, {
+      idField: "id",
+      parentField: (collection as any).hierarchy?.parentField || "parent",
+      labelField: (typeof collection.admin?.useAsTitle === "string" ? collection.admin.useAsTitle : titleField) || "title",
+      slugField: "slug",
+    });
+  }, [docs, isHierarchical, collection, titleField]);
+
+  // Flatten nodes while respecting collapsed state
+  const visibleTreeNodes = useMemo(() => {
+    if (viewMode !== "tree" || treeData.length === 0) return [];
+    
+    const result: (HierarchyNode & { isCollapsed?: boolean; hasChildren?: boolean })[] = [];
+    function traverse(nodes: HierarchyNode[]) {
+      for (const node of nodes) {
+        const isCollapsed = collapsedNodes.has(node.id);
+        const hasChildren = Boolean(node.children && node.children.length > 0);
+        result.push({
+          ...node,
+          isCollapsed,
+          hasChildren,
+        });
+        if (hasChildren && !isCollapsed) {
+          traverse(node.children);
+        }
+      }
+    }
+    traverse(treeData);
+    return result;
+  }, [treeData, viewMode, collapsedNodes]);
 
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
     let cols: string[];
@@ -496,6 +556,38 @@ function ListViewInner({
             )}
           </div>
 
+          {/* View Mode Toggle for Hierarchical Collections */}
+          {isHierarchical && (
+            <div className="flex items-center bg-[var(--kyro-bg)] p-0.5 rounded-xl border border-[var(--kyro-border)]">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === "table"
+                    ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] shadow-sm"
+                    : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
+                }`}
+                title="Table View"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Table</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("tree")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === "tree"
+                    ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] shadow-sm"
+                    : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
+                }`}
+                title="Hierarchy Tree View"
+              >
+                <FolderTree className="w-3.5 h-3.5" />
+                <span>Tree</span>
+              </button>
+            </div>
+          )}
+
           {/* Clear All */}
           {hasActiveFilters && (
             <button
@@ -552,10 +644,11 @@ function ListViewInner({
                 >
                   <option value="equals">Equals</option>
                   <option value="contains">Contains</option>
-                  <option value="gt">Greater than</option>
-                  <option value="lt">Less than</option>
-                  <option value="gte">Greater or equal</option>
-                  <option value="lte">Less or equal</option>
+                  <option value="gt">Greater Than</option>
+                  <option value="lt">Less Than</option>
+                  <option value="gte">Greater Than or Equal</option>
+                  <option value="lte">Less Than or Equal</option>
+                  <option value="in">In</option>
                 </select>
                 <input
                   type="text"
@@ -563,20 +656,20 @@ function ListViewInner({
                   onChange={(e) =>
                     updateFilter(index, { value: e.target.value })
                   }
-                  placeholder={t("fields.value", { defaultValue: "Value..." })}
-                  className="flex-1 min-w-[150px] px-3 py-2 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg text-sm font-medium text-[var(--kyro-text-primary)]"
+                  placeholder="Value..."
+                  className="px-3 py-2 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg text-sm font-medium text-[var(--kyro-text-primary)]"
                 />
                 <button
                   type="button"
                   onClick={() => removeFilter(index)}
-                  className="p-2 text-[var(--kyro-text-muted)] hover:text-red-500 transition-colors"
+                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
             {filters.length === 0 && (
-              <p className="text-sm text-[var(--kyro-text-muted)]">
+              <p className="text-sm text-[var(--kyro-text-secondary)] italic">
                 {t("listView.noFilters", { defaultValue: 'No filters applied. Click "Add Filter" to create one.' })}
               </p>
             )}
@@ -612,7 +705,7 @@ function ListViewInner({
         </div>
       )}
 
-      {/* Data Table */}
+      {/* Data Table / Tree Hierarchy */}
       <div className="surface-tile overflow-hidden rounded-lg">
         {loading ? (
           <div className="space-y-2 p-4">
@@ -641,6 +734,159 @@ function ListViewInner({
                 {t("actions.create", { defaultValue: "Create {{item}}", item: String(collection.singularLabel || collection.label || collectionSlug) })}
               </button>
             )}
+          </div>
+        ) : viewMode === "tree" ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[var(--kyro-text-secondary)] font-bold text-[10px] tracking-[0.3em] border-b border-[var(--kyro-border)] whitespace-nowrap">
+                  <th className="px-4 py-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedIds.size === docs.length && docs.length > 0
+                      }
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-[var(--kyro-border-strong)] text-[var(--kyro-sidebar-active)] focus:ring-[var(--kyro-sidebar-active)]"
+                    />
+                  </th>
+                  <th className="px-4 py-4 min-w-[280px]">Document / Hierarchy</th>
+                  <th className="px-4 py-4">Path / Slug</th>
+                  {collection.timestamps ? (
+                    <th className="px-4 py-4">{t("listView.lastModifiedCol", { defaultValue: "Last Modified" })}</th>
+                  ) : null}
+                  <th className="px-4 py-4 text-right">{t("listView.actionsCol", { defaultValue: "Actions" })}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--kyro-border)]">
+                {visibleTreeNodes.map((node) => {
+                  const doc = node.data;
+                  return (
+                    <tr
+                      key={node.id}
+                      className="hover:bg-[var(--kyro-surface-accent)] transition-colors cursor-pointer group"
+                      onClick={() => handleEdit(node.id)}
+                    >
+                      <td
+                        className="px-4 py-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(node.id)}
+                          onChange={() => handleSelectOne(node.id)}
+                          className="w-4 h-4 rounded border-[var(--kyro-border-strong)] text-[var(--kyro-sidebar-active)] focus:ring-[var(--kyro-sidebar-active)]"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div
+                          className="flex items-center gap-2"
+                          style={{ paddingLeft: `${node.depth * 24}px` }}
+                        >
+                          {node.hasChildren ? (
+                            <button
+                              type="button"
+                              onClick={(e) => toggleNodeCollapse(node.id, e)}
+                              className="p-1 rounded hover:bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors"
+                              title={node.isCollapsed ? "Expand Sub-items" : "Collapse Sub-items"}
+                            >
+                              {node.isCollapsed ? (
+                                <ChevronRight className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          ) : (
+                            <span className="w-6 flex items-center justify-center text-[var(--kyro-text-muted)] opacity-50">
+                              {node.depth > 0 ? (
+                                <CornerDownRight className="w-3.5 h-3.5" />
+                              ) : (
+                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--kyro-border-strong)]" />
+                              )}
+                            </span>
+                          )}
+
+                          <div className="flex items-center gap-2 min-w-0">
+                            {node.hasChildren ? (
+                              <Folder className="w-4 h-4 text-emerald-500 shrink-0" />
+                            ) : (
+                              <FileText className="w-4 h-4 text-[var(--kyro-text-muted)] shrink-0" />
+                            )}
+                            <span className="font-semibold text-sm text-[var(--kyro-text-primary)] truncate">
+                              {node.label || "Untitled"}
+                            </span>
+                            {node.hasChildren && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
+                                {node.children.length} {node.children.length === 1 ? "sub-item" : "sub-items"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs font-mono text-[var(--kyro-text-secondary)]">
+                        {node.nestedPath || `/${node.slug || node.id}`}
+                      </td>
+                      {collection.timestamps ? (
+                        <td className="px-4 py-3 text-sm text-[var(--kyro-text-secondary)]">
+                          {doc?.updatedAt
+                            ? new Date(doc.updatedAt as string).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )
+                            : "—"}
+                        </td>
+                      ) : null}
+                      <td
+                        className="px-4 py-3 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {canCreate && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`${ADMIN_BASE}/${collectionSlug}/new?parent=${node.id}`);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded bg-[var(--kyro-surface-accent)] text-xs font-medium text-[var(--kyro-text-primary)] hover:bg-emerald-500/10 hover:text-emerald-500 transition-colors"
+                              title="Add sub-item"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Add Sub-item</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(node.id)}
+                            className="flex items-center gap-2 px-2 py-1 hover:bg-[var(--kyro-surface-accent)] rounded-lg text-sm font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-all"
+                            title={canUpdate ? t("actions.edit", { defaultValue: "Edit" }) : t("actions.view", { defaultValue: "View" })}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          {canDelete && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSingle(node.id);
+                              }}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-md text-[var(--kyro-text-muted)] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition-colors"
+                              title={t("actions.delete", { defaultValue: "Delete" })}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="overflow-x-auto">

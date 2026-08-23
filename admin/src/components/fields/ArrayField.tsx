@@ -249,7 +249,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
   onChange,
   compact = false,
 }) => {
-  const [openIndex, setOpenIndex] = React.useState<number | null>(0);
+  const [openIndex, setOpenIndex] = React.useState<number | null>(null);
 
   // Sync stable IDs and heal bad data
   React.useEffect(() => {
