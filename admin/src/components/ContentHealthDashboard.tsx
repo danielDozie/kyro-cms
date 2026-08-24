@@ -82,7 +82,7 @@ interface CategoryHealthRowProps {
 function CategoryHealthRow({ name, description, score, issueCount, icon, loading }: CategoryHealthRowProps) {
   const isHealthy = issueCount === 0;
   return (
-    <div className="flex items-center gap-4 py-3.5 px-4 rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-colors group my-4e a">
+    <div className="flex items-center gap-4 py-3.5 px-4 rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-colors group my-4">
       <div className="w-9 h-9 rounded-lg bg-[var(--kyro-surface-accent)] group-hover:bg-[var(--kyro-surface)] flex items-center justify-center text-[var(--kyro-text-secondary)] transition-colors flex-shrink-0">
         {icon}
       </div>

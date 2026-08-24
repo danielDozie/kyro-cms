@@ -133,7 +133,7 @@ export const ordersCollection: CollectionConfig = {
               name: "items",
               type: "array",
               label: "Order Items",
-              admin: { readOnly: true, display: "receipt" },
+              admin: { readOnly: true, display: "pills" },
               fields: [
                 {
                   name: "name",

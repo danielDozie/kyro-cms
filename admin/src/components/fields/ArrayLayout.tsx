@@ -496,7 +496,7 @@ export function ArrayLayout({
     );
   }
 
-  const isReceiptDisplay = (field as any).admin?.display === "receipt";
+  const isPillsDisplay = (field as any).admin?.display === "pills";
   const allExpanded = items.length > 0 && openIndices.size === items.length;
 
   return (
@@ -510,7 +510,7 @@ export function ArrayLayout({
           </span>
         </div>
 
-        {!isReceiptDisplay && !compact && items.length > 1 && (
+        {!isPillsDisplay && !compact && items.length > 1 && (
           <button
             type="button"
             onClick={allExpanded ? collapseAll : expandAll}
@@ -521,7 +521,7 @@ export function ArrayLayout({
         )}
       </div>
 
-      {isReceiptDisplay ? (
+      {isPillsDisplay ? (
         <div className="flex flex-wrap gap-2 p-3 bg-[var(--kyro-surface-accent)]/15 border border-[var(--kyro-border)] rounded-lg">
           {items.map((rawItem, idx) => {
             const item = rawItem as Record<string, any>;

@@ -9,25 +9,42 @@ import type { StorageProvider } from "../storage/index.js";
 // ============================================================================
 
 export interface AdminConfig {
+  /** Field to display as the title/name of the document in list and relation dropdowns (e.g. "title", "name", "orderNumber") */
   useAsTitle?: string;
+  /** Array of field names to display as default table columns in the collection list view */
   defaultColumns?: string[];
+  /** Hide this collection completely from the sidebar navigation */
   hidden?: boolean;
+  /** Subtitle or description shown under the collection header in the admin UI */
   description?: string;
+  /** Hide the quick API endpoint URL badge from the admin collection view */
   hideAPIURL?: boolean;
+  /** Sidebar navigation category section name (e.g. "Commerce", "Restaurant Menu", "Content") */
   group?: string;
+  /** Alias for `group`. Organizes collection under a specific sidebar group/folder */
   folder?: string;
+  /** Sub-folder for nested navigation grouping */
   parentFolder?: string;
+  /** Enable tree hierarchy view for nested hierarchical collections (e.g. parent/child pages) */
   treeHierarchy?: boolean;
+  /** Icon name from Lucide (e.g. "lucide:Utensils", "Utensils") or Heroicons (e.g. "hero:Sparkles", "hero-solid:Fire") */
   icon?: string;
+  /** Sort order index within its sidebar navigation group (lower numbers appear first) */
   order?: number;
+  /** Function returning live frontend preview URL with draft tokens */
   preview?: (doc: Record<string, unknown>, options: { req: unknown; token?: string }) => string | Promise<string>;
+  /** Disable the duplicate document button */
   disableDuplicate?: boolean;
+  /** Disable the live preview split panel */
   disablePreview?: boolean;
+  /** Pagination settings for list view */
   pagination?: {
     defaultLimit?: number;
     limits?: number[];
   };
+  /** Form layout mode: "split" (with sidebar fields) or "single" column */
   layout?: "split" | "single";
+  /** Custom smart view filters configured for this collection */
   smartViews?: SmartViewConfig[];
 }
 

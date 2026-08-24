@@ -87,13 +87,13 @@ export function updateFieldByPath(
     if (field.name === currentPart) {
       if (remainingPath) {
         if (field.fields && Array.isArray(field.fields)) {
-          return updateFieldByPath(field.fields, remainingPath, updates, allowAppend);
+          return updateFieldByPath(field.fields, remainingPath, updates, true);
         }
 
         if (field.type === "tabs" && field.tabs && Array.isArray(field.tabs)) {
           for (const tab of field.tabs) {
             if (tab.fields && Array.isArray(tab.fields)) {
-              if (updateFieldByPath(tab.fields, remainingPath, updates, allowAppend)) {
+              if (updateFieldByPath(tab.fields, remainingPath, updates, true)) {
                 return true;
               }
             }
@@ -108,14 +108,14 @@ export function updateFieldByPath(
 
           for (const block of field.blocks) {
             if (block.slug === blockSlug && block.fields && Array.isArray(block.fields)) {
-              return updateFieldByPath(block.fields, restOfPath, updates, allowAppend);
+              return updateFieldByPath(block.fields, restOfPath, updates, true);
             }
           }
           return false;
         }
 
         if (field.type === "array" && field.fields && Array.isArray(field.fields)) {
-          return updateFieldByPath(field.fields, remainingPath, updates, allowAppend);
+          return updateFieldByPath(field.fields, remainingPath, updates, true);
         }
         return false;
       } else {
@@ -125,11 +125,23 @@ export function updateFieldByPath(
       }
     }
 
-    // Check blocks fields for matching block slug directly
+    // Check blocks fields for matching block slug directly or unwrapping "blocks" prefix
     if (field.type === "blocks" && field.blocks && Array.isArray(field.blocks)) {
+      if (currentPart === "blocks" && remainingPath) {
+        const blockSlug = remainingPath.split(".")[0];
+        const restOfPath = remainingPath.split(".").slice(1).join(".");
+        for (const block of field.blocks) {
+          if (block.slug === blockSlug && block.fields && Array.isArray(block.fields)) {
+            if (updateFieldByPath(block.fields, restOfPath, updates, true)) {
+              return true;
+            }
+          }
+        }
+      }
+
       for (const block of field.blocks) {
         if (block.slug === currentPart && block.fields && Array.isArray(block.fields)) {
-          if (updateFieldByPath(block.fields, remainingPath, updates, allowAppend)) {
+          if (updateFieldByPath(block.fields, remainingPath, updates, true)) {
             return true;
           }
         }

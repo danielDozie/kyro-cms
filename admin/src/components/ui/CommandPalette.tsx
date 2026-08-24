@@ -19,6 +19,7 @@ import {
   Database,
   Network as NetworkIcon,
   Hexagon,
+  DynamicIcon,
 } from "./icons";
 import { useAuthStore } from "../../lib/stores";
 import { useTranslation } from "react-i18next";
@@ -112,7 +113,7 @@ export function CommandPalette({
       label: config.label || slug,
       type: "collection",
       slug,
-      icon: FileText,
+      icon: config.admin?.icon || "FileText",
     }));
 
   const globalItems = Object.entries(globals)
@@ -122,7 +123,7 @@ export function CommandPalette({
       label: config.label || slug,
       type: "global",
       slug,
-      icon: Settings,
+      icon: config.admin?.icon || "Settings",
     }));
 
   const isDark =
@@ -350,7 +351,7 @@ export function CommandPalette({
                     <div
                       className={`p-1.5 rounded-lg ${index === selectedIndex ? "bg-white/20" : "bg-[var(--kyro-bg-secondary)] border border-[var(--kyro-border)]"}`}
                     >
-                      <item.icon className="w-4 h-4" />
+                      <DynamicIcon name={item.icon} className="w-4 h-4" />
                     </div>
                     <div className="flex flex-col">
                       <span className="font-bold text-sm">{(item as any).label}</span>

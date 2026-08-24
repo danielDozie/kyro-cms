@@ -43,7 +43,7 @@ export interface FieldAdmin {
   method?: string;
   inline?: boolean;
   compact?: boolean;
-  display?: "receipt" | "table" | "default";
+  display?: "pills" | "default";
   collapsible?: boolean;
   initCollapsed?: boolean;
   pickerMode?: "drawer" | "dropdown";
