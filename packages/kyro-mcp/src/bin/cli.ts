@@ -39,7 +39,7 @@ async function main() {
     config,
     serverInfo: {
       name: '@kyro-cms/mcp',
-      version: '0.13.0',
+      version: '0.13.1',
     },
   });
 

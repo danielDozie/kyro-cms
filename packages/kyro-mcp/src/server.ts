@@ -170,7 +170,7 @@ Requirements:
             },
             serverInfo: {
               name: this.options.serverInfo?.name || '@kyro-cms/mcp',
-              version: this.options.serverInfo?.version || '0.13.0',
+              version: this.options.serverInfo?.version || '0.13.1',
             },
           };
           return { jsonrpc: '2.0', id: id ?? null, result };
