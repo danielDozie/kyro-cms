@@ -6,7 +6,26 @@ import { authCollectionSlugs } from "../lib/config";
 import { PageHeader } from "./ui/PageHeader";
 import { Shimmer } from "./ui/Shimmer";
 import { useTranslation } from "react-i18next";
+import { apiGet } from "../lib/api";
 
+interface MetricsResponse {
+  totalDocuments: number;
+  totalMedia: number;
+  totalUsers: number;
+  collectionCounts: Record<string, number>;
+}
+
+function timeAgo(dateStr: string | number | Date): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  if (hrs < 24) return `${hrs}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
 interface DashboardProps {
   collections: Record<string, unknown>;
@@ -21,60 +40,62 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
     totalDocs: number;
     totalMedia: number;
     totalUsers: number;
-    recentActivity: Array<{ id: number; type: string; user: string; doc: string; collection: string; time: string }>;
+    collectionCounts: Record<string, number>;
+    recentActivity: Array<{ id: string | number; type: string; user: string; doc: string; collection: string; time: string }>;
   }>({
     totalDocs: 0,
     totalMedia: 0,
     totalUsers: 0,
+    collectionCounts: {},
     recentActivity: [],
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data fetching for high-fidelity look
-    const timer = setTimeout(() => {
-      setStats({
-        totalDocs: 124,
-        totalMedia: 856,
-        totalUsers: 12,
-        recentActivity: [
-          {
-            id: 1,
-            type: "edit",
-            user: "Daniel Dozie",
-            doc: "Getting Started with Kyro",
-            collection: "posts",
-            time: "2m ago",
-          },
-          {
-            id: 2,
-            type: "create",
-            user: "Jane Smith",
-            doc: "New Product Launch",
-            collection: "products",
-            time: "15m ago",
-          },
-          {
-            id: 3,
-            type: "upload",
-            user: "Daniel Dozie",
-            doc: "hero-banner.jpg",
-            collection: "media",
-            time: "1h ago",
-          },
-          {
-            id: 4,
-            type: "publish",
-            user: "System",
-            doc: "Weekly Update",
-            collection: "posts",
-            time: "3h ago",
-          },
-        ],
-      } as { totalDocs: number; totalMedia: number; totalUsers: number; recentActivity: Array<{ id: number; type: string; user: string; doc: string; collection: string; time: string }> });
-      setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    let active = true;
+
+    Promise.all([
+      apiGet<MetricsResponse>("/api/metrics", { autoToast: false }).catch(() => null),
+      apiGet<any>("/api/audit_logs?limit=5", { autoToast: false }).catch(() => null),
+    ])
+      .then(([metrics, auditRes]) => {
+        if (!active) return;
+
+        const totalDocs = metrics?.totalDocuments || 0;
+        const totalMedia = metrics?.totalMedia || 0;
+        const totalUsers = metrics?.totalUsers || 0;
+        const collectionCounts = metrics?.collectionCounts || {};
+
+        const recentActivity = (auditRes?.docs || []).map((log: any) => ({
+          id: log.id,
+          type: log.action?.includes("create")
+            ? "create"
+            : log.action?.includes("update")
+              ? "edit"
+              : log.action?.includes("delete")
+                ? "delete"
+                : "activity",
+          user: log.userEmail?.split("@")[0] || log.metadata?.email || "User",
+          doc: log.metadata?.title || log.resourceId || log.action || "item",
+          collection: log.resource || "system",
+          time: timeAgo(log.timestamp || log.createdAt || Date.now()),
+        }));
+
+        setStats({
+          totalDocs,
+          totalMedia,
+          totalUsers,
+          collectionCounts,
+          recentActivity,
+        });
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const collectionList = Object.entries(collections).filter(
@@ -226,7 +247,9 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
                   <div className="w-full h-1 bg-[var(--kyro-bg-secondary)] rounded-full mb-3 overflow-hidden">
                     <div
                       className="h-full bg-[var(--kyro-primary)]"
-                      style={{ width: `${Math.random() * 60 + 20}%` }}
+                      style={{
+                        width: `${Math.min(100, Math.max(8, stats.totalDocs > 0 ? Math.round(((stats.collectionCounts[slug] || 0) / stats.totalDocs) * 100) : 0))}%`
+                      }}
                     />
                   </div>
                   <p className="text-sm text-[var(--kyro-text-secondary)] line-clamp-1">

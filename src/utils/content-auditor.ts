@@ -95,8 +95,14 @@ export function auditContentHealth(
         if (!field.name) continue;
 
         if (field.type === 'image' || field.type === 'upload') {
-          const val = doc[field.name];
-          if (val && typeof val === 'object' && !val.alt && !doc[`${field.name}Alt`]) {
+          let val = doc[field.name];
+          if (typeof val === 'string' && val.startsWith('{')) {
+            try { val = JSON.parse(val); } catch {}
+          }
+          const hasImage = val !== undefined && val !== null && val !== '';
+          const hasAlt = (typeof val === 'object' && val !== null && Boolean(val.alt)) || Boolean(doc[`${field.name}Alt`]) || Boolean(doc.alt);
+
+          if (hasImage && !hasAlt) {
             issues.push({
               id: `${slug}-${docId}-${field.name}-missing-alt`,
               type: 'accessibility',

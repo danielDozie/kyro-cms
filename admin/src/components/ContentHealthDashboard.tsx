@@ -19,11 +19,12 @@ import { PageHeader } from "./ui/PageHeader";
 import { Badge } from "./ui/Badge";
 import { Shimmer } from "./ui/Shimmer";
 import { adminPath } from "../lib/paths";
+import { apiGet } from "../lib/api";
 import { useTranslation } from "react-i18next";
 
 interface IssueItem {
   id: string;
-  type: "seo" | "accessibility" | "link" | "validation";
+  type: "seo" | "accessibility" | "link" | "validation" | "orphaned";
   severity: "critical" | "warning" | "info";
   collection: string;
   documentId: string;
@@ -31,6 +32,19 @@ interface IssueItem {
   field?: string;
   message: string;
   recommendation?: string;
+}
+
+interface ContentHealthReport {
+  score: number;
+  totalDocuments: number;
+  healthyDocuments: number;
+  issuesCount: {
+    critical: number;
+    warning: number;
+    info: number;
+  };
+  issues: IssueItem[];
+  collectionScores?: Record<string, { score: number; docCount: number; issueCount: number }>;
 }
 
 interface StatCardProps {
@@ -111,7 +125,7 @@ function CategoryHealthRow({ name, description, score, issueCount, icon, loading
 export function ContentHealthDashboard() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const [score, setScore] = useState(94);
+  const [score, setScore] = useState(100);
   const [totalDocs, setTotalDocs] = useState(0);
   const [issues, setIssues] = useState<IssueItem[]>([]);
   const [filterType, setFilterType] = useState<string>("all");
@@ -122,44 +136,10 @@ export function ContentHealthDashboard() {
     setRefreshing(true);
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      setScore(94);
-      setTotalDocs(42);
-      setIssues([
-        {
-          id: "1",
-          type: "seo",
-          severity: "warning",
-          collection: "posts",
-          documentId: "welcome-to-kyro",
-          documentTitle: "Welcome to Kyro CMS",
-          field: "seo.description",
-          message: "Missing SEO meta description",
-          recommendation: "Add a concise 120-160 character description to boost Google snippet CTR.",
-        },
-        {
-          id: "2",
-          type: "accessibility",
-          severity: "warning",
-          collection: "media",
-          documentId: "hero-banner-2026",
-          documentTitle: "hero-banner-2026.webp",
-          field: "alt",
-          message: "Uploaded image is missing descriptive alt text",
-          recommendation: "Use the Vision AI Alt-Text tool in Media Gallery to auto-generate accessibility text.",
-        },
-        {
-          id: "3",
-          type: "validation",
-          severity: "info",
-          collection: "categories",
-          documentId: "uncategorized",
-          documentTitle: "Uncategorized",
-          field: "description",
-          message: "Category description is brief",
-          recommendation: "Elaborate category details for better taxonomy indexing.",
-        },
-      ]);
+      const data = await apiGet<ContentHealthReport>("/api/content-health");
+      setScore(typeof data.score === "number" ? data.score : 100);
+      setTotalDocs(typeof data.totalDocuments === "number" ? data.totalDocuments : 0);
+      setIssues(Array.isArray(data.issues) ? data.issues : []);
       setLastRefreshed(new Date());
     } catch (e) {
       console.error("Audit error:", e);
@@ -178,6 +158,16 @@ export function ContentHealthDashboard() {
     if (filterType === "all") return true;
     return issue.type === filterType;
   });
+
+  const seoIssues = issues.filter((i) => i.type === "seo").length;
+  const a11yIssues = issues.filter((i) => i.type === "accessibility").length;
+  const valIssues = issues.filter((i) => i.type === "validation").length;
+  const linkIssues = issues.filter((i) => i.type === "link" || i.type === "orphaned").length;
+
+  const seoScore = totalDocs > 0 ? Math.max(0, Math.round(100 - (seoIssues / totalDocs) * 100)) : 100;
+  const a11yScore = totalDocs > 0 ? Math.max(0, Math.round(100 - (a11yIssues / totalDocs) * 100)) : 100;
+  const valScore = totalDocs > 0 ? Math.max(0, Math.round(100 - (valIssues / totalDocs) * 100)) : 100;
+  const linkScore = totalDocs > 0 ? Math.max(0, Math.round(100 - (linkIssues / totalDocs) * 100)) : 100;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -233,16 +223,22 @@ export function ContentHealthDashboard() {
               <>
                 <div className="flex items-center gap-3 flex-wrap">
                   <h2 className="text-lg font-bold text-[var(--kyro-text-primary)] tracking-tight">
-                    {isOptimal ? "Content Quality is High" : "Actionable Gaps Detected"}
+                    {totalDocs === 0
+                      ? "No Documents Available"
+                      : isOptimal
+                        ? "Content Quality is High"
+                        : "Actionable Gaps Detected"}
                   </h2>
-                  <Badge variant={isOptimal ? "success" : "warning"} dot>
-                    {isOptimal ? "Optimal Quality" : "Needs Review"}
+                  <Badge variant={totalDocs === 0 ? "default" : isOptimal ? "success" : "warning"} dot>
+                    {totalDocs === 0 ? "Empty Repository" : isOptimal ? "Optimal Quality" : "Needs Review"}
                   </Badge>
                 </div>
                 <p className="text-sm text-[var(--kyro-text-secondary)] mt-1">
-                  {isOptimal
-                    ? `Overall repository quality score is ${score}%. 92% of documents comply with SEO and accessibility standards.`
-                    : "Some published or draft documents are missing SEO tags, image alt texts, or required fields."}
+                  {totalDocs === 0
+                    ? "Create documents in your collections to run automated content quality audits."
+                    : isOptimal
+                      ? `Overall repository quality score is ${score}%. ${totalDocs - issues.length} of ${totalDocs} documents comply with SEO and accessibility standards.`
+                      : `${issues.length} issue${issues.length === 1 ? "" : "s"} detected across published or draft documents (missing SEO tags, image alt texts, or required fields).`}
                 </p>
                 <p className="text-[11px] text-[var(--kyro-text-muted)] mt-2">
                   Last audited: {lastRefreshed.toLocaleTimeString()}
@@ -282,7 +278,7 @@ export function ContentHealthDashboard() {
             icon={<Shield className="w-5 h-5" />}
             color="bg-violet-500/10 text-violet-500"
             label="Perfect Docs"
-            value={loading ? "—" : totalDocs - issues.length}
+            value={loading ? "—" : Math.max(0, totalDocs - issues.length)}
             sub="100% compliant"
             loading={loading}
           />
@@ -302,32 +298,32 @@ export function ContentHealthDashboard() {
               <CategoryHealthRow
                 name="SEO & Metadata"
                 description="Meta titles, descriptions, and OpenGraph social preview tags"
-                score={92}
-                issueCount={issues.filter((i) => i.type === "seo").length}
+                score={seoScore}
+                issueCount={seoIssues}
                 icon={<Globe className="w-4 h-4" />}
                 loading={loading}
               />
               <CategoryHealthRow
                 name="Image Accessibility"
                 description="Descriptive alt-texts and accessibility labels on media assets"
-                score={90}
-                issueCount={issues.filter((i) => i.type === "accessibility").length}
+                score={a11yScore}
+                issueCount={a11yIssues}
                 icon={<Image className="w-4 h-4" />}
                 loading={loading}
               />
               <CategoryHealthRow
                 name="Schema Validation"
                 description="Required fields, data type constraints, and relationships"
-                score={98}
-                issueCount={issues.filter((i) => i.type === "validation").length}
+                score={valScore}
+                issueCount={valIssues}
                 icon={<FolderTree className="w-4 h-4" />}
                 loading={loading}
               />
               <CategoryHealthRow
                 name="Dead Link Detection"
                 description="External hyperlinks and internal document cross-references"
-                score={100}
-                issueCount={0}
+                score={linkScore}
+                issueCount={linkIssues}
                 icon={<FileText className="w-4 h-4" />}
                 loading={loading}
               />
@@ -344,7 +340,7 @@ export function ContentHealthDashboard() {
                 </h3>
               </div>
               <div className="flex items-center gap-1">
-                {["all", "seo", "accessibility"].map((type) => (
+                {["all", "seo", "accessibility", "validation"].map((type) => (
                   <button
                     key={type}
                     type="button"
