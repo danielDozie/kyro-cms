@@ -4,6 +4,7 @@ import { resolveAuthContext, checkCollectionAccess } from "../utils/api-helpers.
 import { hasPermission } from "../../../auth/rbac/checker.js";
 import { ApiError } from "../../../utils/errors.js";
 import { populateRelationships } from "../../../utils/populate.js";
+import { auditContentHealth } from "../../../utils/content-auditor.js";
 import type { BaseAdapter } from "../../../registry/types.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { AuthMiddlewareResult } from "../auth-middleware.js";
@@ -393,6 +394,36 @@ export function mountSystemRoutes(
     }));
     return c.json(collections);
   });
+
+  // Content Health & Quality Audit
+  const handleContentHealthAudit = async (c: any) => {
+    const { user: ctxUser, tenantId: ctxTenantID } = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+    if (!ctxUser) throw new ApiError(401, "Authentication required");
+
+    const collections = registry.getCollections().filter((col) => !col.slug.startsWith("_"));
+    const documentsByCollection: Record<string, any[]> = {};
+
+    for (const col of collections) {
+      try {
+        const res = await db.find({
+          collection: col.slug,
+          where: {},
+          limit: 500,
+          page: 1,
+          tenantId: ctxTenantID,
+        });
+        documentsByCollection[col.slug] = res.docs || [];
+      } catch {
+        documentsByCollection[col.slug] = [];
+      }
+    }
+
+    const report = auditContentHealth(collections, documentsByCollection);
+    return c.json(report);
+  };
+
+  app.get("/api/content-health", handleContentHealthAudit);
+  app.get("/api/audit/content-health", handleContentHealthAudit);
 }
 
 function resolveDocField(fields: any[], doc: any, fieldName: string): any {

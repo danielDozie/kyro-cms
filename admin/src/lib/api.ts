@@ -102,6 +102,29 @@ export async function apiPost<T = any>(
   return response.json();
 }
 
+export async function apiPut<T = any>(
+  url: string,
+  body?: unknown,
+  options?: RequestInit & { autoToast?: boolean },
+): Promise<T> {
+  const { autoToast = true, ...fetchOptions } = options || {};
+  const response = await fetchWithAuth(url, {
+    method: "PUT",
+    body: body ? JSON.stringify(body) : undefined,
+    ...fetchOptions,
+  });
+  if (!response.ok) {
+    let errorMessage = `PUT Failed: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      if (errorData.error) errorMessage = errorData.error;
+    } catch {}
+    if (autoToast) toast.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+  return response.json();
+}
+
 export async function apiPatch<T = any>(
   url: string,
   body?: unknown,

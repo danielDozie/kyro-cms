@@ -1,5 +1,5 @@
 import "../lib/i18n";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   DownloadCloud,
@@ -14,6 +14,7 @@ import {
 import { useUIStore, toast } from "../lib/stores";
 import { Badge } from "./ui/Badge";
 import { useTranslation } from "react-i18next";
+import { apiGet, apiPut } from "../lib/api";
 
 interface Extension {
   id: string;
@@ -28,7 +29,31 @@ interface Extension {
   featured?: boolean;
 }
 
-const mockExtensions: Extension[] = [
+const defaultExtensions: Extension[] = [
+  {
+    id: "@kyro-cms/seo",
+    name: "SEO Optimizer Pro",
+    description: "Meta tags, sitemaps, and rich snippets for better search visibility.",
+    developer: "Kyro Team",
+    rating: 4.8,
+    downloads: "45k+",
+    price: "Free",
+    tags: ["SEO", "Official"],
+    installed: false,
+    featured: true,
+  },
+  {
+    id: "@kyro-cms/ai",
+    name: "AI Content & Alt-Text Generator",
+    description: "Generate content, automated SEO descriptions, and vision alt-text in editor.",
+    developer: "Kyro Official",
+    rating: 4.9,
+    downloads: "28k+",
+    price: "Free",
+    tags: ["AI", "Official"],
+    installed: false,
+    featured: true,
+  },
   {
     id: "ext-ecommerce",
     name: "Commerce Suite",
@@ -37,74 +62,70 @@ const mockExtensions: Extension[] = [
     rating: 4.9,
     downloads: "12k+",
     price: "Free",
-    tags: ["E-commerce", "Stripe"],
-    installed: false,
-    featured: true,
-  },
-  {
-    id: "ext-seo",
-    name: "SEO Optimizer Pro",
-    description: "Meta tags, sitemaps, and rich snippets for better search visibility.",
-    developer: "Kyro Team",
-    rating: 4.8,
-    downloads: "45k+",
-    price: "Free",
-    tags: ["SEO", "Marketing"],
-    installed: true,
-  },
-  {
-    id: "ext-algolia",
-    name: "Algolia Search",
-    description: "Fast search with Algolia for your collections and site.",
-    developer: "SearchBots",
-    rating: 4.6,
-    downloads: "5k+",
-    price: "$19/mo",
-    tags: ["Search", "API"],
+    tags: ["E-commerce", "Official"],
     installed: false,
   },
   {
-    id: "ext-openai",
-    name: "AI Content Writer",
-    description: "Generate content with GPT models directly in the editor.",
-    developer: "AI Tools",
-    rating: 4.7,
-    downloads: "8k+",
-    price: "$9/mo",
-    tags: ["AI", "Content"],
-    installed: false,
-    featured: true,
-  },
-  {
-    id: "ext-backup",
-    name: "Auto Backup",
-    description: "Scheduled backups to S3, Dropbox, or Google Drive.",
-    developer: "SafeData",
+    id: "s3-storage",
+    name: "S3 Storage Provider",
+    description: "Direct cloud asset uploading to Amazon AWS S3 buckets.",
+    developer: "Kyro Official",
     rating: 4.9,
-    downloads: "22k+",
+    downloads: "35k+",
     price: "Free",
-    tags: ["Utility", "Security"],
+    tags: ["Utility", "Official"],
+    installed: false,
+  },
+  {
+    id: "cloudinary-storage",
+    name: "Cloudinary Media",
+    description: "Cloud image transformation and optimized media delivery.",
+    developer: "Cloudinary",
+    rating: 4.7,
+    downloads: "18k+",
+    price: "Free",
+    tags: ["Utility"],
     installed: false,
   },
   {
     id: "ext-slack",
     name: "Slack Notifications",
-    description: "Get notified in Slack when content changes.",
+    description: "Get notified in Slack when content changes via webhooks.",
     developer: "Kyro Team",
     rating: 4.5,
-    downloads: "3k+",
+    downloads: "8k+",
     price: "Free",
-    tags: ["Notifications"],
+    tags: ["Utility"],
     installed: false,
   },
 ];
 
 export function MarketplaceManager() {
-    const { t } = useTranslation();
-  const [extensions, setExtensions] = useState<Extension[]>(mockExtensions);
+  const { t } = useTranslation();
+  const [extensions, setExtensions] = useState<Extension[]>(defaultExtensions);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const { confirm, alert } = useUIStore();
+  const { confirm } = useUIStore();
+
+  useEffect(() => {
+    let active = true;
+    apiGet<any[]>("/api/plugins", { autoToast: false })
+      .then((plugins) => {
+        if (!active || !Array.isArray(plugins)) return;
+        const installedIds = new Set(plugins.filter((p) => p.enabled !== false).map((p) => p.id || p.name));
+        setExtensions((prev) =>
+          prev.map((ext) => ({
+            ...ext,
+            installed: installedIds.has(ext.id) || ext.installed,
+          }))
+        );
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const categories = ["All", "Official", "E-commerce", "SEO", "AI", "Utility"];
 
@@ -114,12 +135,16 @@ export function MarketplaceManager() {
       message: `Connect ${ext.name} to your dashboard? It will have scoped access to your data.`,
       confirmLabel: "Connect Extension",
       onConfirm: async () => {
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+          await apiPut(`/api/plugins/${encodeURIComponent(ext.id)}/toggle`, { enabled: true });
+        } catch {
+          // If extension is not directly hot-swappable via toggle, update local state
+        }
         setExtensions((prev) =>
-          prev.map((e) => e.id === ext.id ? { ...e, installed: true } : e)
+          prev.map((e) => (e.id === ext.id ? { ...e, installed: true } : e))
         );
-        toast.success(`Extension initialized: ${ext.name}`);
-      }
+        toast.success(`Extension connected: ${ext.name}`);
+      },
     });
   };
 

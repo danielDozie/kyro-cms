@@ -331,6 +331,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
         return this.col(field.name) + " TEXT";
       case "relationship":
       case "upload":
+      case "image":
         return this.col(field.name) + " TEXT";
       case "json":
       case "richtext":
