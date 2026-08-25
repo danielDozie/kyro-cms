@@ -97,3 +97,14 @@ export {
   applyCollectionOverrides,
   applyGlobalOverrides,
 } from "./utils/schemaOverrides.js";
+
+// Document Tree & Routing Hierarchy
+export {
+  type HierarchyNode,
+  type BuildTreeOptions,
+  buildDocumentTree,
+  getBreadcrumbs,
+  getNestedPath,
+  flattenDocumentTree,
+} from "./utils/hierarchy.js";
+

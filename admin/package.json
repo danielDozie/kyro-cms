@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/admin",
-  "version": "0.12.72",
+  "version": "0.13.2",
   "engines": {
     "node": ">=22"
   },
@@ -84,6 +84,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@graphiql/react": "^0.37.3",
+    "@heroicons/react": "^2.2.0",
     "@kyro-cms/astro": "workspace:*",
     "@kyro-cms/core": "workspace:*",
     "@tailwindcss/vite": "^4.0.0",

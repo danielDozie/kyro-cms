@@ -183,10 +183,20 @@ function SortableArrayItem({
           {index + 1}
         </span>
 
-        <div className="flex-1 min-w-0 pr-2">
-          <span className="text-xs font-semibold text-[var(--kyro-text-primary)] truncate block">
+        <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
+          <span className="text-xs font-semibold text-[var(--kyro-text-primary)] truncate">
             {label}
           </span>
+          {item.quantity !== undefined && item.quantity !== null && (
+            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] border border-[var(--kyro-border)] shrink-0">
+              × {String(item.quantity)}
+            </span>
+          )}
+          {(item.total !== undefined || item.price !== undefined || item.unitPrice !== undefined) && (
+            <span className="text-[11px] font-medium text-[var(--kyro-text-muted)] shrink-0">
+              ${Number(item.total ?? item.price ?? item.unitPrice).toFixed(2)}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -244,14 +254,14 @@ export function ArrayLayout({
   const fields = (field as Field & { fields?: { name?: string; type?: string; relationTo?: string | string[]; label?: string }[] }).fields || [];
   const firstField = fields[0];
   const labelField = firstField?.name || "user";
-  const isRelationship = firstField?.type === "relationship";
+  const isRelationship = firstField?.type === "relationship" && fields.length === 1;
 
-  // By default, only the first item is open (or none if initCollapsed: true)
+  // By default, all items start collapsed unless initCollapsed: false
   const [openIndices, setOpenIndices] = React.useState<Set<number>>(() => {
-    if ((field as any).admin?.initCollapsed) {
-      return new Set();
+    if ((field as any).admin?.initCollapsed === false) {
+      return new Set([0]);
     }
-    return new Set([0]);
+    return new Set();
   });
 
   const [relLabels, setRelLabels] = React.useState<Record<string, string>>({});
@@ -324,21 +334,22 @@ export function ArrayLayout({
             if (vObj.relationTo && typeof vObj.relationTo === "string") {
               rel = vObj.relationTo;
             }
-            if (vObj.id && typeof vObj.id === "string") {
-              id = vObj.id;
-            } else if (vObj.value && typeof vObj.value === "string") {
-              id = vObj.value;
+            const rawId = vObj.id ?? vObj.value ?? vObj._id;
+            if (typeof rawId === "object" && rawId !== null) {
+              id = (rawId as any)._id ? String((rawId as any)._id) : (rawId as any).id ? String((rawId as any).id) : "";
+            } else if (rawId) {
+              id = String(rawId);
             }
           }
 
-          if (id && rel && !fetchedRelIds.current.has(id)) {
+          if (id && id !== "[object Object]" && rel && !fetchedRelIds.current.has(id)) {
             fetchedRelIds.current.add(id);
-            apiGet<Record<string, unknown>>(`/api/${rel}/${id}`)
+            apiGet<Record<string, unknown>>(`/api/${rel}/${encodeURIComponent(id)}`)
               .then((res) => {
                 const doc = (res as any)?.data || res;
                 const label = extractLabelFromObj(doc);
                 if (label) {
-                  setRelLabels((prev) => ({ ...prev, [id]: label }));
+                  setRelLabels((prev) => ({ ...prev, [id!]: label }));
                 }
               })
               .catch(() => { });
@@ -485,6 +496,7 @@ export function ArrayLayout({
     );
   }
 
+  const isPillsDisplay = (field as any).admin?.display === "pills";
   const allExpanded = items.length > 0 && openIndices.size === items.length;
 
   return (
@@ -498,7 +510,7 @@ export function ArrayLayout({
           </span>
         </div>
 
-        {!compact && items.length > 1 && (
+        {!isPillsDisplay && !compact && items.length > 1 && (
           <button
             type="button"
             onClick={allExpanded ? collapseAll : expandAll}
@@ -509,103 +521,122 @@ export function ArrayLayout({
         )}
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        {compact ? (
-          <div className="kyro-form-array kyro-form-array--compact border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/10 rounded-xl p-3">
-            <SortableContext
-              items={itemIds}
-              strategy={verticalListSortingStrategy}
-            >
-              {(items as Record<string, unknown>[]).map((item, index) => (
-                <SortableArrayItem
-                  key={item.id as string || item._key as string || index}
-                  id={item.id as string || item._key as string || `idx-${index}`}
-                  index={index}
-                  isOpen={false}
-                  onToggle={() => { }}
-                  item={item}
-                  field={field}
-                  renderField={renderField}
-                  onChangeItem={(newItem) => {
-                    const newItems = [...items];
-                    newItems[index] = newItem;
-                    onChange(newItems);
-                  }}
-                  onRemove={() => onChange(items.filter((_: unknown, i: number) => i !== index))}
-                  disabled={disabled}
-                  compact={true}
-                  getItemLabel={getItemLabel}
-                />
-              ))}
-            </SortableContext>
-            <button
-              type="button"
-              className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
-              disabled={disabled}
-              onClick={() => onChange([...items, { id: Math.random().toString(36).substr(2, 9) }])}
-            >
-              + Add Item
-            </button>
-          </div>
-        ) : (
-          <div className="kyro-form-array border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/20 rounded-lg p-3 space-y-3">
-            <SortableContext
-              items={itemIds}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-2">
-                {items.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-[var(--kyro-text-muted)] italic">
-                    No items added yet. Click below to add an item.
-                  </div>
-                ) : (
-                  (items as Record<string, unknown>[]).map((item, index) => {
-                    const isOpen = openIndices.has(index);
-                    return (
-                      <SortableArrayItem
-                        key={item.id as string || item._key as string || index}
-                        id={item.id as string || item._key as string || `idx-${index}`}
-                        index={index}
-                        isOpen={isOpen}
-                        onToggle={() => toggleItemOpen(index)}
-                        item={item}
-                        field={field}
-                        renderField={renderField}
-                        onChangeItem={(newItem) => {
-                          const newItems = [...items];
-                          newItems[index] = newItem;
-                          onChange(newItems);
-                        }}
-                        onRemove={() => onChange(items.filter((_: unknown, i: number) => i !== index))}
-                        disabled={disabled}
-                        compact={false}
-                        getItemLabel={getItemLabel}
-                      />
-                    );
-                  })
-                )}
+      {isPillsDisplay ? (
+        <div className="flex flex-wrap gap-2 p-3 bg-[var(--kyro-surface-accent)]/15 border border-[var(--kyro-border)] rounded-lg">
+          {items.map((rawItem, idx) => {
+            const item = rawItem as Record<string, any>;
+            const itemName = String(item.name || item.title || `Item ${idx + 1}`);
+            const itemQty = Number(item.quantity ?? 1);
+            const unitPrice = Number(item.unitPrice ?? item.price ?? 0);
+            const lineTotal = Number(item.total ?? (unitPrice * itemQty));
+            return (
+              <div
+                key={idx}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--kyro-surface)] border border-[var(--kyro-border)] shadow-xs hover:border-[var(--kyro-border-accent)] transition-colors"
+              >
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] text-xs font-bold text-[var(--kyro-text-primary)]">
+                  {itemQty}×
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-[var(--kyro-text-primary)]">
+                    {itemName}
+                  </span>
+                  {item.options && (
+                    <span className="text-[10px] text-[var(--kyro-text-muted)] leading-tight">
+                      {String(item.options)}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-bold text-[var(--kyro-text-secondary)] ml-1">
+                  ${lineTotal.toFixed(2)}
+                </span>
               </div>
-            </SortableContext>
-            <button
-              type="button"
-              className="w-full py-2.5 border-2 border-dashed border-[var(--kyro-border)] rounded-xl text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)] transition-all disabled:opacity-50"
-              disabled={disabled}
-              onClick={() => {
-                const newId = Math.random().toString(36).substr(2, 9);
-                const nextIndex = items.length;
-                onChange([...items, { id: newId }]);
-                setOpenIndices((prev) => new Set(prev).add(nextIndex));
-              }}
-            >
-              + Add Item
-            </button>
-          </div>
-        )}
-      </DndContext>
+            );
+          })}
+        </div>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          {compact ? (
+            <div className="kyro-form-array kyro-form-array--compact border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/10 rounded-xl p-3">
+              <SortableContext
+                items={itemIds}
+                strategy={verticalListSortingStrategy}
+              >
+                {(items as Record<string, unknown>[]).map((item, index) => (
+                  <SortableArrayItem
+                    key={item.id as string || item._key as string || index}
+                    id={item.id as string || item._key as string || `idx-${index}`}
+                    index={index}
+                    isOpen={false}
+                    onToggle={() => { }}
+                    item={item}
+                    field={field}
+                    renderField={renderField}
+                    onChangeItem={(newItem) => {
+                      const newItems = [...items];
+                      newItems[index] = newItem;
+                      onChange(newItems);
+                    }}
+                    onRemove={() => onChange(items.filter((_: unknown, i: number) => i !== index))}
+                    disabled={disabled}
+                    compact={true}
+                    getItemLabel={getItemLabel}
+                  />
+                ))}
+              </SortableContext>
+              <button
+                type="button"
+                className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
+                disabled={disabled}
+                onClick={() => onChange([...items, { id: Math.random().toString(36).substr(2, 9) }])}
+              >
+                + Add Item
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <SortableContext
+                items={itemIds}
+                strategy={verticalListSortingStrategy}
+              >
+                {(items as Record<string, unknown>[]).map((item, index) => (
+                  <SortableArrayItem
+                    key={item.id as string || item._key as string || index}
+                    id={item.id as string || item._key as string || `idx-${index}`}
+                    index={index}
+                    isOpen={openIndices.has(index)}
+                    onToggle={() => toggleItemOpen(index)}
+                    item={item}
+                    field={field}
+                    renderField={renderField}
+                    onChangeItem={(newItem) => {
+                      const newItems = [...items];
+                      newItems[index] = newItem;
+                      onChange(newItems);
+                    }}
+                    onRemove={() => onChange(items.filter((_: unknown, i: number) => i !== index))}
+                    disabled={disabled}
+                    compact={false}
+                    getItemLabel={getItemLabel}
+                  />
+                ))}
+              </SortableContext>
+              <button
+                type="button"
+                className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
+                disabled={disabled}
+                onClick={() => onChange([...items, { id: Math.random().toString(36).substr(2, 9) }])}
+              >
+                + Add Item
+              </button>
+            </div>
+          )}
+        </DndContext>
+      )}
     </div>
   );
 }

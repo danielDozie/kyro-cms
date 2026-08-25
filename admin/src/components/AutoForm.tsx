@@ -185,13 +185,18 @@ function AutoFormInner({
       useAutoFormStore.getState().loadDocument(cached.data, cached.data);
     }
 
+    if (!globalSlug && (!documentId || documentId === "new" || String(documentId) === "[object Object]")) {
+      setClientLoading(false);
+      return;
+    }
+
     const abort = new AbortController();
     setFetchError(false);
     if (!cached) setClientLoading(true);
 
     const url = globalSlug
       ? `/api/globals/${globalSlug}`
-      : `/api/${collectionSlug}/${documentId}`;
+      : `/api/${collectionSlug}/${encodeURIComponent(String(documentId))}`;
 
     apiGet<{ data?: Record<string, unknown> }>(url, { autoToast: false, signal: abort.signal })
       .then((result) => {
@@ -1027,6 +1032,7 @@ function AutoFormInner({
     <div className="flex flex-col h-full">
       {layout !== "single" && (
         <AutoFormHeader
+          config={config}
           collectionSlug={collectionSlug}
           globalSlug={globalSlug}
           documentStatus={documentStatus || "draft"}

@@ -34,10 +34,10 @@ const permittedQuickLinks = Object.entries(collections)
   .slice(0, 6);
 
 const canSeeAudit = !serverUser || isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
-const canSeeLockedUsers = !serverUser || isServerAdmin || serverPermissions?.collections?.users?.read === true;
+const canSeeContentHealth = !serverUser || isServerAdmin || serverPermissions?.collections?.users?.read === true;
 const canSeeRoles = !serverUser || isServerSuperAdmin;
 const canSeeHealth = !serverUser || isServerAdmin;
-const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || canSeeHealth;
+const hasAnySecurityAction = canSeeAudit || canSeeContentHealth || canSeeRoles || canSeeHealth;
 ---
 
 <AdminLayout title={i18next.t("pages." + "Dashboard".replace(/ /g, ""), { defaultValue: "Dashboard" })}>
@@ -140,24 +140,24 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
             </a>
           )}
 
-          {canSeeLockedUsers && (
+          {canSeeContentHealth && (
             <a
-              href={`${adminPath}/users?locked=true`}
-              data-sec-card="locked-users"
+              href={`${adminPath}/content-health`}
+              data-sec-card="content-health"
               class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
             >
-              <div class="w-10 h-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center mb-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   ></path>
                 </svg>
               </div>
-              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Locked Accounts</h4>
-              <p class="text-xs text-[var(--kyro-text-secondary)]">Manage lockouts</p>
+              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Content Health</h4>
+              <p class="text-xs text-[var(--kyro-text-secondary)]">SEO & Quality audit</p>
             </a>
           )}
 
@@ -244,8 +244,8 @@ const hasAnySecurityAction = canSeeAudit || canSeeLockedUsers || canSeeRoles || 
             var hasAccess = false;
             if (card === "audit") {
               hasAccess = isAdmin || (permissions && permissions.collections && permissions.collections.audit_logs && permissions.collections.audit_logs.read === true);
-            } else if (card === "locked-users") {
-              hasAccess = isAdmin || (permissions && permissions.collections && permissions.collections.users && permissions.collections.users.read === true);
+            } else if (card === "content-health" || card === "locked-users") {
+              hasAccess = isAdmin || isEditor || isAuthor || (permissions && permissions.collections && permissions.collections.users && permissions.collections.users.read === true);
             } else if (card === "roles") {
               hasAccess = isSuperAdmin;
             } else if (card === "health") {

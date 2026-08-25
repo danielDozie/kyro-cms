@@ -149,16 +149,20 @@ export function RelationshipField({
       : value ? [value] : [];
     return items.map((item) => {
       if (typeof item === "object" && item !== null) {
-        return (item as { value?: string }).value || (item as { id?: string }).id || "";
+        const candidate = (item as any).value ?? (item as any).id ?? (item as any)._id ?? "";
+        if (typeof candidate === "object" && candidate !== null) {
+          return candidate._id ? String(candidate._id) : candidate.id ? String(candidate.id) : candidate.toString ? candidate.toString() : "";
+        }
+        return candidate ? String(candidate) : "";
       }
-      return String(item);
-    }).filter(Boolean);
+      return item ? String(item) : "";
+    }).filter((id) => id && id !== "[object Object]" && id !== "undefined" && id !== "null");
   }, [value, isMultiple]);
 
   const fetchSelectedDocs = useCallback((ids: string[]) => {
     if (ids.length === 0) return;
     ids.forEach((id) => {
-      if (fetchedIdsRef.current.has(id)) return;
+      if (!id || id === "[object Object]" || fetchedIdsRef.current.has(id)) return;
       fetchedIdsRef.current.add(id);
       const rel = isPolymorphic
         ? (() => {
@@ -168,21 +172,22 @@ export function RelationshipField({
               : [value];
             const match = items.find((item) => {
               if (typeof item === "object" && item !== null) {
-                return (item as { value?: string }).value === id || (item as { id?: string }).id === id;
+                const itemVal = (item as any).value ?? (item as any).id ?? (item as any)._id;
+                return String(itemVal) === String(id);
               }
-              return false;
+              return String(item) === String(id);
             });
             return match && typeof match === "object" ? (match as { relationTo?: string }).relationTo || activeRelation : activeRelation;
           })()
         : activeRelation;
-      apiGet<Record<string, unknown>>(`/api/${rel}/${id}`)
+      apiGet<Record<string, unknown>>(`/api/${rel}/${encodeURIComponent(id)}`)
         .then((response) => {
           const doc = (response as any).data || response;
           if (!doc || typeof doc !== "object") return;
 
           setSelectedDocs((prev) => {
-            if (prev.some((d) => d.id === id)) return prev;
-            return [...prev, { ...doc, id: String((doc as any).id), relationTo: rel }];
+            if (prev.some((d) => String(d.id || (d as any)._id) === String(id))) return prev;
+            return [...prev, { ...doc, id: String((doc as any).id || (doc as any)._id), relationTo: rel }];
           });
         })
         .catch(() => {});

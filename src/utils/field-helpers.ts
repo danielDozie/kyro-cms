@@ -156,3 +156,49 @@ export function clearUniqueFields(fields: any[], data: any): void {
   }
 }
 
+/**
+ * Strips fields from document or data payload based on field-level access rules.
+ */
+export async function maskRestrictedFields(
+  data: any,
+  fields: Field[],
+  user: any,
+  req?: Request,
+  operation: "read" | "update" | "create" = "read"
+): Promise<any> {
+  if (!data || typeof data !== "object") return data;
+  const isSuperAdmin = user?.role === "super_admin";
+  if (isSuperAdmin) return data;
+
+  const result = Array.isArray(data) ? [...data] : { ...data };
+
+  for (const field of fields) {
+    if (!field.name) continue;
+
+    // Check field-level access control function if declared
+    if (field.access && typeof (field.access as any)[operation] === "function") {
+      const allowed = await (field.access as any)[operation]({
+        user,
+        req,
+        doc: data,
+        data,
+      });
+      if (!allowed) {
+        delete (result as any)[field.name];
+        continue;
+      }
+    }
+
+    // Check nested structures
+    if (field.type === "group" && Array.isArray(field.fields) && (result as any)[field.name]) {
+      (result as any)[field.name] = await maskRestrictedFields((result as any)[field.name], field.fields, user, req, operation);
+    } else if (field.type === "array" && Array.isArray(field.fields) && Array.isArray((result as any)[field.name])) {
+      (result as any)[field.name] = await Promise.all(
+        (result as any)[field.name].map((item: any) => maskRestrictedFields(item, field.fields || [], user, req, operation))
+      );
+    }
+  }
+
+  return result;
+}
+

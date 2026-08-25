@@ -93,9 +93,13 @@ export function DetailView({
 
 
   const loadDocument = async () => {
+    if (!documentId || documentId === "new" || String(documentId) === "[object Object]") {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
-      const result = (await apiGet(`/api/${slug}/${documentId}`, { autoToast: false }) as {
+      const result = (await apiGet(`/api/${slug}/${encodeURIComponent(String(documentId))}`, { autoToast: false }) as {
         data?: Record<string, unknown>;
         status?: string;
         createdAt?: string;

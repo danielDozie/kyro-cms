@@ -10,7 +10,7 @@ export const productsCollection: CollectionConfig = {
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "price", "inventory"],
     description: "E-commerce products",
-    icon: "ShoppingCart",
+    icon: "ShoppingBag",
   },
   seo: true,
   fields: [

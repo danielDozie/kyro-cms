@@ -73,13 +73,15 @@ const defaultCollectionIcons: Record<string, string> = {
   pages: "FileText",
   posts: "Newspaper",
   categories: "Tags",
-  menu: "Menu",
+  menu: "Compass",
   products: "ShoppingBag",
   customers: "Users",
-  orders: "ShoppingCart",
+  orders: "Receipt",
   coupons: "Ticket",
   forms: "FileInput",
   "form-entries": "Inbox",
+  brands: "Sparkles",
+  reviews: "Star",
 };
 
 
@@ -178,6 +180,7 @@ function loadProjectConfig() {
   return null;
 }
 
+// Reload project config
 const projectCfg = loadProjectConfig() || { collections: [], globals: [] };
 
 const rawConfig = createProjectAdminConfig(projectCfg);
@@ -192,3 +195,61 @@ export const authCollectionSlugs = ["users", "audit_logs"];
 export const nonAuthCollections = Object.values(collections).filter(
   (c) => !authCollectionSlugs.includes(c.slug) && c.admin?.hidden !== true,
 );
+
+export const projects = ((projectCfg as any).projects || []) as Array<{
+  id: string;
+  name: string;
+  slug: string;
+  environment?: string;
+  collections?: string[];
+}>;
+
+export const organizations = ((projectCfg as any).organizations || []) as Array<{
+  id: string;
+  name: string;
+  slug: string;
+  billingEmail?: string;
+  projects?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    environment?: string;
+    collections?: string[];
+  }>;
+}>;
+
+export function getAllProjects(): Array<{
+  id: string;
+  name: string;
+  slug: string;
+  environment?: string;
+  collections?: string[];
+  orgName?: string;
+}> {
+  return [
+    ...projects,
+    ...organizations.flatMap((org) =>
+      (org.projects || []).map((p) => ({ ...p, orgName: org.name })),
+    ),
+  ];
+}
+
+export function findProjectByIdOrSlug(idOrSlug: string) {
+  const all = getAllProjects();
+  return all.find((p) => p.id === idOrSlug || p.slug === idOrSlug) || null;
+}
+
+export function getCollectionsForProject(projectIdOrSlug?: string): CollectionConfig[] {
+  const allCols = Object.values(collections);
+  if (!projectIdOrSlug) return allCols;
+
+  const project = findProjectByIdOrSlug(projectIdOrSlug);
+  if (!project || !project.collections || project.collections.length === 0) {
+    return allCols;
+  }
+
+  const allowed = new Set(project.collections);
+  return allCols.filter((col) => allowed.has(col.slug) || authCollectionSlugs.includes(col.slug));
+}
+
+

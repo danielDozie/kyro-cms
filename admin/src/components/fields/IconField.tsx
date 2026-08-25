@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import type { IconField as IconFieldType } from "@kyro-cms/core/client";
 import FieldLayout from "./FieldLayout";
 import { IconPickerModal } from "../ui/IconPickerModal";
+import { DynamicIcon } from "../ui/DynamicIcon";
 import * as LucideIcons from "lucide-react";
 
 interface IconFieldComponentProps {
@@ -22,16 +23,6 @@ export default function IconField({
   const [pickerOpen, setPickerOpen] = useState(false);
   const normalizedValue = value == null ? "" : String(value);
 
-  // Convert kebab-case value back to PascalCase to render the preview component
-  const pascalName = useMemo(() => {
-    if (!normalizedValue) return "";
-    return normalizedValue
-      .split("-")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join("");
-  }, [normalizedValue]);
-
-  const IconComponent = (LucideIcons as any)[pascalName];
   const isReadOnly = typeof field.admin?.readOnly === "function" ? false : Boolean(field.admin?.readOnly);
 
   return (
@@ -43,7 +34,7 @@ export default function IconField({
             type="text"
             value={normalizedValue}
             onChange={(e) => onChange?.(e.target.value)}
-            placeholder={(field.admin?.placeholder as string) || "e.g., activity"}
+            placeholder={(field.admin?.placeholder as string) || "e.g., lucide:utensils, hero:sparkles"}
             disabled={disabled || isReadOnly}
             required={field.required}
             className={`kyro-form-input ${disabled || isReadOnly ? "opacity-70 bg-[var(--kyro-bg-secondary)] cursor-not-allowed" : ""}`}
@@ -56,8 +47,8 @@ export default function IconField({
           disabled={disabled || isReadOnly}
           className="flex items-center gap-2 h-10 px-4 shrink-0 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl text-sm font-bold text-[var(--kyro-text-primary)] hover:border-[var(--kyro-primary)] hover:bg-[var(--kyro-primary-alpha)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {IconComponent ? (
-            <IconComponent className="w-5 h-5" strokeWidth={2} />
+          {normalizedValue ? (
+            <DynamicIcon name={normalizedValue} className="w-5 h-5" fallback={LucideIcons.Search} />
           ) : (
             <LucideIcons.Search className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
           )}

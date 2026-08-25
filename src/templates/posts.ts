@@ -10,6 +10,7 @@ export const postsCollection: CollectionConfig = {
     useAsTitle: "title",
     defaultColumns: ["title", "slug", "status", "createdAt", "updatedAt"],
     description: "Blog posts and articles",
+    icon: "Newspaper",
   },
   seo: true,
   fields: [

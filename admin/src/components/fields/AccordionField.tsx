@@ -19,7 +19,7 @@ export const AccordionField: React.FC<AccordionFieldProps> = ({
   onChange,
   compact = false,
 }) => {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const headerControls = (
     <div className="flex justify-end gap-1 mb-2">

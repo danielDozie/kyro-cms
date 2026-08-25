@@ -129,7 +129,7 @@ function ServiceRow({ name, description, status, detail, icon, loading }: Servic
   const cfg = statusConfig[status];
 
   return (
-    <div className="flex items-center gap-4 py-3.5 px-4 rounded-xl hover:bg-[var(--kyro-surface-accent)] transition-colors group">
+    <div className="flex items-center gap-4 py-3.5 px-4 rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-colors group my-4">
       <div className="w-9 h-9 rounded-lg bg-[var(--kyro-surface-accent)] group-hover:bg-[var(--kyro-surface)] flex items-center justify-center text-[var(--kyro-text-secondary)] transition-colors flex-shrink-0">
         {icon}
       </div>
@@ -155,7 +155,7 @@ function ServiceRow({ name, description, status, detail, icon, loading }: Servic
 }
 
 export function ApiHealth() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const [health, setHealth] = useState<HealthData | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [healthLoading, setHealthLoading] = useState(true);
@@ -242,18 +242,18 @@ export function ApiHealth() {
         {/* Overall status banner */}
         <div
           className={`relative overflow-hidden rounded-2xl border p-6 flex items-center gap-5 ${healthLoading
-              ? "border-[var(--kyro-border)] bg-[var(--kyro-surface)]"
-              : isHealthy
-                ? "border-emerald-500/20 bg-[var(--kyro-surface)]"
-                : "border-red-500/20 bg-[var(--kyro-surface)]"
+            ? "border-[var(--kyro-border)] bg-[var(--kyro-surface)]"
+            : isHealthy
+              ? "border-emerald-500/20 bg-[var(--kyro-surface)]"
+              : "border-red-500/20 bg-[var(--kyro-surface)]"
             }`}
         >
           <div
             className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${healthLoading
-                ? "bg-[var(--kyro-surface-accent)]"
-                : isHealthy
-                  ? "bg-emerald-500/10 text-emerald-500"
-                  : "bg-red-500/10 text-red-500"
+              ? "bg-[var(--kyro-surface-accent)]"
+              : isHealthy
+                ? "bg-emerald-500/10 text-emerald-500"
+                : "bg-red-500/10 text-red-500"
               }`}
           >
             {healthLoading ? (

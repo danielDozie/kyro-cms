@@ -11,7 +11,7 @@ import { InMemoryRateLimiter } from "../../auth/security/in-memory-rate-limit.js
 import { AuthRoutes } from "./auth-routes.js";
 import { SQLiteAuthAdapter } from "../../auth/sqlite-adapter.js";
 import { PostgresAuthAdapter } from "../../database/drizzle/postgres-auth-adapter.js";
-import { mountCollectionRoutes, mountGlobalRoutes, mountMediaRoutes, mountUserRoutes, mountSystemRoutes, mountAuthEndpoints } from "./routes/index.js";
+import { mountCollectionRoutes, mountGlobalRoutes, mountMediaRoutes, mountUserRoutes, mountSystemRoutes, mountAuthEndpoints, mountDesignTokensRoutes } from "./routes/index.js";
 import { D1AuthAdapter } from "../../database/drizzle/d1-auth-adapter.js";
 import { MongoDBAdapter } from "../../database/mongodb/adapter.js";
 import { MongoDBAuthAdapter } from "../../database/mongodb/mongo-auth-adapter.js";
@@ -853,7 +853,7 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
   app.get("/api/health", (c) => {
     return c.json({
       status: "ok",
-      version: "0.12.72",
+      version: "0.13.0",
       collections: registry.getCollectionSlugs(),
       timestamp: new Date().toISOString(),
     });
@@ -936,6 +936,9 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
 
   // Dynamic global routes (Delegated to modular router)
   mountGlobalRoutes(app, options, authMw);
+
+  // Design Token synchronization routes
+  mountDesignTokensRoutes(app, options);
   // Centralized error handling
   app.onError((err, c) => {
     const status = Number((err as any)?.statusCode || (err as any)?.status || 500);

@@ -94,22 +94,39 @@ export function CompactListView({
     const activeIdStr = String(activeId || "");
     const storeIdStr = String(storeFormData?.id || storeFormData?._id || "");
 
-    if (
+    const source =
       storeFormData &&
-      ((activeIdStr && docIdStr === activeIdStr) || (storeIdStr && docIdStr === storeIdStr)) &&
-      titleField &&
-      storeFormData[titleField] !== undefined &&
-      storeFormData[titleField] !== null &&
-      storeFormData[titleField] !== ""
-    ) {
-      const val = storeFormData[titleField];
-      if (typeof val === "object") return (val as any).title || (val as any).name || "Untitled";
-      return String(val);
+      ((activeIdStr && docIdStr === activeIdStr) || (storeIdStr && docIdStr === storeIdStr))
+        ? storeFormData
+        : doc;
+
+    const useTitle = collection.admin?.useAsTitle;
+    let val: any = null;
+
+    if (useTitle) {
+      val = extractFieldValue(source, useTitle) ?? source[useTitle];
     }
-    if (!titleField) return doc.id;
-    const val = extractFieldValue(doc, titleField);
+    if (!val && titleField) {
+      val = extractFieldValue(source, titleField) ?? source[titleField];
+    }
+    if (!val) {
+      val =
+        source.orderNumber ||
+        source.title ||
+        source.name ||
+        source.fullName ||
+        source.label ||
+        source.heading ||
+        source.email ||
+        source.slug ||
+        (source.id ? `#${String(source.id).slice(-6)}` : null) ||
+        (source._id ? `#${String(source._id).slice(-6)}` : null);
+    }
+
     if (!val) return "Untitled";
-    if (typeof val === "object") return val.title || val.name || "Untitled";
+    if (typeof val === "object" && val !== null) {
+      return val.title || val.name || val.orderNumber || val.fullName || val.label || "Untitled";
+    }
     return String(val);
   }
 
@@ -226,8 +243,10 @@ export function CompactListView({
     if (canCreate) navigate(`${ADMIN_BASE}/${collectionSlug}/new`);
   };
 
-  const handleEdit = (id: string) => {
-    let url = `${ADMIN_BASE}/${collectionSlug}/${id}`;
+  const handleEdit = (id: string | any) => {
+    const cleanId = typeof id === "object" && id !== null ? String(id.id || id._id || id.value || id) : String(id || "");
+    if (!cleanId || cleanId === "[object Object]") return;
+    let url = `${ADMIN_BASE}/${collectionSlug}/${encodeURIComponent(cleanId)}`;
     if (search) url += `?search=${encodeURIComponent(search)}`;
     navigate(url);
   };

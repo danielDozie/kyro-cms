@@ -186,6 +186,23 @@ admin?: {
 
   export const richTextStyles: string;
   export function renderRichText(content: unknown, options?: unknown): string;
+  export function applyCollectionOverrides(collections: any[], overrides?: Record<string, any>): void;
+  export function applyGlobalOverrides(globals: any[], overrides?: Record<string, any>): void;
+  export interface HierarchyNode {
+    id: string;
+    label: string;
+    slug?: string;
+    parentId?: string | null;
+    depth: number;
+    nestedPath: string;
+    data: any;
+    children: HierarchyNode[];
+  }
+
+  export function buildDocumentTree(docs: any[], options?: any): HierarchyNode[];
+  export function getBreadcrumbs(docs: any[], targetId: string, options?: any): Array<{ id: string; label: string; slug?: string; nestedPath: string }>;
+  export function getNestedPath(docs: any[], targetId: string, options?: any): string;
+  export function flattenDocumentTree(tree: HierarchyNode[]): HierarchyNode[];
 }
 
 declare module '@kyro-cms/core/client' {

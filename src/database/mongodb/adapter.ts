@@ -163,6 +163,33 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     };
   }
 
+  private buildIdFilter(id: string, tenantId?: string, config?: CollectionConfig): Record<string, any> {
+    const rawId = String(id || "");
+    const isHex24 = /^[0-9a-fA-F]{24}$/.test(rawId);
+
+    const orClauses: any[] = [
+      { _id: rawId },
+      { id: rawId },
+      { slug: rawId },
+      { orderNumber: rawId },
+    ];
+
+    if (isHex24) {
+      try {
+        const { ObjectId } = require("mongodb");
+        orClauses.unshift({ _id: new ObjectId(rawId) });
+      } catch {
+        // ignore
+      }
+    }
+
+    const filter: Record<string, any> = { $or: orClauses };
+    if (tenantId && config?.tenantScoped) {
+      filter.tenantId = tenantId;
+    }
+    return filter;
+  }
+
   async findByID<T>(args: FindByIDArgs): Promise<T | null> {
     const { collection: slug, id, tenantId, draft } = args;
     const config = this.getCollectionConfig(slug);
@@ -175,10 +202,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       }
     }
 
-    const filter: any = { _id: id };
-    if (tenantId && config.tenantScoped) {
-      filter.tenantId = tenantId;
-    }
+    const filter = this.buildIdFilter(id, tenantId, config);
 
     const statusField = config.fields.find((f: any) => f.name === 'status');
     const hasPublished = statusField?.type === 'select' && Array.isArray(statusField.options) && statusField.options.some((o: any) => o.value === 'published');
@@ -237,10 +261,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     const config = this.getCollectionConfig(slug);
     const col = this.getMongoCollection(slug);
 
-    const filter: any = { _id: id };
-    if (tenantId && config.tenantScoped) {
-      filter.tenantId = tenantId;
-    }
+    const filter = this.buildIdFilter(id, tenantId, config);
 
     const updateData = this.prepareData(data, config);
 
@@ -262,10 +283,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     const config = this.getCollectionConfig(slug);
     const col = this.getMongoCollection(slug);
 
-    const filter: any = { _id: id };
-    if (tenantId && config.tenantScoped) {
-      filter.tenantId = tenantId;
-    }
+    const filter = this.buildIdFilter(id, tenantId, config);
 
     const doc = await col.findOneAndDelete(filter);
     if (!doc) {
@@ -589,7 +607,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
 
     // Convert _id to id
     if (data._id) {
-      result.id = data._id;
+      result.id = String(data._id);
       delete result._id;
     }
 

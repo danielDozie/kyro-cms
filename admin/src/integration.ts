@@ -63,12 +63,26 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
           const stubPlugin = {
             name: 'db-stub',
             setup(build: any) {
-              build.onResolve({ filter: /^(better-sqlite3|pg|postgres|mongodb|ioredis)$/ }, (args: any) => ({
+              build.onResolve({ filter: /^(better-sqlite3|pg|postgres|mongodb|ioredis|ai|@ai-sdk.*)$/ }, (args: any) => ({
                 path: args.path,
                 namespace: 'db-stub',
               }));
               build.onLoad({ filter: /.*/, namespace: 'db-stub' }, () => ({
-                contents: 'export default {}; export const Client = class {}; export const Pool = class {};',
+                contents: `
+                  export const createGroq = () => (() => ({}));
+                  export const createOpenAI = () => (() => ({}));
+                  export const createAnthropic = () => (() => ({}));
+                  export const generateObject = () => Promise.resolve({});
+                  export const generateText = () => Promise.resolve({});
+                  export const streamText = () => ({});
+                  export const streamObject = () => ({});
+                  export const tool = () => ({});
+                  export const embed = () => ({});
+                  export const embedMany = () => ({});
+                  export const Client = class {};
+                  export const Pool = class {};
+                  export default () => ({});
+                `,
                 loader: 'js',
               }));
             },
@@ -83,7 +97,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
             sourcemap: false,
             loader: { '.ts': 'ts', '.tsx': 'tsx' },
             resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json'],
-            external: ['@kyro-cms/*', '@ai-sdk/*'],
+            external: ['@kyro-cms/*'],
             plugins: [stubPlugin],
           });
           tmpFile = resolvedConfig.replace(/\.ts$/, ".admin.mjs");
@@ -112,6 +126,8 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
                 return obj;
               };
               parentPort.postMessage({
+                organizations: serialize(cfg?.organizations) || [],
+                projects: serialize(cfg?.projects) || [],
                 collections: serialize(cfg?.collections) || [],
                 globals: serialize(cfg?.globals) || [],
                 collectionOverrides: serialize(cfg?.admin?.collectionOverrides) || {},
@@ -441,6 +457,8 @@ export default EventEmitter;
             entrypoint: "./pages/settings/[slug].astro",
           },
           { pattern: "/audit", entrypoint: "./pages/audit/index.astro" },
+          { pattern: "/audit/content-health", entrypoint: "./pages/audit/content-health.astro" },
+          { pattern: "/content-health", entrypoint: "./pages/content-health.astro" },
           { pattern: "/sessions", entrypoint: "./pages/sessions.astro" },
           { pattern: "/keys", entrypoint: "./pages/keys.astro" },
           { pattern: "/webhooks", entrypoint: "./pages/webhooks.astro" },
@@ -452,6 +470,7 @@ export default EventEmitter;
             entrypoint: "./pages/rest-playground.astro",
           },
           { pattern: "/health", entrypoint: "./pages/health.astro" },
+          { pattern: "/api-health", entrypoint: "./pages/health.astro" },
           { pattern: "/403", entrypoint: "./pages/403.astro" },
           { pattern: "/graphql-explorer", entrypoint: "./pages/graphql-explorer.astro" },
           {

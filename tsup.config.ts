@@ -57,7 +57,7 @@ export default defineConfig([
     },
     splitting: true,
     sourcemap: false,
-    clean: true,
+    clean: false,
     treeshake: true,
     minify: true,
     target: "es2022",

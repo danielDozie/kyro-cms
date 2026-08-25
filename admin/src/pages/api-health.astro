@@ -1,0 +1,9 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import i18next from '../lib/i18n';
+import { ApiHealth } from "../components/ApiHealth";
+---
+
+<AdminLayout title={i18next.t("pages." + "API Health".replace(/ /g, ""), { defaultValue: "API Health" })}> 
+  <ApiHealth client:only="react" />
+</AdminLayout>

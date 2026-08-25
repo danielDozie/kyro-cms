@@ -10,7 +10,7 @@ export const brandsCollection: CollectionConfig = {
     useAsTitle: "name",
     defaultColumns: ["name", "slug"],
     description: "Product brands and manufacturers",
-    icon: "Tag",
+    icon: "Sparkles",
   },
   seo: true,
   fields: [

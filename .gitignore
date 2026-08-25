@@ -112,3 +112,4 @@ scripts/*
 # !scripts/deployments/
 .kyro-admin-config.json
 kyro.config.ts
+wrangler.toml

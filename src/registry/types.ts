@@ -9,22 +9,83 @@ import type { StorageProvider } from "../storage/index.js";
 // ============================================================================
 
 export interface AdminConfig {
+  /** Field to display as the title/name of the document in list and relation dropdowns (e.g. "title", "name", "orderNumber") */
   useAsTitle?: string;
+  /** Array of field names to display as default table columns in the collection list view */
   defaultColumns?: string[];
+  /** Hide this collection completely from the sidebar navigation */
   hidden?: boolean;
+  /** Subtitle or description shown under the collection header in the admin UI */
   description?: string;
+  /** Hide the quick API endpoint URL badge from the admin collection view */
   hideAPIURL?: boolean;
+  /** Sidebar navigation category section name (e.g. "Commerce", "Restaurant Menu", "Content") */
   group?: string;
+  /** Alias for `group`. Organizes collection under a specific sidebar group/folder */
+  folder?: string;
+  /** Sub-folder for nested navigation grouping */
+  parentFolder?: string;
+  /** Enable tree hierarchy view for nested hierarchical collections (e.g. parent/child pages) */
+  treeHierarchy?: boolean;
+  /** Icon name from Lucide (e.g. "lucide:Utensils", "Utensils") or Heroicons (e.g. "hero:Sparkles", "hero-solid:Fire") */
   icon?: string;
+  /** Sort order index within its sidebar navigation group (lower numbers appear first) */
   order?: number;
+  /** Function returning live frontend preview URL with draft tokens */
   preview?: (doc: Record<string, unknown>, options: { req: unknown; token?: string }) => string | Promise<string>;
+  /** Disable the duplicate document button */
   disableDuplicate?: boolean;
+  /** Disable the live preview split panel */
   disablePreview?: boolean;
+  /** Pagination settings for list view */
   pagination?: {
     defaultLimit?: number;
     limits?: number[];
   };
+  /** Form layout mode: "split" (with sidebar fields) or "single" column */
   layout?: "split" | "single";
+  /** Custom smart view filters configured for this collection */
+  smartViews?: SmartViewConfig[];
+}
+
+export interface HierarchyConfig {
+  parentField?: string;
+  maxDepth?: number;
+  slugPrefix?: boolean;
+}
+
+export interface ProjectConfig {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  environment?: 'development' | 'staging' | 'production' | string;
+  collections?: string[];
+  globals?: string[];
+  settings?: Record<string, unknown>;
+}
+
+export interface SmartViewConfig {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  filter: Record<string, any>;
+  collections?: string[];
+  description?: string;
+}
+
+export interface OrganizationConfig {
+  id: string;
+  name: string;
+  slug: string;
+  billingEmail?: string;
+  projects?: ProjectConfig[];
+  roles?: Array<{
+    name: string;
+    description?: string;
+    permissions?: string[];
+  }>;
 }
 
 export interface FieldOverrides {
@@ -134,6 +195,8 @@ export interface CollectionConfig {
   tenantField?: string;
   upload?: UploadConfig;
   versions?: VersionConfig;
+  folder?: string;
+  hierarchy?: HierarchyConfig;
   auth?: boolean | AuthConfig;
   graphQL?: {
     singularName?: string;
@@ -155,6 +218,7 @@ export interface CollectionConfig {
 export interface GlobalConfig {
   slug: string;
   label?: string;
+  folder?: string;
   admin?: AdminConfig;
   fields: Field[];
   access?: GlobalAccess;
@@ -374,6 +438,8 @@ export interface AdapterConfig {
 export interface KyroConfig {
   collections?: CollectionConfig[];
   globals?: GlobalConfig[];
+  projects?: ProjectConfig[];
+  organizations?: OrganizationConfig[];
   adapter: BaseAdapter;
   storage?: StorageProvider;
   plugins?: import("../plugins/index.js").KyroPlugin[];
@@ -407,6 +473,7 @@ export interface KyroConfig {
     components?: Record<string, any>;
     collectionOverrides?: Record<string, CollectionOverrideConfig>;
     globalOverrides?: Record<string, GlobalOverrideConfig>;
+    smartViews?: SmartViewConfig[];
   };
   upload?: {
     limits?: {

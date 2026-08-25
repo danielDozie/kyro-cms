@@ -1,9 +1,11 @@
 ---
 import "../styles/main.css";
-import { nonAuthCollections } from "../lib/config";
+import { nonAuthCollections, projects, organizations } from "../lib/config";
 import { adminPath } from "../lib/paths";
 import { getSiteSettings, getBrandSettings } from "../lib/globals";
 import * as Icons from "lucide-react";
+import * as HeroOutline from "@heroicons/react/24/outline";
+import * as HeroSolid from "@heroicons/react/24/solid";
 import { UserMenu } from "./UserMenu";
 
 import logoWhite from "../assets/logo-white.svg";
@@ -36,6 +38,12 @@ interface Props {
 const { title } = Astro.props;
 const currentPath = Astro.url.pathname;
 
+const allProjects = [
+  ...projects,
+  ...organizations.flatMap((org) => (org.projects || []).map((p) => ({ ...p, orgName: org.name }))),
+];
+const hasTenancy = organizations.length > 0 || allProjects.length > 0;
+
 const groupedCollections = new Map<string, NavItem[]>();
 
 nonAuthCollections
@@ -48,7 +56,7 @@ nonAuthCollections
       order: typeof col.admin?.order === "number" ? col.admin.order : 999,
     };
 
-    const groupName = (col.admin?.group as string) || "Content";
+    const groupName = (col.folder || col.admin?.folder || col.admin?.group || "Content") as string;
     if (!groupedCollections.has(groupName)) {
       groupedCollections.set(groupName, []);
     }
@@ -152,10 +160,13 @@ const iconAliases: Record<string, string> = {
   webhook: "Webhook",
   audit: "FileText",
   settings: "Settings",
+  Activity: "Activity",
 };
 
 function isActive(item: NavItem): boolean {
   if (item.href === adminPath) return title === "Dashboard";
+  if (item.href === adminPath + "/content-health")
+    return title === "Content Health & Quality" || currentPath.includes("/content-health");
   if (item.href.startsWith(adminPath + "/settings")) return currentPath.startsWith(adminPath + "/settings");
   if (item.href === adminPath + "/users") return title === "Users";
   if (item.href === adminPath + "/roles") return title === "Permissions";
@@ -172,7 +183,7 @@ function isActive(item: NavItem): boolean {
 
 <aside
   id="kyro-sidebar"
-  class="surface-tile rounded-r-lg rounded-l-none w-[280px] flex flex-col flex-shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r border-[var(--kyro-border)]"
+  class="surface-tile rounded-r-lg rounded-l-none md:rounded-l-lg w-[280px] flex flex-col flex-shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r border-[var(--kyro-border)]"
 >
   <div
     class="sidebar-header px-6 md:px-6 py-6 flex items-center justify-between gap-2 border-b border-[var(--kyro-border)]/50 shrink-0 transition-all duration-300"
@@ -257,6 +268,95 @@ function isActive(item: NavItem): boolean {
     </button>
   </div>
 
+  {
+    hasTenancy && (
+      <div class="sidebar-tenancy-box px-3 py-1.5 border-b border-[var(--kyro-border)]/40 shrink-0 transition-all duration-200">
+        <div class="relative group/tenancy">
+          <button
+            type="button"
+            id="project-switcher-btn"
+            class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--kyro-surface-accent)]/40 hover:bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)]/50 text-left transition-all duration-150 cursor-pointer"
+          >
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                <Icons.Building2 className="w-3 h-3" />
+              </div>
+              <div class="min-w-0">
+                <p
+                  class="text-xs font-medium text-[var(--kyro-text-primary)] truncate leading-tight"
+                  id="active-project-name"
+                >
+                  {allProjects[0]?.name || organizations[0]?.name || "Default Workspace"}
+                </p>
+                <div class="flex items-center gap-1.5 mt-0.5 leading-none">
+                  <span class="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
+                  <p
+                    class="text-[8.5px] text-[var(--kyro-text-secondary)] capitalize font-normal opacity-80"
+                    id="active-project-env"
+                  >
+                    {allProjects[0]?.environment || "Production"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Icons.ChevronsUpDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-50 shrink-0" />
+          </button>
+
+          {/* Dropdown Menu */}
+          <div
+            id="project-switcher-menu"
+            class="hidden absolute top-full left-0 right-0 mt-1 p-1 rounded-lg bg-[var(--kyro-surface)] border border-[var(--kyro-border)] shadow-xl z-50 space-y-1"
+          >
+            {organizations.map((org) => (
+              <div class="px-1.5 py-0.5">
+                <p class="text-[9px] font-bold text-[var(--kyro-text-secondary)] uppercase tracking-wider opacity-60 px-1 py-0.5">
+                  {org.name}
+                </p>
+                <div class="mt-0.5 space-y-0.5">
+                  {(org.projects || []).map((proj) => (
+                    <button
+                      type="button"
+                      data-proj-id={proj.id}
+                      data-proj-name={proj.name}
+                      data-proj-env={proj.environment || "Production"}
+                      data-proj-collections={JSON.stringify(proj.collections || [])}
+                      class="project-switcher-item w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] text-left transition-colors cursor-pointer"
+                    >
+                      <span class="truncate font-medium text-xs">{proj.name}</span>
+                      <span class="text-[7.5px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium capitalize">
+                        {proj.environment || "Production"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {projects.length > 0 && organizations.length === 0 && (
+              <div class="space-y-0.5 p-0.5">
+                {projects.map((proj) => (
+                  <button
+                    type="button"
+                    data-proj-id={proj.id}
+                    data-proj-name={proj.name}
+                    data-proj-env={proj.environment || "Production"}
+                    data-proj-collections={JSON.stringify(proj.collections || [])}
+                    class="project-switcher-item w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] text-left transition-colors cursor-pointer"
+                  >
+                    <span class="truncate font-medium text-xs">{proj.name}</span>
+                    <span class="text-[7.5px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium capitalize">
+                      {proj.environment || "Production"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   <nav class="flex-1 px-4 overflow-y-auto overflow-x-hidden" id="sidebar-nav">
     <div class="space-y-4">
       {
@@ -265,16 +365,21 @@ function isActive(item: NavItem): boolean {
             <div class="pt-4 pb-2">
               <button
                 type="button"
-                class="w-full flex items-center justify-between px-6 focus:outline-none sidebar-section-toggle transition-opacity hover:opacity-80"
+                class="w-full flex items-center justify-between px-4 focus:outline-none sidebar-section-toggle transition-opacity hover:opacity-80"
               >
-                <p class="text-[10px] font-medium text-[var(--kyro-text-secondary)] tracking-[0.2em] opacity-40 uppercase">
-                  {i18next.t(section.label, {
-                    defaultValue: section.label.split(".").pop()?.toUpperCase() || section.label,
-                  }) ||
-                    section.label.split(".").pop()?.toUpperCase() ||
-                    section.label}
-                </p>
-                <Icons.ChevronDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 transition-transform duration-200 group-data-[collapsed=true]/section:-rotate-90" />
+                <div class="flex items-center gap-2 min-w-0">
+                  {section.label !== "Dashboard" && section.label !== "Settings" && (
+                    <Icons.Folder className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 shrink-0" />
+                  )}
+                  <p class="text-[10px] font-medium text-[var(--kyro-text-secondary)] tracking-[0.2em] opacity-40 uppercase truncate">
+                    {i18next.t(section.label, {
+                      defaultValue: section.label.split(".").pop()?.toUpperCase() || section.label,
+                    }) ||
+                      section.label.split(".").pop()?.toUpperCase() ||
+                      section.label}
+                  </p>
+                </div>
+                <Icons.ChevronDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 transition-transform duration-200 group-data-[collapsed=true]/section:-rotate-90 shrink-0" />
               </button>
             </div>
             <div class="section-items space-y-1">
@@ -304,9 +409,49 @@ function isActive(item: NavItem): boolean {
                   >
                     <div class="nav-icon-wrapper flex items-center justify-center flex-shrink-0">
                       {(() => {
-                        const iconName = iconAliases[item.icon] || item.icon;
-                        const Icon = (Icons as any)[iconName] || Icons.Dot;
-                        return <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
+                        const raw = item.icon || "";
+                        const iconName = iconAliases[raw] || raw;
+
+                        const toPascalCase = (str: string) =>
+                          str
+                            .replace(/[-_](\w)/g, (_, c) => c.toUpperCase())
+                            .replace(/^(\w)/, (_, c) => c.toUpperCase());
+
+                        // 1. Explicit Lucide namespace (e.g. "lucide:Utensils", "lucide:shopping-bag")
+                        if (iconName.startsWith("lucide:")) {
+                          const clean = iconName.replace("lucide:", "");
+                          const pascal = toPascalCase(clean);
+                          const LucideComp = (Icons as any)[clean] || (Icons as any)[pascal];
+                          if (LucideComp) return <LucideComp className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
+                        }
+
+                        // 2. Explicit Heroicons Outline namespace (e.g. "hero:Sparkles", "hero-outline:fire")
+                        if (iconName.startsWith("hero:") || iconName.startsWith("hero-outline:")) {
+                          const clean = iconName.replace(/^hero(-outline)?:/, "");
+                          const pascal = toPascalCase(clean);
+                          const HeroComp = (HeroOutline as any)[clean] || (HeroOutline as any)[pascal] || (HeroOutline as any)[`${pascal}Icon`];
+                          if (HeroComp) return <HeroComp className="w-4 h-4 flex-shrink-0" strokeWidth={2} />;
+                        }
+
+                        // 3. Explicit Heroicons Solid namespace (e.g. "hero-solid:Fire")
+                        if (iconName.startsWith("hero-solid:")) {
+                          const clean = iconName.replace("hero-solid:", "");
+                          const pascal = toPascalCase(clean);
+                          const HeroComp = (HeroSolid as any)[clean] || (HeroSolid as any)[pascal] || (HeroSolid as any)[`${pascal}Icon`];
+                          if (HeroComp) return <HeroComp className="w-4 h-4 flex-shrink-0" />;
+                        }
+
+                        // 4. Direct Lucide icon check
+                        const pascal = toPascalCase(iconName);
+                        const LucideComp = (Icons as any)[iconName] || (Icons as any)[pascal];
+                        if (LucideComp) return <LucideComp className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
+
+                        // 5. Direct Heroicon check (e.g. SparklesIcon, ShoppingBagIcon, or Sparkles)
+                        const HeroDirect = (HeroOutline as any)[iconName] || (HeroOutline as any)[pascal] || (HeroOutline as any)[`${pascal}Icon`];
+                        if (HeroDirect) return <HeroDirect className="w-4 h-4 flex-shrink-0" strokeWidth={2} />;
+
+                        const Fallback = Icons.Dot;
+                        return <Fallback className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
                       })()}
                     </div>
                     <span class="sidebar-text truncate">{itemText}</span>
@@ -323,7 +468,91 @@ function isActive(item: NavItem): boolean {
   <script>
     import { adminPath } from "../lib/paths";
 
+    function applyProjectFilter(allowedCollectionsJson?: string | null) {
+      if (!allowedCollectionsJson) return;
+      try {
+        const allowed: string[] = JSON.parse(allowedCollectionsJson);
+        if (!Array.isArray(allowed) || allowed.length === 0) {
+          // No collection restrictions on this project, show all permitted by RBAC
+          return;
+        }
+
+        const allowedSet = new Set(allowed);
+        const navItems = document.querySelectorAll("[data-nav-item]");
+        navItems.forEach((item) => {
+          const type = item.getAttribute("data-type");
+          const slug = item.getAttribute("data-slug") || "";
+          const isDashboard = item.getAttribute("data-is-dashboard") === "true";
+          if (isDashboard || type !== "collection" || slug === "media" || slug === "users" || slug === "audit_logs") {
+            return;
+          }
+          if (!allowedSet.has(slug)) {
+            (item as HTMLElement).style.display = "none";
+          }
+        });
+      } catch {
+        // Fallback gracefully on parsing error
+      }
+    }
+
     function initSidebar() {
+      // Project / Tenancy Switcher
+      const switcherBtn = document.getElementById("project-switcher-btn");
+      const switcherMenu = document.getElementById("project-switcher-menu");
+      const activeNameEl = document.getElementById("active-project-name");
+      const activeEnvEl = document.getElementById("active-project-env");
+
+      if (switcherBtn && switcherMenu) {
+        const savedProjName = localStorage.getItem("kyro-active-project-name");
+        const savedProjEnv = localStorage.getItem("kyro-active-project-env");
+        const savedProjCollections = localStorage.getItem("kyro-active-project-collections");
+
+        if (savedProjName && activeNameEl) activeNameEl.textContent = savedProjName;
+        if (savedProjEnv && activeEnvEl) activeEnvEl.textContent = savedProjEnv;
+        if (savedProjCollections) applyProjectFilter(savedProjCollections);
+
+        switcherBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          switcherMenu.classList.toggle("hidden");
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!switcherMenu.contains(e.target as Node) && !switcherBtn.contains(e.target as Node)) {
+            switcherMenu.classList.add("hidden");
+          }
+        });
+
+        const items = switcherMenu.querySelectorAll(".project-switcher-item");
+        items.forEach((item) => {
+          item.addEventListener("click", () => {
+            const id = item.getAttribute("data-proj-id") || "";
+            const name = item.getAttribute("data-proj-name") || "";
+            const env = item.getAttribute("data-proj-env") || "";
+            const collectionsJson = item.getAttribute("data-proj-collections") || "[]";
+
+            if (activeNameEl) activeNameEl.textContent = name;
+            if (activeEnvEl) activeEnvEl.textContent = env;
+
+            localStorage.setItem("kyro-active-project-id", id);
+            localStorage.setItem("kyro-active-project-name", name);
+            localStorage.setItem("kyro-active-project-env", env);
+            localStorage.setItem("kyro-active-project-collections", collectionsJson);
+
+            switcherMenu.classList.add("hidden");
+
+            // Re-run RBAC pruning then apply project-level filtering
+            pruneSidebar();
+            applyProjectFilter(collectionsJson);
+
+            window.dispatchEvent(
+              new CustomEvent("kyro:project-changed", {
+                detail: { id, name, env, collections: JSON.parse(collectionsJson) },
+              }),
+            );
+          });
+        });
+      }
+
       const sections = document.querySelectorAll("[data-section]");
       sections.forEach((section) => {
         const label = section.getAttribute("data-section");
@@ -427,7 +656,13 @@ function isActive(item: NavItem): boolean {
         }
       });
 
-      // Hide empty sections after RBAC
+      // Apply saved project collection filter if active
+      const savedProjCollections = localStorage.getItem("kyro-active-project-collections");
+      if (savedProjCollections) {
+        applyProjectFilter(savedProjCollections);
+      }
+
+      // Hide empty sections after RBAC & project filtering
       const sections = document.querySelectorAll("[data-section]");
       sections.forEach((section) => {
         const visibleItems = section.querySelectorAll('[data-nav-item]:not([style*="display: none"])');
@@ -642,9 +877,10 @@ function isActive(item: NavItem): boolean {
       max-height: 28px !important;
     }
 
-    /* Hide text & section headers cleanly */
+    /* Hide text, section headers, and workspace switcher cleanly */
     #kyro-sidebar[data-minimized="true"] .sidebar-text,
     #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle,
+    #kyro-sidebar[data-minimized="true"] .sidebar-tenancy-box,
     #kyro-sidebar[data-minimized="true"] [data-section] > div:first-child {
       display: none !important;
       width: 0 !important;
@@ -656,6 +892,7 @@ function isActive(item: NavItem): boolean {
       line-height: 0 !important;
       margin: 0 !important;
       padding: 0 !important;
+      border: none !important;
     }
 
     /* Center Nav Item Buttons and force Icons to be visible & perfectly centered */

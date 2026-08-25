@@ -1,7 +1,7 @@
 import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { Dropdown, DropdownItem, DropdownSeparator } from "./ui/Dropdown";
-import { User, Shield, Key, Webhook, Clock, FileText, ExternalLink, HelpCircle, LogOut, Terminal, Zap } from "./ui/icons";
+import { User, Shield, Key, Webhook, Clock, FileText, ExternalLink, HelpCircle, LogOut, Terminal, Zap, Activity } from "./ui/icons";
 import { useAuthStore } from "../lib/stores";
 import { apiGet } from "../lib/api";
 import { resolveMedia } from "../lib/paths";
@@ -203,10 +203,24 @@ export function UserMenu({ adminPath }: UserMenuProps) {
       </div>
 
       <DropdownItem
+        icon={<Activity className="w-4 h-4" />}
+        onClick={() => navigate(`${adminPath}/content-health`)}
+      >
+        {t("userMenu.contentHealth", { defaultValue: "Content Health" })}
+      </DropdownItem>
+
+      <DropdownItem
         icon={<ExternalLink className="w-4 h-4" />}
         onClick={() => window.open("https://kyro-cms.com/getting-started.html", "_blank")}
       >
         {t("userMenu.documentation", { defaultValue: "Documentation" })}
+      </DropdownItem>
+
+      <DropdownItem
+        icon={<Activity className="w-4 h-4" />}
+        onClick={() => navigate(`${adminPath}/api-health`)}
+      >
+        {t("userMenu.apiHealth", { defaultValue: "API Health" })}
       </DropdownItem>
 
       <DropdownItem
