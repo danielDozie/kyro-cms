@@ -12,6 +12,7 @@ export const SQLITE_AUTH_DDL = `
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until TEXT,
     avatar TEXT,
+    metadata TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );

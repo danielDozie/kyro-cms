@@ -54,6 +54,42 @@ program
     });
   });
 
+// Production start command (called by Docker CMD)
+program
+  .command("start")
+  .description("Start Kyro CMS in production mode")
+  .option("-p, --port <port>", "Port to run on", process.env.PORT || "4321")
+  .option("-h, --host <host>", "Host to bind to", process.env.HOST || "0.0.0.0")
+  .action(async (options) => {
+    const { spawn } = await import("child_process");
+    const entrypoint = join(__dirname, "../../server/entry.mjs");
+
+    // Verify the built entrypoint exists
+    const { existsSync } = await import("fs");
+    if (!existsSync(entrypoint)) {
+      console.error(`❌ Production build not found at: ${entrypoint}`);
+      console.error("   Run 'pnpm build' before starting in production mode.");
+      process.exit(1);
+    }
+
+    console.log(`🚀 Starting Kyro CMS on ${options.host}:${options.port}`);
+
+    const child = spawn("node", [entrypoint], {
+      env: {
+        ...process.env,
+        HOST: options.host,
+        PORT: options.port,
+        NODE_ENV: "production",
+      },
+      stdio: "inherit",
+    });
+
+    child.on("exit", (code) => process.exit(code ?? 0));
+
+    process.on("SIGTERM", () => child.kill("SIGTERM"));
+    process.on("SIGINT", () => child.kill("SIGINT"));
+  });
+
 // Register commands
 program.addCommand(createGenerateCommand());
 program.addCommand(createDeployCommand());

@@ -116,6 +116,7 @@ export class MongoDBAuthAdapter implements AuthAdapter {
       role: data.role || "customer",
       avatar: data.avatar || null,
       tenantId: data.tenantId || null,
+      metadata: (data as any).metadata || null,
       emailVerified: false,
       locked: false,
       lastLogin: null,
@@ -148,6 +149,7 @@ export class MongoDBAuthAdapter implements AuthAdapter {
     if (data.role !== undefined) setData.role = data.role;
     if (data.avatar !== undefined) setData.avatar = data.avatar;
     if (data.tenantId !== undefined) setData.tenantId = data.tenantId;
+    if (data.metadata !== undefined) setData.metadata = data.metadata;
     if (data.emailVerified !== undefined) setData.emailVerified = data.emailVerified;
     if (data.locked !== undefined) setData.locked = data.locked;
     if (data.lastLogin !== undefined) setData.lastLogin = data.lastLogin ? new Date(data.lastLogin) : null;
@@ -379,8 +381,9 @@ export class MongoDBAuthAdapter implements AuthAdapter {
       email: doc.email,
       passwordHash: doc.passwordHash || undefined,
       role: doc.role as UserRole,
-      tenantId: doc.tenantId || undefined,
       avatar: doc.avatar || undefined,
+      tenantId: doc.tenantId || undefined,
+      metadata: doc.metadata || undefined,
       emailVerified: doc.emailVerified || false,
       locked: doc.locked || false,
       lastLogin: doc.lastLogin?.toISOString?.() || doc.lastLogin || undefined,

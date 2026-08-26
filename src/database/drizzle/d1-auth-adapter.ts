@@ -84,6 +84,10 @@ export class D1AuthAdapter implements AuthAdapter {
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await this.executeSql(`ALTER TABLE users ADD COLUMN metadata TEXT;`);
+    await this.executeSql(`ALTER TABLE users ADD COLUMN avatar TEXT;`);
+    await this.executeSql(`ALTER TABLE audit_logs ADD COLUMN metadata TEXT;`);
+    await this.executeSql(`ALTER TABLE audit_logs ADD COLUMN resource_id TEXT;`);
     await this.executeSql(`
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -148,8 +152,8 @@ export class D1AuthAdapter implements AuthAdapter {
     const now = new Date().toISOString();
 
     await this.executeSql(
-      `INSERT INTO users (id, email, password_hash, name, role, avatar, tenant_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, email, passwordHash, data.name || null, role, data.avatar || null, data.tenantId || null, now, now]
+      `INSERT INTO users (id, email, password_hash, name, role, avatar, tenant_id, metadata, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, email, passwordHash, data.name || null, role, data.avatar || null, data.tenantId || null, (data as any).metadata ? JSON.stringify((data as any).metadata) : null, now, now]
     );
 
     const created = await this.findUserById(id);
@@ -171,6 +175,7 @@ export class D1AuthAdapter implements AuthAdapter {
     if (data.role) { updates.push("role = ?"); params.push(data.role); }
     if (data.avatar !== undefined) { updates.push("avatar = ?"); params.push(data.avatar); }
     if (data.tenantId !== undefined) { updates.push("tenant_id = ?"); params.push(data.tenantId); }
+    if (data.metadata !== undefined) { updates.push("metadata = ?"); params.push(data.metadata ? JSON.stringify(data.metadata) : null); }
 
     params.push(id);
     await this.executeSql(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, params);
@@ -295,6 +300,7 @@ export class D1AuthAdapter implements AuthAdapter {
       role: row.role as UserRole,
       avatar: row.avatar || undefined,
       tenantId: row.tenant_id || row.tenantId || undefined,
+      metadata: row.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata) : undefined,
       emailVerified: Boolean(row.email_verified || row.emailVerified),
       locked: Boolean(row.locked),
       lastLogin: row.last_login || row.lastLogin || undefined,

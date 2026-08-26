@@ -32,7 +32,7 @@ function getPackageManager(): string {
   return 'npm';
 }
 
-const VERSION = '0.12.72';
+const VERSION = '0.12.73';
 
 async function main() {
   logger.intro('@kyro-cms/create', VERSION);
@@ -81,17 +81,38 @@ async function main() {
   const pkgManager = getPackageManager();
   const runCmd = pkgManager === 'npm' ? 'npm run' : pkgManager;
 
+  const nextSteps: string[] = [
+    `cd ${answers.projectName}`,
+  ];
+
+  if (answers.database !== 'sqlite') {
+    const envVar = answers.database === 'postgres' ? 'DATABASE_URL' : 'MONGODB_URI';
+    nextSteps.push(`Configure ${envVar} in your .env file`);
+  }
+
+  nextSteps.push(`${pkgManager} install`);
+  nextSteps.push(`${runCmd} dev`);
+
   console.log('\n=========================================');
   console.log('🎉 Kyro CMS App Created Successfully!');
   console.log('=========================================');
   console.log(`\nNext steps:`);
-  console.log(`  1. cd ${answers.projectName}`);
-  console.log(`  2. ${pkgManager} install`);
-  console.log(`  3. ${runCmd} dev\n`);
+  nextSteps.forEach((step, idx) => {
+    console.log(`  ${idx + 1}. ${step}`);
+  });
+  console.log();
+
+  if (answers.database !== 'sqlite') {
+    const dbName = answers.database === 'postgres' ? 'PostgreSQL' : 'MongoDB';
+    const envVar = answers.database === 'postgres' ? 'DATABASE_URL' : 'MONGODB_URI';
+    console.log(`ℹ️  Database Setup (${dbName}):`);
+    console.log(`  Set your ${envVar} in .env before starting the server.\n`);
+  }
+
   console.log('🔑 Super Admin Credentials (Local):');
   console.log(`  Email:    ${answers.adminEmail}`);
   console.log(`  Password: ${adminPassword}`);
-  console.log('\n(These have been saved to your .env.local file)');
+  console.log('\n(These have been saved to your .env file)');
   console.log('=========================================\n');
 }
 

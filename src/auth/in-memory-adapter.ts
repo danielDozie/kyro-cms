@@ -30,8 +30,11 @@ export class InMemoryAuthAdapter implements AuthAdapter {
   async createUser(data: {
     email: string;
     password: string;
+    name?: string;
     role?: UserRole;
+    avatar?: string;
     tenantId?: string;
+    metadata?: Record<string, unknown>;
   }): Promise<AuthUser> {
     const userId = randomBytes(16).toString("hex");
     const now = new Date().toISOString();
@@ -39,10 +42,13 @@ export class InMemoryAuthAdapter implements AuthAdapter {
 
     const user: AuthUser = {
       id: userId,
+      name: data.name,
       email: data.email.toLowerCase(),
       passwordHash,
       role: (data.role || "customer") as UserRole,
+      avatar: data.avatar,
       tenantId: data.tenantId,
+      metadata: data.metadata,
       createdAt: now,
       updatedAt: now,
     };
