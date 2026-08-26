@@ -66,9 +66,9 @@ npx @kyro-cms/create my-app --db postgres --template ecommerce --admin-email adm
 2. **`kyro.config.ts`**: Standardized with `defineKyroConfig` and pre-populated collections matching your template choice.
 3. **Database Configuration**:
    - `sqlite`: Zero-config local SQLite adapter at `./data/kyro.db`.
-   - `postgres`: Production-ready PostgreSQL adapter via Drizzle ORM.
-   - `mongodb`: MongoDB adapter configuration.
-4. **Super Admin Setup**: Generates cryptographically secure initial super admin credentials saved to `.env.local`.
+   - `postgres`: Production-ready PostgreSQL adapter via Drizzle ORM (reads `DATABASE_URL` from `.env`).
+   - `mongodb`: MongoDB adapter configuration (reads `MONGODB_URI` from `.env`).
+4. **Super Admin Setup**: Generates cryptographically secure initial super admin credentials saved to `.env`.
 5. **Git Repository**: Initialized with `.gitignore` and an initial commit.
 
 ---

@@ -338,6 +338,7 @@ export class RedisAuthAdapter implements AuthAdapter {
 
     if (user.avatar) hash.avatar = user.avatar;
     if (user.tenantId) hash.tenantId = user.tenantId;
+    if (user.metadata) hash.metadata = JSON.stringify(user.metadata);
     if (user.emailVerified !== undefined)
       hash.emailVerified = String(user.emailVerified);
     if (user.locked !== undefined) hash.locked = String(user.locked);
@@ -356,6 +357,7 @@ export class RedisAuthAdapter implements AuthAdapter {
       role: hash.role as UserRole,
       tenantId: hash.tenantId,
       avatar: hash.avatar,
+      metadata: hash.metadata ? JSON.parse(hash.metadata) : undefined,
       createdAt: hash.createdAt,
       updatedAt: hash.updatedAt,
       emailVerified: hash.emailVerified === "true",

@@ -43,6 +43,12 @@ export const usersCollection: CollectionConfig = {
       label: "Failed Login Attempts",
       admin: { readOnly: true },
     },
+    {
+      name: "metadata",
+      type: "json",
+      label: "Metadata",
+      admin: { hidden: true },
+    },
   ],
   timestamps: true,
   admin: {
@@ -64,9 +70,14 @@ export const auditLogsCollection: CollectionConfig = {
     { name: "userId", type: "text", label: "User ID" },
     { name: "userEmail", type: "email", label: "User Email" },
     { name: "role", type: "text" },
-    { name: "resource", type: "text", label: "Resource" },
+    { name: "resource", type: "text", label: "Resource", required: true },
+    { name: "resourceId", type: "text", label: "Resource ID" },
+    { name: "changes", type: "json", label: "Changes" },
     { name: "ipAddress", type: "text", label: "IP Address" },
+    { name: "userAgent", type: "text", label: "User Agent" },
     { name: "success", type: "checkbox" },
+    { name: "error", type: "text", label: "Error" },
+    { name: "metadata", type: "json", label: "Metadata" },
     {
       name: "timestamp",
       type: "date",

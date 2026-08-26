@@ -70,6 +70,12 @@ export class PostgresAuthAdapter implements AuthAdapter {
       )
     `);
     await this.db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatar" VARCHAR(255)`);
+    await this.db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "metadata" JSONB`);
+    await this.db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "tenant_id" UUID`);
+    await this.db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "email_verified" BOOLEAN DEFAULT false`);
+    await this.db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "locked" BOOLEAN DEFAULT false`);
+    await this.db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "last_login" TIMESTAMP`);
+    await this.db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "failed_login_attempts" INTEGER DEFAULT 0`);
     await this.db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS "users_email_idx" ON "users" ("email")`);
     await this.db.execute(sql`CREATE INDEX IF NOT EXISTS "users_tenant_idx" ON "users" ("tenant_id")`);
     await this.db.execute(sql`CREATE INDEX IF NOT EXISTS "users_role_idx" ON "users" ("role")`);
@@ -108,7 +114,16 @@ export class PostgresAuthAdapter implements AuthAdapter {
         "timestamp" TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
-    await this.db.execute(sql`ALTER TABLE "audit_logs" ALTER COLUMN "resource_id" TYPE VARCHAR(255)`);
+    await this.db.execute(sql`ALTER TABLE "audit_logs" ADD COLUMN IF NOT EXISTS "resource_id" VARCHAR(255)`);
+    await this.db.execute(sql`ALTER TABLE "audit_logs" ADD COLUMN IF NOT EXISTS "changes" JSONB`);
+    await this.db.execute(sql`ALTER TABLE "audit_logs" ADD COLUMN IF NOT EXISTS "user_agent" TEXT`);
+    await this.db.execute(sql`ALTER TABLE "audit_logs" ADD COLUMN IF NOT EXISTS "error" TEXT`);
+    await this.db.execute(sql`ALTER TABLE "audit_logs" ADD COLUMN IF NOT EXISTS "metadata" JSONB`);
+    try {
+      await this.db.execute(sql`ALTER TABLE "audit_logs" ALTER COLUMN "resource_id" TYPE VARCHAR(255)`);
+    } catch {
+      // Ignore if column type is already compatible
+    }
     await this.db.execute(sql`CREATE INDEX IF NOT EXISTS "audit_logs_user_idx" ON "audit_logs" ("user_id")`);
     await this.db.execute(sql`CREATE INDEX IF NOT EXISTS "audit_logs_action_idx" ON "audit_logs" ("action")`);
     await this.db.execute(sql`CREATE INDEX IF NOT EXISTS "audit_logs_resource_idx" ON "audit_logs" ("resource")`);

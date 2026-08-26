@@ -92,12 +92,12 @@ export async function promptUser(): Promise<Answers> {
           },
           {
             title: "PostgreSQL",
-            description: "Recommended for production. Robust and scalable.",
+            description: "Recommended for production. (DATABASE_URL configured in .env)",
             value: "postgres",
           },
           {
             title: "MongoDB",
-            description: "Best for flexible, document-based schemas.",
+            description: "Best for flexible document schemas. (MONGODB_URI configured in .env)",
             value: "mongodb",
           },
         ],

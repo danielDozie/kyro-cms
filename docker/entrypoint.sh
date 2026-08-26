@@ -15,9 +15,18 @@ echo "======================================================================"
 # 1. Wait for Database if DATABASE_URL is configured
 if [ -n "$DATABASE_URL" ]; then
   echo "📡 Checking PostgreSQL database connection..."
-  until pg_isready -d "${DATABASE_URL}" -t 3 2>/dev/null || [ "$retry" -gt 10 ]; do
-    echo "   ... waiting for database (${retry:-1}/10)"
-    retry=$(( ${retry:-0} + 1 ))
+  # Parse host and port from DATABASE_URL (postgres://user:pass@host:port/db)
+  DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|postgres://[^@]+@([^:/]+).*|\1|')
+  DB_PORT=$(echo "$DATABASE_URL" | sed -E 's|.*:([0-9]+)/.*|\1|')
+  DB_PORT=${DB_PORT:-5432}
+  retry=0
+  until pg_isready -h "$DB_HOST" -p "$DB_PORT" -t 3 2>/dev/null; do
+    retry=$(( retry + 1 ))
+    echo "   ... waiting for database (${retry}/10)"
+    if [ "$retry" -ge 10 ]; then
+      echo "⚠️  Database not ready after 10 attempts, continuing anyway..."
+      break
+    fi
     sleep 1
   done
   echo "✓ PostgreSQL connection established"

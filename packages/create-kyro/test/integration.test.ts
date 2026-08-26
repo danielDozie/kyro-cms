@@ -160,6 +160,12 @@ describe("file generation", () => {
       it("extends astro strict config", () => {
         expect(content).toContain("astro/tsconfigs/strict");
       });
+
+      it("includes moduleResolution bundler and skipLibCheck", () => {
+        const parsed = JSON.parse(content);
+        expect(parsed.compilerOptions.moduleResolution).toBe("bundler");
+        expect(parsed.compilerOptions.skipLibCheck).toBe(true);
+      });
     });
 
     describe(".env.example", () => {

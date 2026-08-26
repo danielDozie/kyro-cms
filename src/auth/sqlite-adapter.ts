@@ -115,6 +115,24 @@ export class SQLiteAuthAdapter implements AuthAdapter {
     } catch {
       // Column already exists, ignore
     }
+
+    try {
+      this.db.exec(`ALTER TABLE kyro_users ADD COLUMN metadata TEXT`);
+    } catch {
+      // Column already exists, ignore
+    }
+
+    try {
+      this.db.exec(`ALTER TABLE kyro_audit_logs ADD COLUMN metadata TEXT`);
+    } catch {
+      // Column already exists, ignore
+    }
+
+    try {
+      this.db.exec(`ALTER TABLE kyro_audit_logs ADD COLUMN resource_id TEXT`);
+    } catch {
+      // Column already exists, ignore
+    }
   }
 
   private prepareStatements(): void {
@@ -303,8 +321,8 @@ export class SQLiteAuthAdapter implements AuthAdapter {
     };
 
     this.db!.prepare(
-      `INSERT INTO kyro_users (id, name, email, password_hash, role, avatar, tenant_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO kyro_users (id, name, email, password_hash, role, avatar, tenant_id, metadata, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       id,
       user.name || null,
@@ -313,6 +331,7 @@ export class SQLiteAuthAdapter implements AuthAdapter {
       user.role,
       user.avatar || null,
       user.tenantId || null,
+      user.metadata ? JSON.stringify(user.metadata) : null,
       now,
       now,
     );
@@ -377,6 +396,10 @@ export class SQLiteAuthAdapter implements AuthAdapter {
     if (data.tenantId !== undefined) {
       updates.push("tenant_id = ?");
       values.push(data.tenantId);
+    }
+    if (data.metadata !== undefined) {
+      updates.push("metadata = ?");
+      values.push(data.metadata ? JSON.stringify(data.metadata) : null);
     }
     if (data.emailVerified !== undefined) {
       updates.push("email_verified = ?");
@@ -811,6 +834,7 @@ export class SQLiteAuthAdapter implements AuthAdapter {
       role: row.role as UserRole,
       tenantId: row.tenant_id as string | undefined,
       avatar: row.avatar as string | undefined,
+      metadata: row.metadata ? (typeof row.metadata === "string" ? JSON.parse(row.metadata as string) : (row.metadata as Record<string, unknown>)) : undefined,
       emailVerified: (row.email_verified as number) === 1,
       locked: (row.locked as number) === 1,
       lastLogin: row.last_login as string | undefined,

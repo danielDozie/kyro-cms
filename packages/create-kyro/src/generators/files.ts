@@ -53,6 +53,8 @@ export function generateProjectFiles(
     "paths": {
       "@/*": ["./src/*"]
     },
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
     "jsx": "react-jsx",
     "jsxImportSource": "react"
   }
@@ -72,10 +74,17 @@ data/
 
   writeFileSync(join(projectDir, ".gitignore"), gitignore);
 
+  const dbInstructions =
+    answers.database === "postgres"
+      ? `\n## Database Setup\n\nSet your \`DATABASE_URL\` in \`.env\` before starting the server:\n\n\`\`\`env\nDATABASE_URL=postgresql://user:password@localhost:5432/kyro_cms\n\`\`\`\n`
+      : answers.database === "mongodb"
+        ? `\n## Database Setup\n\nSet your \`MONGODB_URI\` in \`.env\` before starting the server:\n\n\`\`\`env\nMONGODB_URI=mongodb://localhost:27017/kyro_cms\n\`\`\`\n`
+        : "";
+
   const readme = `# ${answers.projectName}
 
 A Kyro CMS project.
-
+${dbInstructions}
 ## Quick Start
 
 \`\`\`bash

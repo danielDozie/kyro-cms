@@ -8,6 +8,7 @@ export interface AuthUser {
   role: UserRole;
   avatar?: string;
   tenantId?: string;
+  metadata?: Record<string, unknown>;
   emailVerified?: boolean;
   locked?: boolean;
   lastLogin?: string;

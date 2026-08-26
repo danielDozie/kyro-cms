@@ -29,6 +29,7 @@ describe("generators", () => {
       const answers = { ...baseAnswers, database: "postgres" as const };
       const config = generateKyroConfig(answers);
       expect(config).toContain("createDrizzleAdapter");
+      expect(config).toContain("type: 'postgres'");
       expect(config).toContain("DATABASE_URL");
     });
 

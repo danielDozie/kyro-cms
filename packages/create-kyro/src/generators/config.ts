@@ -19,6 +19,7 @@ export function generateKyroConfig(answers: Answers): string {
     adapterLines.push(`  adapter: createLocalAdapter({ path: './data.db' }),`);
   } else if (answers.database === "postgres") {
     adapterLines.push(`  adapter: createDrizzleAdapter({`);
+    adapterLines.push(`    type: 'postgres',`);
     adapterLines.push(`    connectionString: process.env.DATABASE_URL,`);
     adapterLines.push(`  }),`);
   } else if (answers.database === "mongodb") {
