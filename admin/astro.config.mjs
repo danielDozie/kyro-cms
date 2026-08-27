@@ -52,11 +52,8 @@ export default defineConfig({
   vite: {
     plugins: [
       tailwindcss(),
-      // Rewrite rolldown's __require("node:XXX") calls to proper ESM imports
-      // so wrangler's esbuild can add them to the static module graph.
-      // Without this, workerd's runtime require() throws "Dynamic require is not supported"
-      // because __require is an opaque call that esbuild can't statically analyze.
-      (() => {
+      // Rewrite rolldown's __require("node:XXX") calls to proper ESM imports ONLY for Cloudflare Pages/Workers.
+      ...(isCloudflare ? [(() => {
         const NODE_BUILTIN_RE = /__require\("(node:(?:buffer|crypto|events|fs|fs\/promises|http|https|module|net|os|path|stream|stream\/consumers|stream\/promises|stream\/web|string_decoder|timers|tls|url|util|util\/types|zlib)|(?:crypto|events|fs|path|stream|url|util|buffer|os|net|http|https|tls|zlib|assert|querystring|child_process|dns|module|readline|tty|vm|string_decoder|assert\/strict|timers\/promises))"\)/g;
         const BARE_TO_NODE = {
           crypto: "node:crypto", events: "node:events", fs: "node:fs",
@@ -107,7 +104,7 @@ export default defineConfig({
             return { code: out, map: null };
           },
         };
-      })(),
+      })()] : []),
     ],
     define: {
       global: "globalThis",
@@ -125,7 +122,6 @@ export default defineConfig({
             external: [
               ...NODE_BUILTINS,
               ...NODE_BUILTINS_PREFIXED,
-              "picomatch", "anymatch", "micromatch",
               "better-sqlite3", "sharp", "ssh2", "cpu-features",
               "ioredis", "nodemailer", "jsonwebtoken", "basic-ftp",
               "aws-sdk", "@mapbox/node-pre-gyp", "mock-aws-s3", "nock",
@@ -159,7 +155,6 @@ export default defineConfig({
          "nock",
          "better-sqlite3",
          "basic-ftp",
-         "picomatch",
          ...NODE_BUILTINS,
          ...NODE_BUILTINS_PREFIXED,
        ],
@@ -216,7 +211,6 @@ export default defineConfig({
       external: [
         ...NODE_BUILTINS,
         ...NODE_BUILTINS_PREFIXED,
-        "picomatch", "anymatch", "micromatch",
         "better-sqlite3", "sharp", "ssh2", "cpu-features",
         "ioredis", "nodemailer", "jsonwebtoken", "basic-ftp",
         "aws-sdk", "@mapbox/node-pre-gyp", "mock-aws-s3", "nock",

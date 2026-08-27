@@ -496,6 +496,28 @@ export interface KyroConfig {
     max?: number;
   };
   debug?: boolean;
+  /**
+   * Experimental features configuration.
+   * Opt-in to features undergoing active development.
+   */
+  experimental?: ExperimentalConfig;
+}
+
+/**
+ * Experimental features configuration.
+ * Features toggled here are active work-in-progress and subject to change across minor releases.
+ */
+export interface ExperimentalConfig {
+  /** Enable WebSocket real-time engine and multiplayer presence synchronization */
+  websockets?: boolean;
+  /** Enable AI Assistant and LLM copilot integrations */
+  aiAssistant?: boolean;
+  /** Enable vector embeddings and semantic search endpoints */
+  vectorSearch?: boolean;
+  /** Enable dynamic design token compilation (/api/tokens.css) */
+  designTokens?: boolean;
+  /** Enable live visual preview / island canvas */
+  visualCanvas?: boolean;
 }
 
 // ============================================================================

@@ -2,6 +2,15 @@
   "name": "@kyro-cms/mcp",
   "version": "0.13.1",
   "description": "Official Model Context Protocol (MCP) server for Kyro CMS — introspect schemas, query data, scaffold Astro components, and orchestrate AI agents",
+  "keywords": [
+    "kyro",
+    "cms",
+    "astro",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "experimental"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

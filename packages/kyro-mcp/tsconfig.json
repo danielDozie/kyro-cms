@@ -11,7 +11,7 @@
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
-      "@kyro-cms/core": ["../../src/index.ts"]
+      "@kyro-cms/core": ["../../dist/index.d.ts"]
     }
   },
   "include": ["src/**/*"]
