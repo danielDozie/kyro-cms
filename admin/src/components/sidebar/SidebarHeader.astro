@@ -1,0 +1,117 @@
+---
+import logoWhite from "../../assets/logo-white.svg";
+import logoDark from "../../assets/logo.svg";
+
+interface Props {
+  siteLogo?: { url: string; width?: number; height?: number; altText?: string } | null;
+  darkLogo?: { url: string; width?: number; height?: number; altText?: string } | null;
+  logoWidth?: number;
+  logoHeight?: number;
+  logoAlt?: string;
+  showSiteName?: boolean;
+  siteName: string;
+}
+
+const {
+  siteLogo,
+  darkLogo,
+  logoWidth,
+  logoHeight,
+  logoAlt = "Kyro CMS",
+  showSiteName = true,
+  siteName = "KYRO.",
+} = Astro.props;
+---
+
+<div
+  class="sidebar-header px-6 md:px-6 py-6 flex items-center justify-between gap-2 border-b border-[var(--kyro-border)]/50 shrink-0 transition-all duration-300"
+>
+  <div class="sidebar-brand flex items-center gap-3 overflow-hidden min-w-0 transition-all duration-300">
+    {
+      siteLogo || darkLogo ? (
+        <div class="flex items-center gap-3">
+          <div class="flex items-center flex-shrink-0">
+            {siteLogo && (
+              <img
+                src={siteLogo.url}
+                alt={logoAlt}
+                style={{
+                  width: logoWidth ? `${logoWidth}px` : "auto",
+                  height: logoHeight ? `${logoHeight}px` : "32px",
+                  objectFit: "contain",
+                }}
+                class={`rounded ${darkLogo ? "block dark:hidden" : ""}`}
+              />
+            )}
+            {darkLogo && (
+              <img
+                src={darkLogo.url}
+                alt={logoAlt}
+                style={{
+                  width: logoWidth ? `${logoWidth}px` : "auto",
+                  height: logoHeight ? `${logoHeight}px` : "32px",
+                  objectFit: "contain",
+                }}
+                class={`rounded ${siteLogo ? "hidden dark:block" : ""}`}
+              />
+            )}
+          </div>
+          {showSiteName && (
+            <span class="sidebar-text text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] truncate transition-opacity duration-200">
+              {siteName}
+            </span>
+          )}
+        </div>
+      ) : (
+        <div class="flex items-center gap-3 overflow-hidden">
+          <img src={logoWhite.src} alt="Kyro CMS" class="w-7 h-7 hidden dark:block flex-shrink-0" />
+          <img src={logoDark.src} alt="Kyro CMS" class="w-7 h-7 block dark:hidden flex-shrink-0" />
+          <span class="sidebar-text text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)] truncate transition-opacity duration-200">
+            {siteName}
+          </span>
+        </div>
+      )
+    }
+  </div>
+
+  {/* Desktop Panel Toggle Button */}
+  <button
+    id="sidebar-panel-toggle"
+    type="button"
+    title="Collapse Sidebar"
+    aria-label="Collapse Sidebar"
+    class="hidden md:flex items-center justify-center p-1.5 text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-all duration-200 rounded-lg flex-shrink-0 cursor-pointer"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      class="w-4.5 h-4.5 flex-shrink-0 sidebar-toggle-icon"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="4" ry="4" stroke="currentColor" stroke-width="2"></rect>
+      <path d="M7 3H9.5V21H7C4.79086 21 3 19.2091 3 17V7C3 4.79086 4.79086 3 7 3Z" fill="currentColor" stroke="none"
+      ></path>
+    </svg>
+  </button>
+
+  {/* Mobile Close Button */}
+  <button
+    id="mobile-close-btn"
+    class="md:hidden p-2 -mr-2 rounded-lg text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
+    >
+  </button>
+</div>

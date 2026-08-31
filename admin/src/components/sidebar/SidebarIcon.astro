@@ -1,0 +1,72 @@
+---
+import * as Icons from "lucide-react";
+import * as HeroOutline from "@heroicons/react/24/outline";
+import * as HeroSolid from "@heroicons/react/24/solid";
+
+interface Props {
+  icon?: string;
+  className?: string;
+}
+
+const { icon = "", className = "w-4 h-4 flex-shrink-0" } = Astro.props;
+
+const iconAliases: Record<string, string> = {
+  collection: "Dot",
+  media: "Image",
+  home: "Home",
+  users: "Users",
+  shield: "Shield",
+  plugins: "Blocks",
+  key: "Key",
+  webhook: "Webhook",
+  audit: "FileText",
+  settings: "Settings",
+  Activity: "Activity",
+};
+
+const iconName = iconAliases[icon] || icon;
+
+const toPascalCase = (str: string) =>
+  str
+    .replace(/[-_](\w)/g, (_, c) => c.toUpperCase())
+    .replace(/^(\w)/, (_, c) => c.toUpperCase());
+
+let Component: any = null;
+let strokeWidth: number | undefined = 2.5;
+
+if (iconName.startsWith("lucide:")) {
+  const clean = iconName.replace("lucide:", "");
+  const pascal = toPascalCase(clean);
+  Component = (Icons as any)[clean] || (Icons as any)[pascal];
+} else if (iconName.startsWith("hero:") || iconName.startsWith("hero-outline:")) {
+  const clean = iconName.replace(/^hero(-outline)?:/, "");
+  const pascal = toPascalCase(clean);
+  Component =
+    (HeroOutline as any)[clean] ||
+    (HeroOutline as any)[pascal] ||
+    (HeroOutline as any)[`${pascal}Icon`];
+  strokeWidth = 2;
+} else if (iconName.startsWith("hero-solid:")) {
+  const clean = iconName.replace("hero-solid:", "");
+  const pascal = toPascalCase(clean);
+  Component =
+    (HeroSolid as any)[clean] ||
+    (HeroSolid as any)[pascal] ||
+    (HeroSolid as any)[`${pascal}Icon`];
+  strokeWidth = undefined;
+} else {
+  const pascal = toPascalCase(iconName);
+  Component =
+    (Icons as any)[iconName] ||
+    (Icons as any)[pascal] ||
+    (HeroOutline as any)[iconName] ||
+    (HeroOutline as any)[pascal] ||
+    (HeroOutline as any)[`${pascal}Icon`];
+}
+
+if (!Component) {
+  Component = Icons.Dot;
+}
+---
+
+<Component className={className} strokeWidth={strokeWidth} />

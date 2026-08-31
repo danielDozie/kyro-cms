@@ -1,0 +1,60 @@
+---
+import * as Icons from "lucide-react";
+import i18next from "../../lib/i18n";
+import SidebarNavItem, { type NavItem } from "./SidebarNavItem.astro";
+
+export interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+interface Props {
+  navSections: NavSection[];
+  adminPath: string;
+  currentPath: string;
+  pageTitle: string;
+}
+
+const { navSections, adminPath, currentPath, pageTitle } = Astro.props;
+---
+
+<nav class="flex-1 px-4 overflow-y-auto overflow-x-hidden" id="sidebar-nav">
+  <div class="space-y-4">
+    {
+      navSections.map((section) => (
+        <div class="space-y-2 group/section" data-section={section.label}>
+          <div class="pt-4 pb-2">
+            <button
+              type="button"
+              class="w-full flex items-center justify-between px-4 focus:outline-none sidebar-section-toggle transition-opacity hover:opacity-80 cursor-pointer"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                {section.label !== "Dashboard" && section.label !== "Settings" && (
+                  <Icons.Folder className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 shrink-0" />
+                )}
+                <p class="text-[10px] font-medium text-[var(--kyro-text-secondary)] tracking-[0.2em] opacity-40 uppercase truncate">
+                  {i18next.t(section.label, {
+                    defaultValue: section.label.split(".").pop()?.toUpperCase() || section.label,
+                  }) ||
+                    section.label.split(".").pop()?.toUpperCase() ||
+                    section.label}
+                </p>
+              </div>
+              <Icons.ChevronDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 transition-transform duration-200 group-data-[collapsed=true]/section:-rotate-90 shrink-0" />
+            </button>
+          </div>
+          <div class="section-items space-y-1">
+            {section.items.map((item) => (
+              <SidebarNavItem
+                item={item}
+                adminPath={adminPath}
+                currentPath={currentPath}
+                pageTitle={pageTitle}
+              />
+            ))}
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</nav>

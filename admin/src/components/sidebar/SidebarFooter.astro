@@ -1,0 +1,41 @@
+---
+import * as Icons from "lucide-react";
+import i18next from "../../lib/i18n";
+import { UserMenu } from "../UserMenu";
+
+interface Props {
+  adminPath: string;
+}
+
+const { adminPath } = Astro.props;
+---
+
+<div class="sidebar-footer px-6 py-4 mt-auto transition-all duration-300">
+  <div
+    class="sidebar-footer-inner flex items-center justify-between p-2 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-2xl transition-all duration-300"
+  >
+    <div
+      class="theme-toggle-box flex p-1 bg-[var(--kyro-bg)] rounded-xl border border-[var(--kyro-border)] shadow-inner transition-all duration-300"
+    >
+      <button
+        id="theme-light-btn"
+        class="p-2 rounded-lg transition-all active:scale-95 cursor-pointer"
+        title={i18next.t("sidebar.lightMode", { defaultValue: "Light Mode" })}
+      >
+        <Icons.Sun className="w-4 h-4" strokeWidth={2.5} />
+      </button>
+      <button
+        id="theme-dark-btn"
+        class="p-2 rounded-lg transition-all active:scale-95 cursor-pointer"
+        title={i18next.t("sidebar.darkMode", { defaultValue: "Dark Mode" })}
+      >
+        <Icons.Moon className="w-4 h-4" strokeWidth={2.5} />
+      </button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <UserMenu client:only="react" adminPath={adminPath} />
+      <button id="logout-btn" class="hidden"></button>
+    </div>
+  </div>
+</div>

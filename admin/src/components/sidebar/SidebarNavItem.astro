@@ -1,0 +1,67 @@
+---
+import i18next from "../../lib/i18n";
+import SidebarIcon from "./SidebarIcon.astro";
+
+export interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  order?: number;
+}
+
+interface Props {
+  item: NavItem;
+  adminPath: string;
+  currentPath: string;
+  pageTitle: string;
+}
+
+const { item, adminPath, currentPath, pageTitle } = Astro.props;
+
+const slug = item.href.split("/").pop() || "";
+const type = item.href.includes("/settings") ? "global" : "collection";
+const fallback = item.label.split(".").pop() || item.label;
+const capitalized = fallback.charAt(0).toUpperCase() + fallback.slice(1);
+const itemText = i18next.t(item.label, { defaultValue: capitalized }) || capitalized;
+
+function checkIsActive(it: NavItem): boolean {
+  if (it.href === adminPath) return pageTitle === "Dashboard";
+  if (it.href === adminPath + "/content-health")
+    return pageTitle === "Content Health & Quality" || currentPath.includes("/content-health");
+  if (it.href.startsWith(adminPath + "/settings")) return currentPath.startsWith(adminPath + "/settings");
+  if (it.href === adminPath + "/users") return pageTitle === "Users";
+  if (it.href === adminPath + "/roles") return pageTitle === "Permissions";
+  if (it.href === adminPath + "/audit") return pageTitle === "Audit Logs";
+  if (it.href === adminPath + "/keys") return pageTitle === "API Keys";
+  if (it.href === adminPath + "/webhooks") return pageTitle === "Webhooks";
+  if (it.href === adminPath + "/plugins") return pageTitle === "Plugins";
+  if (it.href === adminPath + "/marketplace") return pageTitle === "Marketplace";
+  // Collections: match /collection-name and /collection-name/* paths
+  if (currentPath === it.href || currentPath.startsWith(it.href + "/")) return true;
+  return false;
+}
+
+const isCollectionActive = item.icon === "collection" && (currentPath === item.href || currentPath.startsWith(item.href + "/"));
+const isItemActive = checkIsActive(item);
+
+const linkClass = isCollectionActive
+  ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] active-nav-item"
+  : isItemActive
+    ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md active-nav-item"
+    : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]";
+---
+
+<a
+  href={item.href}
+  title={itemText}
+  data-nav-item
+  data-slug={slug}
+  data-type={type}
+  data-is-dashboard={item.href === adminPath ? "true" : "false"}
+  class={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm ${linkClass}`}
+>
+  <div class="nav-icon-wrapper flex items-center justify-center flex-shrink-0">
+    <SidebarIcon icon={item.icon} />
+  </div>
+  <span class="sidebar-text truncate">{itemText}</span>
+</a>
