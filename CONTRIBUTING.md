@@ -9,7 +9,7 @@ This project adheres to our [Code of Conduct](CODE_OF_CONDUCT.md). By participat
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/kyro-cms.git`
+2. Clone your fork: `git clone https://github.com/danielDozie/kyro-cms.git`
 3. Install dependencies: `pnpm install`
 4. Create a branch: `git checkout -b feature/your-feature-name`
 
