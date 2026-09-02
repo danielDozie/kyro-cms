@@ -13,7 +13,7 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: true,
   splitting: false,
-  sourcemap: true,
+  sourcemap: false,
   clean: true,
   external: ['astro', 'astro/config', 'astro/toolbar', 'astro:content', 'astro:actions', '@kyro-cms/core'],
 });

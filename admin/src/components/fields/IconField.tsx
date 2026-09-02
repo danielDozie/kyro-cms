@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import type { IconField as IconFieldType } from "@kyro-cms/core/client";
 import FieldLayout from "./FieldLayout";
-import { IconPickerModal } from "../ui/IconPickerModal";
 import { DynamicIcon } from "../ui/DynamicIcon";
-import * as LucideIcons from "lucide-react";
+import { Search } from "../ui/icons";
+
+const IconPickerModal = lazy(() =>
+  import("../ui/IconPickerModal").then((m) => ({ default: m.IconPickerModal }))
+);
 
 interface IconFieldComponentProps {
   field: IconFieldType;
@@ -48,22 +51,24 @@ export default function IconField({
           className="flex items-center gap-2 h-10 px-4 shrink-0 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl text-sm font-bold text-[var(--kyro-text-primary)] hover:border-[var(--kyro-primary)] hover:bg-[var(--kyro-primary-alpha)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {normalizedValue ? (
-            <DynamicIcon name={normalizedValue} className="w-5 h-5" fallback={LucideIcons.Search} />
+            <DynamicIcon name={normalizedValue} className="w-5 h-5" fallback={Search} />
           ) : (
-            <LucideIcons.Search className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
+            <Search className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
           )}
           Browse
         </button>
       </div>
 
       {pickerOpen && (
-        <IconPickerModal
-          open={pickerOpen}
-          onClose={() => setPickerOpen(false)}
-          onSelect={(iconName) => {
-            onChange?.(iconName);
-          }}
-        />
+        <Suspense fallback={null}>
+          <IconPickerModal
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            onSelect={(iconName) => {
+              onChange?.(iconName);
+            }}
+          />
+        </Suspense>
       )}
     </FieldLayout>
   );

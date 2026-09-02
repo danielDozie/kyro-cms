@@ -97,7 +97,7 @@ const hasAnySecurityAction = canSeeAudit || canSeeContentHealth || canSeeRoles |
     </div>
 
     <!-- CMS Metrics -->
-    <DashboardMetrics client:load isEcommerce={!!collections["orders"] || !!collections["products"]} />
+    <DashboardMetrics client:idle isEcommerce={!!collections["orders"] || !!collections["products"]} />
     {(!!collections["orders"] || !!collections["products"]) && <RevenueChart client:only="react" />}
 
 

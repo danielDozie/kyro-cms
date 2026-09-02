@@ -1,5 +1,5 @@
 import "../../lib/i18n";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -15,9 +15,12 @@ import Color from "@tiptap/extension-color";
 import type { Field } from "@kyro-cms/core/client";
 import FieldLayout from "./FieldLayout";
 import { SlidePanel } from "../ui/SlidePanel";
-import { MediaGallery } from "../MediaGallery";
 import { Eye, Edit2, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+const MediaGallery = lazy(() =>
+  import("../MediaGallery").then((m) => ({ default: m.MediaGallery }))
+);
 
 interface RichTextFieldProps {
   field: Field;
@@ -305,25 +308,33 @@ function RichTextEditor({
           title={t("tooltips.selectImage", { defaultValue: "Select Image" })}
           width="xl"
         >
-    <MediaGallery
-      pickerMode
-      multiple={false}
-      onSelect={(selectedItems) => {
-              if (selectedItems && selectedItems.length > 0) {
-                const selectedImage = selectedItems[0];
-                editor
-                  .chain()
-                  .focus()
-                  .setImage({
-                    src: selectedImage.url,
-                    alt: selectedImage.alt || selectedImage.title || "",
-                    title: selectedImage.title || "",
-                  })
-                  .run();
-              }
-              setIsMediaPickerOpen(false);
-            }}
-          />
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center p-12 text-sm text-[var(--kyro-text-muted)] animate-pulse">
+                <span>Loading media gallery...</span>
+              </div>
+            }
+          >
+            <MediaGallery
+              pickerMode
+              multiple={false}
+              onSelect={(selectedItems) => {
+                if (selectedItems && selectedItems.length > 0) {
+                  const selectedImage = selectedItems[0];
+                  editor
+                    .chain()
+                    .focus()
+                    .setImage({
+                      src: selectedImage.url,
+                      alt: selectedImage.alt || selectedImage.title || "",
+                      title: selectedImage.title || "",
+                    })
+                    .run();
+                }
+                setIsMediaPickerOpen(false);
+              }}
+            />
+          </Suspense>
         </SlidePanel>
       )}
     </FieldLayout>

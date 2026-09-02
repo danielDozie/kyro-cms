@@ -3,10 +3,6 @@ declare module "*.css" {
   export default content;
 }
 
-declare module "graphiql/graphiql.css" {
-  const content: string;
-  export default content;
-}
 
 declare module "react-image-crop/dist/ReactCrop.css" {
   const content: Record<string, string>;
