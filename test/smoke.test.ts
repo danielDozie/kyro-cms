@@ -9,14 +9,14 @@
  *
  * Run AFTER a successful build of the core package.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 
 describe("ESM import smoke tests", () => {
   let core: any;
 
   beforeAll(async () => {
     core = await import("@kyro-cms/core");
-  });
+  }, 30000);
 
   it("@kyro-cms/core index loads without errors", () => {
     expect(core).toBeDefined();

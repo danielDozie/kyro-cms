@@ -10,8 +10,7 @@ import { useTranslation } from "react-i18next";
 import type { CollectionConfig, Field } from "@kyro-cms/core";
 import { resolveFieldValue } from "../lib/resolve-field-value";
 import { useAutoFormStore } from "../lib/autoform-store";
-
-type FieldConfig = Field;
+import { flattenAdminFields, type FieldConfig } from "../lib/field-utils";
 
 interface CompactListViewProps {
   collection: CollectionConfig;
@@ -56,28 +55,7 @@ export function CompactListView({
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Extract title field
-  function flattenFields(fields: FieldConfig[]): FieldConfig[] {
-    const result: FieldConfig[] = [];
-    for (const field of fields || []) {
-      if (field.hidden === true || field.admin?.hidden || field.name === "id") continue;
-      if (field.type === "tabs" && field.tabs) {
-        for (const tab of field.tabs) {
-          if (tab.fields) {
-            result.push(...flattenFields(tab.fields));
-          }
-        }
-      } else if ((field.type === "row" || field.type === "collapsible") && field.fields) {
-        result.push(...flattenFields(field.fields));
-      } else {
-        if (!field.name) continue;
-        result.push(field);
-      }
-    }
-    return result;
-  }
-
-  const allFields = useMemo(() => flattenFields(collection.fields), [collection.fields]);
+  const allFields = useMemo(() => flattenAdminFields(collection.fields), [collection.fields]);
   const titleField: string | undefined = typeof collection.admin?.useAsTitle === "string"
     ? collection.admin.useAsTitle
     : allFields.find((f) => f.type !== "group" && typeof f.name === "string")?.name;

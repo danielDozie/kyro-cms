@@ -199,11 +199,12 @@ export const ALL: APIRoute = async (context) => {
     const app = await kyroInstance.getREST();
     return await app.fetch(context.request, context.locals);
   } catch (err: any) {
+    const isProd = process.env.NODE_ENV === "production";
     console.error("[Kyro API Execution Error]:", err?.stack || err?.message || err);
     return new Response(JSON.stringify({
       error: "Internal Server Error",
-      message: err?.message || String(err),
-      stack: err?.stack,
+      message: isProd ? "An unexpected error occurred" : (err?.message || String(err)),
+      ...(isProd ? {} : { stack: err?.stack }),
     }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

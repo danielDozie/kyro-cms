@@ -19,8 +19,7 @@ import { useIsMounted } from "../hooks/useIsMounted";
 
 import type { CollectionConfig, Field } from "@kyro-cms/core";
 import { resolveFieldValue } from "../lib/resolve-field-value";
-
-type FieldConfig = Field;
+import { flattenAdminFields, type FieldConfig } from "../lib/field-utils";
 
 interface FilterConfig {
   field: string;
@@ -141,32 +140,8 @@ function ListViewInner({
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
 
-  function flattenFields(fields: FieldConfig[]): FieldConfig[] {
-    const result: FieldConfig[] = [];
-    for (const field of fields || []) {
-      if (field.hidden === true || field.admin?.hidden || field.name === "id") continue;
-
-      if (field.type === "tabs" && field.tabs) {
-        for (const tab of field.tabs) {
-          if (tab.fields) {
-            result.push(...flattenFields(tab.fields));
-          }
-        }
-      } else if (
-        (field.type === "row" || field.type === "collapsible") &&
-        field.fields
-      ) {
-        result.push(...flattenFields(field.fields));
-      } else {
-        if (!field.name) continue;
-        result.push(field);
-      }
-    }
-    return result;
-  }
-
   const allFields = useMemo(
-    () => flattenFields(collection.fields),
+    () => flattenAdminFields(collection.fields),
     [collection.fields],
   );
 

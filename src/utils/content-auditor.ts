@@ -236,7 +236,13 @@ export function auditContentHealth(
         }
 
         // 4. Audit Link / URL fields and rich-text embedded links
-        if (field.type === 'url') {
+        const isUrlField =
+          (field as any).type === "url" ||
+          (field.type === "text" &&
+            (field.name.toLowerCase().includes("url") ||
+              field.name.toLowerCase().includes("link") ||
+              (field as any).format === "url"));
+        if (isUrlField) {
           const rawUrl = doc[field.name];
           if (rawUrl && typeof rawUrl === 'string') {
             const check = isValidUrlString(rawUrl.trim());

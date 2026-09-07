@@ -6,11 +6,12 @@ import { AiAssistantPlugin, AiAutoSeoPlugin } from "./packages/kyro-ai/src/index
 import { setDbAdapter, loadSecrets, getAppSecret } from "./src/lib/secret.js";
 import path from "path";
 import fs from "fs";
-import { createGroq } from '@ai-sdk/groq';
+// @ts-ignore - optional ai provider
+// import { createGroq } from '@ai-sdk/groq';
 
-const groq = createGroq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// const groq = createGroq({
+//   apiKey: process.env.GROQ_API_KEY,
+// });
 
 // Database adapter setup - Cloudflare / Production vs Local SQLite
 let adapter = null;
@@ -124,15 +125,15 @@ export default {
       description: "Manage your content with ease",
     },
   },
-  plugins: [
-    new AiAssistantPlugin({
-      provider: groq,
-      modelName: 'llama-3.1-8b-instant',
-    }),
-    new AiAutoSeoPlugin({
-      collections: ['posts', 'pages'],
-      provider: groq,
-      modelName: 'llama-3.1-8b-instant',
-    }),
-  ],
+  // plugins: [
+  //   new AiAssistantPlugin({
+  //     provider: groq,
+  //     modelName: 'llama-3.1-8b-instant',
+  //   }),
+  //   new AiAutoSeoPlugin({
+  //     collections: ['posts', 'pages'],
+  //     provider: groq,
+  //     modelName: 'llama-3.1-8b-instant',
+  //   }),
+  // ],
 };

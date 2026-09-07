@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.13.5",
+  "version": "0.13.6",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
@@ -226,6 +226,7 @@
     "tsup": "^8.5.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.59.1",
+    "@vitest/coverage-v8": "^3.0.0",
     "vitest": "^3.0.0"
   },
   "optionalDependencies": {

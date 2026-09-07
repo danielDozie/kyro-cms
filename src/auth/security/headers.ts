@@ -42,8 +42,8 @@ export class SecurityHeaders {
     }
 
     if (config.allowedOrigins && config.allowedOrigins.length > 0) {
-      const origins = config.allowedOrigins.join(" ");
-      this.headers["Access-Control-Allow-Origin"] = origins;
+      const origin = config.allowedOrigins.includes("*") ? "*" : config.allowedOrigins[0];
+      this.headers["Access-Control-Allow-Origin"] = origin;
       this.headers["Vary"] = "Origin";
     }
   }
@@ -78,12 +78,20 @@ export class SecurityHeaders {
     this.headers["Access-Control-Allow-Origin"] = origin;
   }
 
-  apply(response: Response): Response {
+  apply(response: Response, req?: Request): Response {
     const newHeaders = new Headers(response.headers);
 
     for (const [name, value] of Object.entries(this.headers)) {
       if (!newHeaders.has(name)) {
         newHeaders.set(name, value);
+      }
+    }
+
+    if (req && this.config.allowedOrigins && this.config.allowedOrigins.length > 0) {
+      const incomingOrigin = req.headers.get("Origin");
+      if (incomingOrigin && (this.config.allowedOrigins.includes("*") || this.config.allowedOrigins.includes(incomingOrigin))) {
+        newHeaders.set("Access-Control-Allow-Origin", incomingOrigin);
+        newHeaders.set("Vary", "Origin");
       }
     }
 
@@ -100,7 +108,7 @@ export class SecurityHeaders {
       next: () => Promise<Response>,
     ): Promise<Response> => {
       const response = await next();
-      return this.apply(response);
+      return this.apply(response, req);
     };
   }
 }

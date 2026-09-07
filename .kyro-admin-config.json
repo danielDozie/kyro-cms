@@ -10026,12 +10026,5 @@
   ],
   "collectionOverrides": {},
   "globalOverrides": {},
-  "plugins": [
-    {
-      "name": "ai-assistant"
-    },
-    {
-      "name": "ai-auto-seo"
-    }
-  ]
+  "plugins": []
 }
