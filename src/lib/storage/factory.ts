@@ -1,5 +1,4 @@
 import type { StorageConfig, StorageAdapter, CreateStorageResult } from './types.js';
-import { createBrowserStorage } from './browser.js';
 import { createNodeStorage } from './node.js';
 import { getEncryptionKey } from './encryption.js';
 
@@ -17,6 +16,7 @@ export async function createStorage(config: StorageConfig): Promise<CreateStorag
   };
 
   if (environment === 'browser') {
+    const { createBrowserStorage } = await import('./browser.js');
     return createBrowserStorage({
       namespace: 'kyro',
     });
@@ -85,5 +85,10 @@ export async function createAuthStorage(config: StorageConfig): Promise<CreateSt
   return createStorage(storageConfig);
 }
 
-export { createBrowserStorage } from './browser.js';
+export async function createBrowserStorage(
+  options?: Parameters<typeof import('./browser.js').createBrowserStorage>[0],
+) {
+  const { createBrowserStorage: fn } = await import('./browser.js');
+  return fn(options);
+}
 export { createNodeStorage } from './node.js';
