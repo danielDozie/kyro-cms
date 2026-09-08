@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.13.3",
+  "version": "0.13.7",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
@@ -171,10 +171,7 @@
   },
   "homepage": "https://github.com/danielDozie/kyro-cms#readme",
   "dependencies": {
-    "@ai-sdk/groq": "^4.0.12",
-    "@ai-sdk/openai": "^0.0.14",
     "@aws-sdk/client-s3": "^3.751.0",
-    "@aws-sdk/s3-request-presigner": "^3.751.0",
     "@kyro-cms/ai": "workspace:*",
     "@smithy/node-http-handler": "^4.7.0",
     "@tiptap/core": "^3.23.6",
@@ -189,22 +186,16 @@
     "@tiptap/extension-underline": "^3.23.6",
     "@tiptap/html": "^3.23.6",
     "@tiptap/starter-kit": "^3.23.6",
-    "@trpc/client": "^11.0.0",
-    "@trpc/react-query": "^11.0.0",
-    "@trpc/server": "^11.0.0",
     "basic-ftp": "^5.3.0",
     "bcryptjs": "^2.4.3",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "cpu-features": "^0.0.10",
     "drizzle-orm": "^0.44.7",
-    "esbuild": "^0.25.0",
     "glob": "^11.0.1",
     "graphql": "^16.10.0",
     "graphql-yoga": "^5.21.2",
     "hono": "^4.7.0",
-    "idb-keyval": "^6.2.2",
-    "jsondiffpatch": "^0.7.3",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^8.0.4",
     "ora": "^8.2.0",
@@ -235,6 +226,7 @@
     "tsup": "^8.5.1",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.59.1",
+    "@vitest/coverage-v8": "^3.0.0",
     "vitest": "^3.0.0"
   },
   "optionalDependencies": {

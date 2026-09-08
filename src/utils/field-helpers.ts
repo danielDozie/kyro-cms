@@ -202,3 +202,55 @@ export async function maskRestrictedFields(
   return result;
 }
 
+/**
+ * Recursively flattens structural wrapper fields (tabs, row, collapsible) into an array of concrete fields.
+ */
+export function flattenFields<T = any>(fields: T[]): T[] {
+  const result: T[] = [];
+  for (const field of fields) {
+    if ((field as any).type === "tabs" && Array.isArray((field as any).tabs)) {
+      for (const tab of (field as any).tabs) {
+        if (Array.isArray(tab.fields)) {
+          result.push(...flattenFields(tab.fields));
+        }
+      }
+    } else if (((field as any).type === "row" || (field as any).type === "collapsible") && Array.isArray((field as any).fields)) {
+      result.push(...flattenFields((field as any).fields));
+    } else {
+      result.push(field);
+    }
+  }
+  return result;
+}
+
+/**
+ * Normalizes upload/image fields within nested dynamic blocks data payloads.
+ */
+export function processBlocksUploadFields(value: unknown, blockDefs: any[]): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((block) => {
+    if (!block || typeof block !== "object") return block;
+    const data = block.data ? { ...block.data } : undefined;
+    if (!data) return block;
+    const def = blockDefs.find((d: any) => d.slug === block.type || d.slug === block.slug);
+    if (!def || !Array.isArray(def.fields)) return block;
+    for (const f of def.fields) {
+      if (f.name && (f.type === "upload" || f.type === "image") && data[f.name]) {
+        const val = data[f.name];
+        if (Array.isArray(val)) {
+          data[f.name] = val.map((item: any) =>
+            typeof item === "string" ? { id: item } : item
+          );
+        } else if (typeof val === "string") {
+          data[f.name] = { id: val };
+        }
+      }
+      if (f.type === "blocks" && f.name && data[f.name]) {
+        const nestedDefs = (f as any).blocks || [];
+        data[f.name] = processBlocksUploadFields(data[f.name], nestedDefs);
+      }
+    }
+    return { ...block, data };
+  });
+}
+

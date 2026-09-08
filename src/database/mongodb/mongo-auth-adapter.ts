@@ -14,6 +14,7 @@ import type {
 export interface MongoDBAuthAdapterOptions {
   db?: any | (() => any);
   adapter?: any;
+  client?: any;
   collectionPrefix?: string;
   sessionTTL?: number;
   refreshTokenTTL?: number;
@@ -22,6 +23,7 @@ export interface MongoDBAuthAdapterOptions {
 export class MongoDBAuthAdapter implements AuthAdapter {
   private db: any;
   private adapter: any;
+  private client: any;
   private prefix: string;
   private sessionTTL: number;
   private refreshTokenTTL: number;
@@ -30,6 +32,7 @@ export class MongoDBAuthAdapter implements AuthAdapter {
   constructor(options: MongoDBAuthAdapterOptions) {
     this.db = options.db;
     this.adapter = options.adapter;
+    this.client = options.client;
     this.prefix = options.collectionPrefix || "";
     this.sessionTTL = options.sessionTTL || 86400;
     this.refreshTokenTTL = options.refreshTokenTTL || 604800;
@@ -72,6 +75,17 @@ export class MongoDBAuthAdapter implements AuthAdapter {
   }
 
   async disconnect(): Promise<void> {
+    if (this.client && !this.adapter) {
+      const isProduction = process.env.NODE_ENV === 'production';
+      const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+      if (isProduction || isTest) {
+        try {
+          await this.client.close();
+        } catch {
+          // Ignore
+        }
+      }
+    }
   }
 
   private async ensureIndexes(): Promise<void> {

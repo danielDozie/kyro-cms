@@ -18,6 +18,7 @@ export {
 } from "./registry/index.js";
 export type {
   KyroConfig,
+  ExperimentalConfig,
   CollectionConfig,
   GlobalConfig,
   AdminConfig,
@@ -152,7 +153,7 @@ export {
   fieldToDrizzleType,
   collectionToDrizzleSchema,
 } from "./database/index.js";
-export { MongoDBAdapter, createMongoDBAdapter } from "./database/index.js";
+export { MongoDBAdapter, createMongoDBAdapter, getMongoDb, getMongoClient } from "./database/index.js";
 export { LocalAdapter, createLocalAdapter } from "./database/index.js";
 
 // API Gateways
@@ -333,8 +334,8 @@ export {
   allGlobalSettings,
   coreGlobalSettings,
   createTemplateConfig,
-} from "./templates/index";
-export type { TemplateConfig } from "./templates/index";
+} from "./templates/index.js";
+export type { TemplateConfig } from "./templates/index.js";
 
 // Configuration Service
 export {

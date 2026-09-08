@@ -57,7 +57,7 @@ export default defineConfig([
     },
     splitting: true,
     sourcemap: false,
-    clean: false,
+    clean: true,
     treeshake: true,
     minify: true,
     target: "es2022",
@@ -65,7 +65,6 @@ export default defineConfig([
     esbuildOptions(options) {
       options.conditions = ["style", "import", "module", "default"];
     },
-    noExternal: [new RegExp(`^(?!(${externalPattern})$).*`)],
     external: ALL_EXTERNALS,
   },
   {

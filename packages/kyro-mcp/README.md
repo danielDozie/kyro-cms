@@ -3,7 +3,11 @@
 > Official Model Context Protocol (MCP) server for Kyro CMS — introspect schemas, query and mutate live data, scaffold Astro components, and orchestrate AI agents.
 
 [![npm version](https://img.shields.io/npm/v/@kyro-cms/mcp.svg)](https://www.npmjs.com/package/@kyro-cms/mcp)
+[![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange.svg)](https://kyro-cms.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> [!WARNING]
+> **Status: Experimental / Beta** — `@kyro-cms/mcp` is under active development. Tools, resource URIs (`kyro://...`), and prompt schemas may evolve as the Model Context Protocol specification matures.
 
 ---
 

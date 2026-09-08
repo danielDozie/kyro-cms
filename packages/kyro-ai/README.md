@@ -3,8 +3,12 @@
 > Official AI plugin pack for Kyro CMS — automated SEO metadata generation, in-editor writing assistant, vector embeddings & semantic search, vision-powered alt-text, and prompt-to-schema synthesis.
 
 [![npm version](https://img.shields.io/npm/v/@kyro-cms/ai.svg)](https://www.npmjs.com/package/@kyro-cms/ai)
+[![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange.svg)](https://kyro-cms.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
+
+> [!WARNING]
+> **Status: Experimental / Beta** — `@kyro-cms/ai` incorporates fast-evolving LLM and Vision SDK interfaces. APIs and prompt generation contracts are subject to change between minor versions.
 
 ---
 

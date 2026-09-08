@@ -3,21 +3,22 @@ import "../styles/main.css";
 import { nonAuthCollections, projects, organizations } from "../lib/config";
 import { adminPath } from "../lib/paths";
 import { getSiteSettings, getBrandSettings } from "../lib/globals";
-import * as Icons from "lucide-react";
-import * as HeroOutline from "@heroicons/react/24/outline";
-import * as HeroSolid from "@heroicons/react/24/solid";
-import { UserMenu } from "./UserMenu";
+import { getAuthServer } from "../lib/auth-server";
 
-import logoWhite from "../assets/logo-white.svg";
-import logoDark from "../assets/logo.svg";
+import SidebarHeader from "./sidebar/SidebarHeader.astro";
+import ProjectSwitcher from "./sidebar/ProjectSwitcher.astro";
+import SidebarNav, { type NavSection } from "./sidebar/SidebarNav.astro";
+import SidebarFooter from "./sidebar/SidebarFooter.astro";
+import type { NavItem } from "./sidebar/SidebarNavItem.astro";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: string;
-  order?: number;
+interface Props {
+  title: string;
 }
 
+const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+// Site & Branding configuration
 const siteSettings = await getSiteSettings({ request: Astro.request });
 const brandSettings = await getBrandSettings({ request: Astro.request });
 
@@ -29,25 +30,17 @@ const logoHeight = siteLogo?.height || darkLogo?.height;
 const logoAlt = siteLogo?.altText || darkLogo?.altText || siteName;
 const showSiteName = brandSettings?.identity?.showSiteName ?? true;
 
-import i18next from "../lib/i18n";
-
-interface Props {
-  title: string;
-}
-
-const { title } = Astro.props;
-const currentPath = Astro.url.pathname;
-
+// Tenancy / Projects
 const allProjects = [
   ...projects,
   ...organizations.flatMap((org) => (org.projects || []).map((p) => ({ ...p, orgName: org.name }))),
 ];
-const hasTenancy = organizations.length > 0 || allProjects.length > 0;
 
+// Dynamic collections grouped by folder/group
 const groupedCollections = new Map<string, NavItem[]>();
 
 nonAuthCollections
-  .filter((col) => col.slug !== "media") //removed here cos it's been added manually in the navSections.
+  .filter((col) => col.slug !== "media")
   .forEach((col) => {
     const item: NavItem = {
       href: `${adminPath}/${col.slug}`,
@@ -63,7 +56,7 @@ nonAuthCollections
     groupedCollections.get(groupName)!.push(item);
   });
 
-const dynamicSections = Array.from(groupedCollections.entries())
+const dynamicSections: NavSection[] = Array.from(groupedCollections.entries())
   .map(([group, items]) => {
     const sortedItems = items.sort((a, b) => (a.order || 999) - (b.order || 999));
     const minOrder = sortedItems.length > 0 ? (sortedItems[0].order ?? 999) : 999;
@@ -73,16 +66,19 @@ const dynamicSections = Array.from(groupedCollections.entries())
       minOrder,
     };
   })
-  .sort((a, b) => a.minOrder - b.minOrder);
+  .sort((a, b) => a.minOrder - b.minOrder)
+  .map(({ label, items }) => ({ label, items }));
 
-import { getAuthServer } from "../lib/auth-server";
-
+// Server-side auth & RBAC resolution
 const { user: serverUser, permissions: serverPermissions } = await getAuthServer(Astro.request);
 const serverRole = serverUser?.role || "";
 const isServerSuperAdmin = serverRole === "super_admin";
 const isServerAdmin = serverRole === "admin" || isServerSuperAdmin;
+const isServerEditor = serverRole === "editor";
+const isServerAuthor = serverRole === "author";
+const isServerCustomer = serverRole === "customer";
 
-const navSectionsRaw: { label: string; items: NavItem[] }[] = [
+const navSectionsRaw: NavSection[] = [
   {
     label: "Dashboard",
     items: [
@@ -108,11 +104,7 @@ const navSectionsRaw: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-const isServerEditor = serverRole === "editor";
-const isServerAuthor = serverRole === "author";
-const isServerCustomer = serverRole === "customer";
-
-const navSections = navSectionsRaw
+const navSections: NavSection[] = navSectionsRaw
   .map((section) => {
     if (!serverUser) return section;
     const items = section.items.filter((item) => {
@@ -148,882 +140,214 @@ const navSections = navSectionsRaw
     return { ...section, items };
   })
   .filter((section) => section.items.length > 0);
-
-const iconAliases: Record<string, string> = {
-  collection: "Dot",
-  media: "Image",
-  home: "Home",
-  users: "Users",
-  shield: "Shield",
-  plugins: "Blocks",
-  key: "Key",
-  webhook: "Webhook",
-  audit: "FileText",
-  settings: "Settings",
-  Activity: "Activity",
-};
-
-function isActive(item: NavItem): boolean {
-  if (item.href === adminPath) return title === "Dashboard";
-  if (item.href === adminPath + "/content-health")
-    return title === "Content Health & Quality" || currentPath.includes("/content-health");
-  if (item.href.startsWith(adminPath + "/settings")) return currentPath.startsWith(adminPath + "/settings");
-  if (item.href === adminPath + "/users") return title === "Users";
-  if (item.href === adminPath + "/roles") return title === "Permissions";
-  if (item.href === adminPath + "/audit") return title === "Audit Logs";
-  if (item.href === adminPath + "/keys") return title === "API Keys";
-  if (item.href === adminPath + "/webhooks") return title === "Webhooks";
-  if (item.href === adminPath + "/plugins") return title === "Plugins";
-  if (item.href === adminPath + "/marketplace") return title === "Marketplace";
-  // Collections: match /collection-name and /collection-name/* paths
-  if (currentPath === item.href || currentPath.startsWith(item.href + "/")) return true;
-  return false;
-}
 ---
 
 <aside
   id="kyro-sidebar"
   class="surface-tile rounded-r-lg rounded-l-none md:rounded-l-lg w-[280px] flex flex-col flex-shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r border-[var(--kyro-border)]"
 >
-  <div
-    class="sidebar-header px-6 md:px-6 py-6 flex items-center justify-between gap-2 border-b border-[var(--kyro-border)]/50 shrink-0 transition-all duration-300"
-  >
-    <div class="sidebar-brand flex items-center gap-3 overflow-hidden min-w-0 transition-all duration-300">
-      {
-        siteLogo || darkLogo ? (
-          <div class="flex items-center gap-3">
-            <div class="flex items-center flex-shrink-0">
-              {siteLogo && (
-                <img
-                  src={siteLogo.url}
-                  alt={logoAlt}
-                  style={{
-                    width: logoWidth ? `${logoWidth}px` : "auto",
-                    height: logoHeight ? `${logoHeight}px` : "32px",
-                    objectFit: "contain",
-                  }}
-                  class={`rounded ${darkLogo ? "block dark:hidden" : ""}`}
-                />
-              )}
-              {darkLogo && (
-                <img
-                  src={darkLogo.url}
-                  alt={logoAlt}
-                  style={{
-                    width: logoWidth ? `${logoWidth}px` : "auto",
-                    height: logoHeight ? `${logoHeight}px` : "32px",
-                    objectFit: "contain",
-                  }}
-                  class={`rounded ${siteLogo ? "hidden dark:block" : ""}`}
-                />
-              )}
-            </div>
-            {showSiteName && (
-              <span class="sidebar-text text-xl font-bold tracking-tight text-[var(--kyro-text-primary)] truncate transition-opacity duration-200">
-                {siteName}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div class="flex items-center gap-3 overflow-hidden">
-            <img src={logoWhite.src} alt="Kyro CMS" class="w-7 h-7 hidden dark:block flex-shrink-0" />
-            <img src={logoDark.src} alt="Kyro CMS" class="w-7 h-7 block dark:hidden flex-shrink-0" />
-            <span class="sidebar-text text-2xl font-black tracking-tighter text-[var(--kyro-text-primary)] truncate transition-opacity duration-200">
-              {siteName}
-            </span>
-          </div>
-        )
-      }
-    </div>
+  <SidebarHeader
+    siteLogo={siteLogo}
+    darkLogo={darkLogo}
+    logoWidth={logoWidth}
+    logoHeight={logoHeight}
+    logoAlt={logoAlt}
+    showSiteName={showSiteName}
+    siteName={siteName}
+  />
 
-    {/* Desktop Panel Toggle Button */}
-    <button
-      id="sidebar-panel-toggle"
-      type="button"
-      title="Toggle Sidebar"
-      aria-label="Toggle Sidebar"
-      class="hidden md:flex items-center justify-center p-1.5 text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-colors rounded flex-shrink-0 cursor-pointer"
-    >
-      <Icons.PanelLeftClose className="w-5 h-5 sidebar-icon-expanded" />
-      <Icons.PanelLeftOpen className="w-5 h-5 sidebar-icon-collapsed hidden" />
-    </button>
+  <ProjectSwitcher
+    organizations={organizations}
+    projects={projects}
+    allProjects={allProjects}
+  />
 
-    {/* Mobile Close Button */}
-    <button
-      id="mobile-close-btn"
-      class="md:hidden p-2 -mr-2 rounded-lg text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg
-      >
-    </button>
-  </div>
+  <SidebarNav
+    navSections={navSections}
+    adminPath={adminPath}
+    currentPath={currentPath}
+    pageTitle={title}
+  />
 
-  {
-    hasTenancy && (
-      <div class="sidebar-tenancy-box px-3 py-1.5 border-b border-[var(--kyro-border)]/40 shrink-0 transition-all duration-200">
-        <div class="relative group/tenancy">
-          <button
-            type="button"
-            id="project-switcher-btn"
-            class="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--kyro-surface-accent)]/40 hover:bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)]/50 text-left transition-all duration-150 cursor-pointer"
-          >
-            <div class="flex items-center gap-2 min-w-0">
-              <div class="w-5 h-5 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                <Icons.Building2 className="w-3 h-3" />
-              </div>
-              <div class="min-w-0">
-                <p
-                  class="text-xs font-medium text-[var(--kyro-text-primary)] truncate leading-tight"
-                  id="active-project-name"
-                >
-                  {allProjects[0]?.name || organizations[0]?.name || "Default Workspace"}
-                </p>
-                <div class="flex items-center gap-1.5 mt-0.5 leading-none">
-                  <span class="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />
-                  <p
-                    class="text-[8.5px] text-[var(--kyro-text-secondary)] capitalize font-normal opacity-80"
-                    id="active-project-env"
-                  >
-                    {allProjects[0]?.environment || "Production"}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <Icons.ChevronsUpDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-50 shrink-0" />
-          </button>
+  <SidebarFooter adminPath={adminPath} />
+</aside>
 
-          {/* Dropdown Menu */}
-          <div
-            id="project-switcher-menu"
-            class="hidden absolute top-full left-0 right-0 mt-1 p-1 rounded-lg bg-[var(--kyro-surface)] border border-[var(--kyro-border)] shadow-xl z-50 space-y-1"
-          >
-            {organizations.map((org) => (
-              <div class="px-1.5 py-0.5">
-                <p class="text-[9px] font-bold text-[var(--kyro-text-secondary)] uppercase tracking-wider opacity-60 px-1 py-0.5">
-                  {org.name}
-                </p>
-                <div class="mt-0.5 space-y-0.5">
-                  {(org.projects || []).map((proj) => (
-                    <button
-                      type="button"
-                      data-proj-id={proj.id}
-                      data-proj-name={proj.name}
-                      data-proj-env={proj.environment || "Production"}
-                      data-proj-collections={JSON.stringify(proj.collections || [])}
-                      class="project-switcher-item w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] text-left transition-colors cursor-pointer"
-                    >
-                      <span class="truncate font-medium text-xs">{proj.name}</span>
-                      <span class="text-[7.5px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium capitalize">
-                        {proj.environment || "Production"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+<script>
+  import { adminPath } from "../lib/paths";
+  import { setupSidebar } from "./sidebar/sidebar-client";
 
-            {projects.length > 0 && organizations.length === 0 && (
-              <div class="space-y-0.5 p-0.5">
-                {projects.map((proj) => (
-                  <button
-                    type="button"
-                    data-proj-id={proj.id}
-                    data-proj-name={proj.name}
-                    data-proj-env={proj.environment || "Production"}
-                    data-proj-collections={JSON.stringify(proj.collections || [])}
-                    class="project-switcher-item w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs hover:bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] text-left transition-colors cursor-pointer"
-                  >
-                    <span class="truncate font-medium text-xs">{proj.name}</span>
-                    <span class="text-[7.5px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium capitalize">
-                      {proj.environment || "Production"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
+  setupSidebar(adminPath);
+</script>
+
+<style is:global>
+  #kyro-sidebar {
+    transition:
+      width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+      transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden !important;
   }
 
-  <nav class="flex-1 px-4 overflow-y-auto overflow-x-hidden" id="sidebar-nav">
-    <div class="space-y-4">
-      {
-        navSections.map((section) => (
-          <div class="space-y-2 group/section" data-section={section.label}>
-            <div class="pt-4 pb-2">
-              <button
-                type="button"
-                class="w-full flex items-center justify-between px-4 focus:outline-none sidebar-section-toggle transition-opacity hover:opacity-80"
-              >
-                <div class="flex items-center gap-2 min-w-0">
-                  {section.label !== "Dashboard" && section.label !== "Settings" && (
-                    <Icons.Folder className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 shrink-0" />
-                  )}
-                  <p class="text-[10px] font-medium text-[var(--kyro-text-secondary)] tracking-[0.2em] opacity-40 uppercase truncate">
-                    {i18next.t(section.label, {
-                      defaultValue: section.label.split(".").pop()?.toUpperCase() || section.label,
-                    }) ||
-                      section.label.split(".").pop()?.toUpperCase() ||
-                      section.label}
-                  </p>
-                </div>
-                <Icons.ChevronDown className="w-3.5 h-3.5 text-[var(--kyro-text-secondary)] opacity-40 transition-transform duration-200 group-data-[collapsed=true]/section:-rotate-90 shrink-0" />
-              </button>
-            </div>
-            <div class="section-items space-y-1">
-              {section.items.map((item) => {
-                const slug = item.href.split("/").pop();
-                const type = item.href.includes("/settings") ? "global" : "collection";
-                const fallback = item.label.split(".").pop() || item.label;
-                const capitalized = fallback.charAt(0).toUpperCase() + fallback.slice(1);
-                const itemText = i18next.t(item.label, { defaultValue: capitalized }) || capitalized;
-                return (
-                  <a
-                    href={item.href}
-                    title={itemText}
-                    data-nav-item
-                    data-slug={slug}
-                    data-type={type}
-                    data-is-dashboard={item.href === adminPath ? "true" : "false"}
-                    class={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm ${
-                      item.icon === "collection"
-                        ? currentPath === item.href || currentPath.startsWith(item.href + "/")
-                          ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] active-nav-item"
-                          : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"
-                        : isActive(item)
-                          ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md active-nav-item"
-                          : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"
-                    }`}
-                  >
-                    <div class="nav-icon-wrapper flex items-center justify-center flex-shrink-0">
-                      {(() => {
-                        const raw = item.icon || "";
-                        const iconName = iconAliases[raw] || raw;
+  #kyro-sidebar #sidebar-nav {
+    overflow-x: hidden !important;
+  }
 
-                        const toPascalCase = (str: string) =>
-                          str
-                            .replace(/[-_](\w)/g, (_, c) => c.toUpperCase())
-                            .replace(/^(\w)/, (_, c) => c.toUpperCase());
+  /* Collapsed Rail State */
+  #kyro-sidebar[data-minimized="true"] {
+    width: 76px !important;
+    min-width: 76px !important;
+    max-width: 76px !important;
+    overflow-x: hidden !important;
+  }
+  #kyro-sidebar[data-minimized="true"] #sidebar-nav,
+  #kyro-sidebar[data-minimized="true"] #sidebar-nav > div,
+  #kyro-sidebar[data-minimized="true"] #sidebar-nav .group\/section,
+  #kyro-sidebar[data-minimized="true"] #sidebar-nav .section-items {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+  #kyro-sidebar[data-minimized="true"] #sidebar-nav::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 
-                        // 1. Explicit Lucide namespace (e.g. "lucide:Utensils", "lucide:shopping-bag")
-                        if (iconName.startsWith("lucide:")) {
-                          const clean = iconName.replace("lucide:", "");
-                          const pascal = toPascalCase(clean);
-                          const LucideComp = (Icons as any)[clean] || (Icons as any)[pascal];
-                          if (LucideComp) return <LucideComp className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
-                        }
+  #kyro-sidebar[data-minimized="true"] .sidebar-header {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 1rem !important;
+    padding-bottom: 0.75rem !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .sidebar-brand {
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .sidebar-brand > div {
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .sidebar-brand img {
+    margin: 0 auto !important;
+    width: 28px !important;
+    height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+  }
 
-                        // 2. Explicit Heroicons Outline namespace (e.g. "hero:Sparkles", "hero-outline:fire")
-                        if (iconName.startsWith("hero:") || iconName.startsWith("hero-outline:")) {
-                          const clean = iconName.replace(/^hero(-outline)?:/, "");
-                          const pascal = toPascalCase(clean);
-                          const HeroComp = (HeroOutline as any)[clean] || (HeroOutline as any)[pascal] || (HeroOutline as any)[`${pascal}Icon`];
-                          if (HeroComp) return <HeroComp className="w-4 h-4 flex-shrink-0" strokeWidth={2} />;
-                        }
+  /* Hide text, section headers, and workspace switcher cleanly */
+  #kyro-sidebar[data-minimized="true"] .sidebar-text,
+  #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle,
+  #kyro-sidebar[data-minimized="true"] .sidebar-tenancy-box,
+  #kyro-sidebar[data-minimized="true"] [data-section] > div:first-child {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
 
-                        // 3. Explicit Heroicons Solid namespace (e.g. "hero-solid:Fire")
-                        if (iconName.startsWith("hero-solid:")) {
-                          const clean = iconName.replace("hero-solid:", "");
-                          const pascal = toPascalCase(clean);
-                          const HeroComp = (HeroSolid as any)[clean] || (HeroSolid as any)[pascal] || (HeroSolid as any)[`${pascal}Icon`];
-                          if (HeroComp) return <HeroComp className="w-4 h-4 flex-shrink-0" />;
-                        }
+  /* Center Nav Item Buttons and force Icons to be visible & perfectly centered */
+  #kyro-sidebar[data-minimized="true"] a[data-nav-item] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 8px !important;
+    margin-bottom: 4px !important;
+    border-radius: 5px !important;
+    padding: 8px !important;
+  }
 
-                        // 4. Direct Lucide icon check
-                        const pascal = toPascalCase(iconName);
-                        const LucideComp = (Icons as any)[iconName] || (Icons as any)[pascal];
-                        if (LucideComp) return <LucideComp className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
+  #kyro-sidebar[data-minimized="true"] .nav-icon-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
-                        // 5. Direct Heroicon check (e.g. SparklesIcon, ShoppingBagIcon, or Sparkles)
-                        const HeroDirect = (HeroOutline as any)[iconName] || (HeroOutline as any)[pascal] || (HeroOutline as any)[`${pascal}Icon`];
-                        if (HeroDirect) return <HeroDirect className="w-4 h-4 flex-shrink-0" strokeWidth={2} />;
+  #kyro-sidebar[data-minimized="true"] .sidebar-icon-expanded {
+    display: none !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .sidebar-icon-collapsed {
+    display: block !important;
+  }
 
-                        const Fallback = Icons.Dot;
-                        return <Fallback className="w-4 h-4 flex-shrink-0" strokeWidth={2.5} />;
-                      })()}
-                    </div>
-                    <span class="sidebar-text truncate">{itemText}</span>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        ))
-      }
-    </div>
-  </nav>
-
-  <script>
-    import { adminPath } from "../lib/paths";
-
-    function applyProjectFilter(allowedCollectionsJson?: string | null) {
-      if (!allowedCollectionsJson) return;
-      try {
-        const allowed: string[] = JSON.parse(allowedCollectionsJson);
-        if (!Array.isArray(allowed) || allowed.length === 0) {
-          // No collection restrictions on this project, show all permitted by RBAC
-          return;
-        }
-
-        const allowedSet = new Set(allowed);
-        const navItems = document.querySelectorAll("[data-nav-item]");
-        navItems.forEach((item) => {
-          const type = item.getAttribute("data-type");
-          const slug = item.getAttribute("data-slug") || "";
-          const isDashboard = item.getAttribute("data-is-dashboard") === "true";
-          if (isDashboard || type !== "collection" || slug === "media" || slug === "users" || slug === "audit_logs") {
-            return;
-          }
-          if (!allowedSet.has(slug)) {
-            (item as HTMLElement).style.display = "none";
-          }
-        });
-      } catch {
-        // Fallback gracefully on parsing error
-      }
-    }
-
-    function initSidebar() {
-      // Project / Tenancy Switcher
-      const switcherBtn = document.getElementById("project-switcher-btn");
-      const switcherMenu = document.getElementById("project-switcher-menu");
-      const activeNameEl = document.getElementById("active-project-name");
-      const activeEnvEl = document.getElementById("active-project-env");
-
-      if (switcherBtn && switcherMenu) {
-        const savedProjName = localStorage.getItem("kyro-active-project-name");
-        const savedProjEnv = localStorage.getItem("kyro-active-project-env");
-        const savedProjCollections = localStorage.getItem("kyro-active-project-collections");
-
-        if (savedProjName && activeNameEl) activeNameEl.textContent = savedProjName;
-        if (savedProjEnv && activeEnvEl) activeEnvEl.textContent = savedProjEnv;
-        if (savedProjCollections) applyProjectFilter(savedProjCollections);
-
-        switcherBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          switcherMenu.classList.toggle("hidden");
-        });
-
-        document.addEventListener("click", (e) => {
-          if (!switcherMenu.contains(e.target as Node) && !switcherBtn.contains(e.target as Node)) {
-            switcherMenu.classList.add("hidden");
-          }
-        });
-
-        const items = switcherMenu.querySelectorAll(".project-switcher-item");
-        items.forEach((item) => {
-          item.addEventListener("click", () => {
-            const id = item.getAttribute("data-proj-id") || "";
-            const name = item.getAttribute("data-proj-name") || "";
-            const env = item.getAttribute("data-proj-env") || "";
-            const collectionsJson = item.getAttribute("data-proj-collections") || "[]";
-
-            if (activeNameEl) activeNameEl.textContent = name;
-            if (activeEnvEl) activeEnvEl.textContent = env;
-
-            localStorage.setItem("kyro-active-project-id", id);
-            localStorage.setItem("kyro-active-project-name", name);
-            localStorage.setItem("kyro-active-project-env", env);
-            localStorage.setItem("kyro-active-project-collections", collectionsJson);
-
-            switcherMenu.classList.add("hidden");
-
-            // Re-run RBAC pruning then apply project-level filtering
-            pruneSidebar();
-            applyProjectFilter(collectionsJson);
-
-            window.dispatchEvent(
-              new CustomEvent("kyro:project-changed", {
-                detail: { id, name, env, collections: JSON.parse(collectionsJson) },
-              }),
-            );
-          });
-        });
-      }
-
-      const sections = document.querySelectorAll("[data-section]");
-      sections.forEach((section) => {
-        const label = section.getAttribute("data-section");
-        const toggleBtn = section.querySelector(".sidebar-section-toggle");
-        const itemsContainer = section.querySelector(".section-items");
-
-        const isCollapsed = localStorage.getItem(`kyro-sidebar-collapsed-${label}`) === "true";
-        if (isCollapsed) {
-          section.setAttribute("data-collapsed", "true");
-          if (itemsContainer) itemsContainer.classList.add("hidden");
-        } else {
-          section.removeAttribute("data-collapsed");
-          if (itemsContainer) itemsContainer.classList.remove("hidden");
-        }
-
-        // Remove old listeners to prevent duplicates
-        const newToggleBtn = toggleBtn?.cloneNode(true);
-        if (toggleBtn && newToggleBtn && toggleBtn.parentNode) {
-          toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
-          newToggleBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const currentlyCollapsed = section.getAttribute("data-collapsed") === "true";
-            if (currentlyCollapsed) {
-              section.removeAttribute("data-collapsed");
-              if (itemsContainer) itemsContainer.classList.remove("hidden");
-              localStorage.setItem(`kyro-sidebar-collapsed-${label}`, "false");
-            } else {
-              section.setAttribute("data-collapsed", "true");
-              if (itemsContainer) itemsContainer.classList.add("hidden");
-              localStorage.setItem(`kyro-sidebar-collapsed-${label}`, "true");
-            }
-          });
-        }
-      });
-    }
-
-    function pruneSidebar(user?: any, permissions?: any) {
-      if (!user) {
-        // @ts-ignore
-        user = window.__kyroAuth?.user;
-        // @ts-ignore
-        permissions = window.__kyroAuth?.permissions;
-      }
-      if (!user) return;
-
-      const userRole = user.role || "";
-      const isSuperAdmin = userRole === "super_admin";
-      const isAdmin = userRole === "admin" || isSuperAdmin;
-      const isEditor = userRole === "editor";
-      const isAuthor = userRole === "author";
-      const isCustomer = userRole === "customer";
-
-      const navItems = document.querySelectorAll("[data-nav-item]");
-      navItems.forEach((item) => {
-        const slug = item.getAttribute("data-slug") || "";
-        const type = item.getAttribute("data-type") || "";
-
-        let hasAccess = true;
-
-        const isDashboard =
-          item.getAttribute("data-is-dashboard") === "true" || item.getAttribute("href") === adminPath;
-        if (isDashboard) {
-          hasAccess = true;
-        } else if (slug === "roles") {
-          hasAccess = isSuperAdmin;
-        } else if (slug === "plugins" || slug === "keys" || slug === "webhooks" || slug === "settings") {
-          hasAccess = isAdmin;
-        } else if (slug === "users") {
-          hasAccess = isAdmin || permissions?.collections?.users?.read === true;
-        } else if (slug === "audit" || slug === "audit_logs") {
-          hasAccess = isAdmin || permissions?.collections?.audit_logs?.read === true;
-        } else if (slug === "media") {
-          hasAccess =
-            !isCustomer && (isAdmin || isEditor || isAuthor || permissions?.collections?.media?.read === true);
-        } else if (type === "collection") {
-          if (isAdmin) {
-            hasAccess = true;
-          } else if (permissions?.collections?.[slug]) {
-            hasAccess = permissions.collections[slug].read === true;
-          } else if (isEditor) {
-            hasAccess = !["users", "audit_logs", "roles", "plugins", "keys", "webhooks", "settings"].includes(slug);
-          } else if (isAuthor) {
-            hasAccess = ["posts", "categories", "orders"].includes(slug);
-          } else if (isCustomer) {
-            hasAccess = ["orders"].includes(slug);
-          } else {
-            hasAccess = false;
-          }
-        } else if (type === "global") {
-          if (!isAdmin) {
-            hasAccess = permissions?.globals?.[slug]?.read === true;
-          }
-        }
-
-        if (!hasAccess) {
-          // @ts-ignore
-          item.style.display = "none";
-        } else {
-          // @ts-ignore
-          item.style.display = "";
-        }
-      });
-
-      // Apply saved project collection filter if active
-      const savedProjCollections = localStorage.getItem("kyro-active-project-collections");
-      if (savedProjCollections) {
-        applyProjectFilter(savedProjCollections);
-      }
-
-      // Hide empty sections after RBAC & project filtering
-      const sections = document.querySelectorAll("[data-section]");
-      sections.forEach((section) => {
-        const visibleItems = section.querySelectorAll('[data-nav-item]:not([style*="display: none"])');
-        if (visibleItems.length === 0) {
-          // @ts-ignore
-          section.style.display = "none";
-        } else {
-          // @ts-ignore
-          section.style.display = "";
-        }
-      });
-    }
-
-    const runPruning = () => {
-      initSidebar();
-      pruneSidebar();
-      initPanelToggle();
-      initTooltips();
-    };
-
-    function initTooltips() {
-      const sidebar = document.getElementById("kyro-sidebar");
-      if (!sidebar) return;
-
-      let tooltipBadge = document.getElementById("sidebar-tooltip-badge");
-      if (!tooltipBadge) {
-        tooltipBadge = document.createElement("div");
-        tooltipBadge.id = "sidebar-tooltip-badge";
-        tooltipBadge.className =
-          "fixed z-[9999] pointer-events-none opacity-0 transition-opacity duration-150 ease-out px-2.5 py-1.5 text-xs font-semibold rounded-sm bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] border border-[var(--kyro-border)] shadow-md whitespace-nowrap hidden";
-        document.body.appendChild(tooltipBadge);
-      }
-
-      const navItems = document.querySelectorAll("[data-nav-item]");
-      navItems.forEach((item) => {
-        const handleMouseEnter = () => {
-          if (sidebar.getAttribute("data-minimized") !== "true") return;
-          const textSpan = item.querySelector(".sidebar-text");
-          const label = textSpan?.textContent?.trim() || item.getAttribute("title") || "";
-          if (!label || !tooltipBadge) return;
-
-          tooltipBadge.textContent = label;
-          tooltipBadge.classList.remove("hidden");
-
-          const rect = item.getBoundingClientRect();
-          const top = rect.top + rect.height / 2;
-          const left = rect.right + 10;
-
-          tooltipBadge.style.top = `${top}px`;
-          tooltipBadge.style.left = `${left}px`;
-          tooltipBadge.style.transform = "translateY(-50%)";
-
-          requestAnimationFrame(() => {
-            tooltipBadge?.classList.remove("opacity-0");
-            tooltipBadge?.classList.add("opacity-100");
-          });
-        };
-
-        const handleMouseLeave = () => {
-          if (!tooltipBadge) return;
-          tooltipBadge.classList.remove("opacity-100");
-          tooltipBadge.classList.add("opacity-0");
-          setTimeout(() => {
-            if (tooltipBadge?.classList.contains("opacity-0")) {
-              tooltipBadge.classList.add("hidden");
-            }
-          }, 150);
-        };
-
-        item.removeEventListener("mouseenter", (item as any)._tpEnter);
-        item.removeEventListener("mouseleave", (item as any)._tpLeave);
-        (item as any)._tpEnter = handleMouseEnter;
-        (item as any)._tpLeave = handleMouseLeave;
-        item.addEventListener("mouseenter", handleMouseEnter);
-        item.addEventListener("mouseleave", handleMouseLeave);
-      });
-
-      const navContainer = document.getElementById("sidebar-nav");
-      if (navContainer) {
-        navContainer.addEventListener(
-          "scroll",
-          () => {
-            if (tooltipBadge) {
-              tooltipBadge.classList.remove("opacity-100");
-              tooltipBadge.classList.add("opacity-0", "hidden");
-            }
-          },
-          { passive: true },
-        );
-      }
-    }
-
-    function initPanelToggle() {
-      const sidebar = document.getElementById("kyro-sidebar");
-      const toggleBtn = document.getElementById("sidebar-panel-toggle");
-      if (!sidebar || !toggleBtn) return;
-
-      const updateMinimizedUI = (isMin: boolean) => {
-        if (isMin) {
-          sidebar.setAttribute("data-minimized", "true");
-          sidebar.classList.remove("w-[280px]");
-          sidebar.classList.add("w-[76px]");
-          toggleBtn.setAttribute("title", "Expand Sidebar");
-        } else {
-          sidebar.removeAttribute("data-minimized");
-          sidebar.classList.remove("w-[76px]");
-          sidebar.classList.add("w-[280px]");
-          toggleBtn.setAttribute("title", "Minimize Sidebar");
-        }
-      };
-
-      const savedMin = localStorage.getItem("kyro-sidebar-minimized") === "true";
-      updateMinimizedUI(savedMin);
-
-      const newToggleBtn = toggleBtn.cloneNode(true);
-      if (toggleBtn.parentNode) {
-        toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
-        newToggleBtn.addEventListener("click", () => {
-          const isNowMin = sidebar.getAttribute("data-minimized") !== "true";
-          localStorage.setItem("kyro-sidebar-minimized", isNowMin ? "true" : "false");
-          updateMinimizedUI(isNowMin);
-        });
-      }
-    }
-
-    // Run on load and view transitions
-    runPruning();
-    document.addEventListener("astro:page-load", runPruning);
-
-    // Handle frontend RBAC pruning in the sidebar
-    window.addEventListener("kyro:auth-ready", (event) => {
-      // @ts-ignore
-      const { user, permissions } = event.detail || {};
-      pruneSidebar(user, permissions);
-    });
-
-    // Fallback interval check to ensure pruning runs after async auth resolves
-    const authCheckInterval = setInterval(() => {
-      // @ts-ignore
-      if (window.__kyroAuth?.verified) {
-        runPruning();
-        clearInterval(authCheckInterval);
-      }
-    }, 100);
-    setTimeout(() => clearInterval(authCheckInterval), 5000);
-  </script>
-
-  <style is:global>
-    #kyro-sidebar {
-      transition:
-        width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-        transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
-      overflow-x: hidden !important;
-    }
-
-    #kyro-sidebar #sidebar-nav {
-      overflow-x: hidden !important;
-    }
-
-    /* Collapsed Rail State */
-    #kyro-sidebar[data-minimized="true"] {
-      width: 76px !important;
-      min-width: 76px !important;
-      max-width: 76px !important;
-      overflow-x: hidden !important;
-    }
-    #kyro-sidebar[data-minimized="true"] #sidebar-nav,
-    #kyro-sidebar[data-minimized="true"] #sidebar-nav > div,
-    #kyro-sidebar[data-minimized="true"] #sidebar-nav .group\/section,
-    #kyro-sidebar[data-minimized="true"] #sidebar-nav .section-items {
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-      margin-left: 0 !important;
-      margin-right: 0 !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      min-width: 0 !important;
-      overflow-x: hidden !important;
-      box-sizing: border-box !important;
-    }
-    #kyro-sidebar[data-minimized="true"] #sidebar-nav::-webkit-scrollbar {
-      display: none !important;
-      width: 0 !important;
-      height: 0 !important;
-    }
-
-    #kyro-sidebar[data-minimized="true"] .sidebar-header {
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-      padding-top: 1rem !important;
-      padding-bottom: 0.75rem !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 0.5rem !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-brand {
-      justify-content: center !important;
-      width: 100% !important;
-      margin: 0 auto !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-brand > div {
-      justify-content: center !important;
-      width: 100% !important;
-      margin: 0 auto !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-brand img {
-      margin: 0 auto !important;
-      width: 28px !important;
-      height: 28px !important;
-      max-width: 28px !important;
-      max-height: 28px !important;
-    }
-
-    /* Hide text, section headers, and workspace switcher cleanly */
-    #kyro-sidebar[data-minimized="true"] .sidebar-text,
-    #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle,
-    #kyro-sidebar[data-minimized="true"] .sidebar-tenancy-box,
-    #kyro-sidebar[data-minimized="true"] [data-section] > div:first-child {
-      display: none !important;
-      width: 0 !important;
-      height: 0 !important;
-      opacity: 0 !important;
-      overflow: hidden !important;
-      visibility: hidden !important;
-      font-size: 0 !important;
-      line-height: 0 !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none !important;
-    }
-
-    /* Center Nav Item Buttons and force Icons to be visible & perfectly centered */
-    #kyro-sidebar[data-minimized="true"] a[data-nav-item] {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 0 !important;
-      width: 28px !important;
-      height: 28px !important;
-      min-width: 28px !important;
-      max-width: 28px !important;
-      margin-left: auto !important;
-      margin-right: auto !important;
-      margin-top: 8px !important;
-      margin-bottom: 4px !important;
-      border-radius: 5px !important;
-      padding: 8px !important;
-    }
-
-    #kyro-sidebar[data-minimized="true"] .nav-icon-wrapper {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      width: 100% !important;
-      height: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-
-    /* #kyro-sidebar[data-minimized="true"] .nav-icon-wrapper svg {
-      display: block !important;
-      width: 20px !important;
-      height: 20px !important;
-      min-width: 20px !important;
-      min-height: 20px !important;
-      max-width: 20px !important;
-      max-height: 20px !important;
-      flex-shrink: 0 !important;
-      margin: 0 auto !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-    } */
-
-    #kyro-sidebar[data-minimized="true"] .sidebar-icon-expanded {
-      display: none !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-icon-collapsed {
-      display: block !important;
-    }
-
-    /* Footer & User Menu Rail alignment for Collapsed State */
-    #kyro-sidebar[data-minimized="true"] .sidebar-footer {
-      padding: 0.75rem 0 !important;
-      margin-top: auto !important;
-      width: 100% !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner {
-      display: flex !important;
-      flex-direction: column-reverse !important;
-      gap: 0.625rem !important;
-      padding: 0 !important;
-      align-items: center !important;
-      justify-content: center !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      width: 100% !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .theme-toggle-box {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 0.25rem !important;
-      padding: 0.25rem !important;
-      width: 32px !important;
-      margin: 0 auto !important;
-      border-radius: 8px !important;
-    }
-    #kyro-sidebar[data-minimized="true"] #theme-light-btn,
-    #kyro-sidebar[data-minimized="true"] #theme-dark-btn {
-      width: 24px !important;
-      height: 24px !important;
-      padding: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      border-radius: 6px !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner > div.flex {
-      width: 100% !important;
-      justify-content: center !important;
-      gap: 0 !important;
-    }
-    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner [title*="Account"],
-    #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner div[class*="items-center"][class*="justify-center"] {
-      width: 32px !important;
-      height: 32px !important;
-      margin: 0 auto !important;
-      border-radius: 8px !important;
-    }
-  </style>
-
-  <div class="sidebar-footer px-6 py-4 mt-auto transition-all duration-300">
-    <div
-      class="sidebar-footer-inner flex items-center justify-between p-2 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-2xl transition-all duration-300"
-    >
-      <div
-        class="theme-toggle-box flex p-1 bg-[var(--kyro-bg)] rounded-xl border border-[var(--kyro-border)] shadow-inner transition-all duration-300"
-      >
-        <button
-          id="theme-light-btn"
-          class="p-2 rounded-lg transition-all active:scale-95"
-          title={i18next.t("sidebar.lightMode", { defaultValue: "Light Mode" })}
-        >
-          <Icons.Sun className="w-4 h-4" strokeWidth={2.5} />
-        </button>
-        <button
-          id="theme-dark-btn"
-          class="p-2 rounded-lg transition-all active:scale-95"
-          title={i18next.t("sidebar.darkMode", { defaultValue: "Dark Mode" })}
-        >
-          <Icons.Moon className="w-4 h-4" strokeWidth={2.5} />
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <UserMenu client:only="react" adminPath={adminPath} />
-        <button id="logout-btn" class="hidden"></button>
-      </div>
-    </div>
-  </div>
-</aside>
+  /* Footer & User Menu Rail alignment for Collapsed State */
+  #kyro-sidebar[data-minimized="true"] .sidebar-footer {
+    padding: 0.75rem 0 !important;
+    margin-top: auto !important;
+    width: 100% !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: 0.625rem !important;
+    padding: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .theme-toggle-box {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.25rem !important;
+    padding: 0.25rem !important;
+    width: 32px !important;
+    margin: 0 auto !important;
+    border-radius: 8px !important;
+  }
+  #kyro-sidebar[data-minimized="true"] #theme-light-btn,
+  #kyro-sidebar[data-minimized="true"] #theme-dark-btn {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner > div.flex {
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+  #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner [title*="Account"],
+  #kyro-sidebar[data-minimized="true"] .sidebar-footer-inner div[class*="items-center"][class*="justify-center"] {
+    width: 32px !important;
+    height: 32px !important;
+    margin: 0 auto !important;
+    border-radius: 8px !important;
+  }
+</style>

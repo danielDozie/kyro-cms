@@ -1,7 +1,17 @@
 {
   "name": "@kyro-cms/ai",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "AI plugin pack for Kyro CMS — auto-SEO, content generation, translation, chat assistant, and semantic embeddings",
+  "keywords": [
+    "kyro",
+    "cms",
+    "astro",
+    "ai",
+    "openai",
+    "embeddings",
+    "vector-search",
+    "experimental"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

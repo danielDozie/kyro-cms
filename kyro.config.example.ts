@@ -25,4 +25,12 @@ export default defineKyroConfig({
         endpoint: process.env.R2_ENDPOINT || `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       })
     : undefined,
+
+  // Optional experimental features
+  // experimental: {
+  //   websockets: true,
+  //   aiAssistant: true,
+  //   vectorSearch: true,
+  //   designTokens: true,
+  // },
 });

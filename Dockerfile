@@ -17,8 +17,8 @@ RUN npm install -g pnpm@9
 
 COPY . .
 RUN pnpm install --no-frozen-lockfile
-# Build root core engine and admin workspace dashboard
-RUN pnpm -r build || (pnpm build && pnpm --filter @kyro-cms/admin build) || true
+# Build core packages first, then admin Astro SSR application
+RUN pnpm build && (cd admin && pnpm exec astro build)
 
 FROM node:22-bookworm-slim AS runner
 

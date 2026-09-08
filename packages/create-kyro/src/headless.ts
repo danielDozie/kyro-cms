@@ -55,10 +55,13 @@ export interface CreateProjectResult {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function generatePassword(length = 20): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  // Exclude '#' as it acts as a comment delimiter in .env files
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%^&*';
   const bytes = randomBytes(length);
   let out = '';
-  for (let i = 0; i < length; i++) out += chars[bytes[i] % chars.length];
+  for (let i = 0; i < length; i++) {
+    out += chars[bytes[i] % chars.length];
+  }
   return out;
 }
 

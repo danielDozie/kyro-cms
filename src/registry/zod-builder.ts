@@ -26,6 +26,7 @@ import type {
   ValidateOptions,
 } from "../fields/types.js";
 import type { CollectionConfig, GlobalConfig } from "./types.js";
+import { flattenFields } from "../utils/field-helpers.js";
 
 // ============================================================================
 // Field → Zod Schema Generator
@@ -428,24 +429,6 @@ function addCustomValidation(
 // ============================================================================
 // Collection Schema Generator
 // ============================================================================
-
-function flattenFields(fields: Field[]): Field[] {
-  const result: Field[] = [];
-  for (const field of fields) {
-    if (field.type === "tabs" && "tabs" in field) {
-      for (const tab of field.tabs) {
-        result.push(...flattenFields(tab.fields));
-      }
-    } else if (field.type === "row" && "fields" in field) {
-      result.push(...flattenFields(field.fields));
-    } else if (field.type === "collapsible" && "fields" in field) {
-      result.push(...flattenFields(field.fields));
-    } else {
-      result.push(field);
-    }
-  }
-  return result;
-}
 
 function buildNestedShape(fields: Field[]): Record<string, ZodTypeAny> {
   const shape: Record<string, ZodTypeAny> = {};

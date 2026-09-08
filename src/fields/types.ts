@@ -327,6 +327,10 @@ export interface IconField extends BaseField {
   type: "icon";
 }
 
+/**
+ * @experimental
+ * Native embedding field for AI semantic search and RAG workflows.
+ */
 export interface EmbeddingField extends BaseField {
   type: "embedding";
   sourceField: string;

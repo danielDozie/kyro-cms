@@ -14,7 +14,8 @@ import { randomBytes } from 'crypto';
 const execAsync = promisify(exec);
 
 function generatePassword(length = 24): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+  // Exclude '#' as it acts as a comment delimiter in .env files
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@$%^&*()';
   const bytes = randomBytes(length);
   let password = '';
   for (let i = 0; i < length; i++) {
@@ -32,7 +33,7 @@ function getPackageManager(): string {
   return 'npm';
 }
 
-const VERSION = '0.12.73';
+const VERSION = '0.12.74';
 
 async function main() {
   logger.intro('@kyro-cms/create', VERSION);

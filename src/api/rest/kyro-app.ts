@@ -163,7 +163,8 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
 
     // Fallback for unexpected errors
     console.error("[Kyro API Error]", err);
-    return c.json({ error: err.message || "Internal Server Error" }, 500);
+    const isProd = process.env.NODE_ENV === "production";
+    return c.json({ error: isProd ? "Internal Server Error" : (err.message || "Internal Server Error") }, 500);
   });
 
   // Inject Plugin API Routes

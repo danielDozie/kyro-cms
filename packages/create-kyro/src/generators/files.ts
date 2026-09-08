@@ -191,8 +191,8 @@ ${answers.database === "sqlite"
 APP_SECRET=${generateAppSecret()}
 
 # Admin credentials (used for first-user bootstrap)
-KYRO_ADMIN_EMAIL=${adminCredentials.adminEmail}
-KYRO_ADMIN_PASSWORD=${adminCredentials.adminPassword}
+KYRO_ADMIN_EMAIL="${adminCredentials.adminEmail}"
+KYRO_ADMIN_PASSWORD="${adminCredentials.adminPassword}"
 `;
 
     writeFileSync(join(projectDir, ".env"), envFile);

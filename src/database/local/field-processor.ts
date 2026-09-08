@@ -1,22 +1,7 @@
 import type { Field } from "../../fields/types.js";
+import { flattenFields } from "../../utils/field-helpers.js";
 
-export function flattenFields(fields: Field[]): Field[] {
-  const result: Field[] = [];
-  for (const field of fields) {
-    if (field.type === "tabs" && "tabs" in field) {
-      for (const tab of field.tabs) {
-        result.push(...flattenFields(tab.fields));
-      }
-    } else if (field.type === "row" && "fields" in field) {
-      result.push(...flattenFields(field.fields));
-    } else if (field.type === "collapsible" && "fields" in field) {
-      result.push(...flattenFields(field.fields));
-    } else {
-      result.push(field);
-    }
-  }
-  return result;
-}
+export { flattenFields };
 
 export function processFieldValue(row: any, field: Field): any {
   const f = field as any;
