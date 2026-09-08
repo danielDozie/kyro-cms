@@ -1,6 +1,7 @@
 import { autoInstall } from "../../utils/auto-install.js";
 import { AbstractBaseAdapter } from '../base.js';
 import { sanitizeDoc } from "../../utils/sanitize.js";
+import { flattenFields } from "../../utils/field-helpers.js";
 import { sql, eq, and, or, desc, ne, inArray, like, ilike, gt, gte, lt, lte } from 'drizzle-orm';
 import {
   pgTable,
@@ -100,6 +101,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
 
   protected prepareData(data: Record<string, any>, config: CollectionConfig): Record<string, any> {
     const result = super.prepareData(data, config);
+    const flatFields = flattenFields(config.fields);
 
     // Convert ISO date strings to Date objects for Drizzle timestamp columns
     if (result.createdAt && typeof result.createdAt === "string") {
@@ -110,7 +112,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
 
     // Convert date-type field values to Date objects for Drizzle timestamp columns
-    for (const field of config.fields) {
+    for (const field of flatFields) {
       if (field.type === 'date' && field.name) {
         const value = result[field.name];
         if (value && typeof value === "string") {
@@ -121,7 +123,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
 
     // Process complex fields — Drizzle ORM handles JSONB serialization natively for Postgres,
     // but for SQLite we must manually stringify ALL jsonb columns.
-    for (const field of config.fields) {
+    for (const field of flatFields) {
       const dbType = fieldToDrizzleType(field, this.dialect);
       const isJsonb = dbType === "jsonb";
 
@@ -153,7 +155,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
 
     // Convert empty strings to null for field types that reject them in PostgreSQL
-    for (const field of config.fields) {
+    for (const field of flatFields) {
       if (field.name && result[field.name] === "") {
         const dbType = fieldToDrizzleType(field, this.dialect);
         if (dbType === "timestamp" || dbType === "jsonb" || dbType === "decimal" || dbType === "integer" || dbType === "numeric" || dbType === "boolean") {
@@ -246,7 +248,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       id: useTextId ? text("id").primaryKey() : uuid("id").primaryKey().defaultRandom(),
     };
 
-    for (const field of config.fields) {
+    const flatFields = flattenFields(config.fields);
+    for (const field of flatFields) {
       if (!field.name || field.name === "id" || field.type === "password") continue;
       const dbType = fieldToDrizzleType(field, this.dialect);
       const propName = field.name.replace(/-/g, "_");
@@ -325,10 +328,11 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       const isGlobal = config.slug.startsWith("_globals_");
       const tableName = this.getTableName(config.slug);
       const colDefs = this.generateCreateColumns(config);
-      const hasCreated = config.fields.some((f) => f.name === "createdAt");
-      const hasUpdated = config.fields.some((f) => f.name === "updatedAt");
-      const hasStatus = config.fields.some((f) => f.name === "status");
-      const hasDraftField = config.fields.some((f) => f.name === "hasDraft");
+      const flatFields = flattenFields(config.fields);
+      const hasCreated = flatFields.some((f) => f.name === "createdAt");
+      const hasUpdated = flatFields.some((f) => f.name === "updatedAt");
+      const hasStatus = flatFields.some((f) => f.name === "status");
+      const hasDraftField = flatFields.some((f) => f.name === "hasDraft");
       
       if (this.dialect === 'postgres') {
         const idCol = isGlobal ? '"id" TEXT PRIMARY KEY' : '"id" UUID PRIMARY KEY DEFAULT gen_random_uuid()';
@@ -413,10 +417,11 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
   private getExpectedColumnDefs(config: CollectionConfig, tableName: string): Record<string, string> {
     const defs: Record<string, string> = {};
     const isGlobal = config.slug.startsWith("_globals_");
-    const hasCreated = config.fields.some((f) => f.name === "createdAt");
-    const hasUpdated = config.fields.some((f) => f.name === "updatedAt");
-    const hasStatus = config.fields.some((f) => f.name === "status");
-    const hasDraftField = config.fields.some((f) => f.name === "hasDraft");
+    const flatFields = flattenFields(config.fields);
+    const hasCreated = flatFields.some((f) => f.name === "createdAt");
+    const hasUpdated = flatFields.some((f) => f.name === "updatedAt");
+    const hasStatus = flatFields.some((f) => f.name === "status");
+    const hasDraftField = flatFields.some((f) => f.name === "hasDraft");
 
     if (this.dialect === 'postgres') {
       defs["id"] = isGlobal ? '"id" TEXT PRIMARY KEY' : '"id" UUID PRIMARY KEY DEFAULT gen_random_uuid()';
@@ -432,7 +437,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       if (!hasDraftField) defs["hasDraft"] = '"hasDraft" INTEGER DEFAULT NULL';
     }
 
-    for (const field of config.fields) {
+    for (const field of flatFields) {
       if (!field.name || field.name === "id") continue;
       const def = this.getColumnSqlDefinition(field, this.dialect);
       const sqlName = field.name
@@ -473,7 +478,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
 
     // Fix column type mismatches: VARCHAR → correct type where field config changed
     if (this.dialect === 'postgres') {
-      for (const field of config.fields) {
+      const flatFields = flattenFields(config.fields);
+      for (const field of flatFields) {
         if (!field.name || field.name === "id") continue;
         const expectedDbType = fieldToDrizzleType(field, this.dialect);
         const sqlName = field.name
@@ -498,7 +504,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
 
   private generateCreateColumns(config: CollectionConfig): string {
     const cols: string[] = [];
-    for (const field of config.fields) {
+    const flatFields = flattenFields(config.fields);
+    for (const field of flatFields) {
       if (!field.name || field.name === "id") continue;
       const dbType = fieldToDrizzleType(field, this.dialect);
       const sqlName = field.name
@@ -582,7 +589,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     const filters = this.buildWhereClause(effectiveWhere, config, table, tenantId);
     
     // Default filter for non-draft requests: only show published
-    const statusField = config.fields.find((f: any) => f.name === 'status');
+    const flatFields = flattenFields(config.fields);
+    const statusField = flatFields.find((f: any) => f.name === 'status');
     const hasPublished = statusField?.type === 'select' && Array.isArray(statusField.options) && statusField.options.some((o: any) => o.value === 'published');
     if (!draft && table.status && hasPublished) {
       filters.push(eq(table.status, 'published'));
@@ -666,7 +674,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     const conditions = [eq(table.id, formattedId)];
     if (tenantId && table.tenantId) conditions.push(eq(table.tenantId, tenantId));
     
-    const statusField = config.fields.find((f: any) => f.name === 'status');
+    const flatFields = flattenFields(config.fields);
+    const statusField = flatFields.find((f: any) => f.name === 'status');
     const hasPublished = statusField?.type === 'select' && Array.isArray(statusField.options) && statusField.options.some((o: any) => o.value === 'published');
     if (!draft && table.status && hasPublished) conditions.push(eq(table.status, "published"));
     
@@ -802,7 +811,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       const table = this.getTable(slug);
       let query = this.client.select().from(table);
       
-      const statusField = globalConfig.fields.find((f: any) => f.name === 'status');
+      const flatFields = flattenFields(globalConfig.fields);
+      const statusField = flatFields.find((f: any) => f.name === 'status');
       const hasPublished = statusField?.type === 'select' && Array.isArray(statusField.options) && statusField.options.some((o: any) => o.value === 'published');
       if (!draft && table.status && hasPublished) {
         query = query.where(eq(table.status, 'published'));
@@ -1116,7 +1126,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
 
     // Map snake_case SQL column names to camelCase field names
     // (createTableFromConfig converts field names like featuredImage → featured_image in SQL)
-    for (const field of config.fields) {
+    const flatFields = flattenFields(config.fields);
+    for (const field of flatFields) {
       if (!field.name) continue;
       const sqlKey = field.name.replace(/-/g, "_").replace(/([A-Z])/g, "_$1").toLowerCase();
       if (sqlKey !== field.name && result[sqlKey] !== undefined && result[field.name] === undefined) {
@@ -1126,7 +1137,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
 
     // Parse JSON fields and upload/image fields
-    for (const field of config.fields) {
+    for (const field of flatFields) {
       if (['json', 'richtext', 'array', 'group', 'blocks', 'upload', 'image', 'list', 'relationship-block'].includes((field as any).type)) {
         const f = field as any;
         if (result[f.name] && typeof result[f.name] === 'string') {

@@ -1,5 +1,6 @@
 import type { CollectionConfig } from '../../registry/types.js';
 import type { Field } from '../../fields/types.js';
+import { flattenFields } from '../../utils/field-helpers.js';
 
 export function fieldToDrizzleType(field: Field, dialect: 'postgres' | 'sqlite' = 'postgres'): string {
   switch (field.type) {
@@ -54,7 +55,8 @@ export function collectionToDrizzleSchema(
   lines.push(`  id: uuid('id').primaryKey().defaultRandom(),`);
 
   // Process fields
-  for (const field of collection.fields) {
+  const flatFields = flattenFields(collection.fields);
+  for (const field of flatFields) {
     if (field.name === 'id' || field.type === 'password') continue;
 
     const dbType = fieldToDrizzleType(field, dialect);
