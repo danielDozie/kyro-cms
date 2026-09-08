@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/admin",
-  "version": "0.13.4",
+  "version": "0.13.6",
   "engines": {
     "node": ">=22"
   },
@@ -114,6 +114,7 @@
     "react-image-crop": "^11.0.10",
     "recharts": "^3.9.2",
     "tailwindcss": "^4.0.0",
+    "idb-keyval": "^6.2.1",
     "unstorage": "^1.17.5",
     "use-sync-external-store": "1.5.0",
     "zustand": "^5.0.3"

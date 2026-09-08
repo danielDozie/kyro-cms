@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { StateStorage } from "zustand/middleware";
 import { createStorage } from "unstorage";
-import indexedbDriver from "unstorage/drivers/indexedb";
 import type { Version, VersionDiff } from "@kyro-cms/core/client";
 import { deepEqual, isEmpty } from "./deep-equal";
 import { normalizeUploadFields } from "./normalize-upload-fields";
@@ -14,6 +13,8 @@ const getStorage = async () => {
   if (storageInstance && storageReady) {
     return storageInstance;
   }
+
+  const { default: indexedbDriver } = await import("unstorage/drivers/indexedb");
 
   storageInstance = createStorage({
     driver: indexedbDriver({

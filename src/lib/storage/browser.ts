@@ -1,5 +1,4 @@
 import { createStorage } from "unstorage";
-import indexedbDriver from "unstorage/drivers/indexedb";
 
 export interface BrowserStorageOptions {
   namespace?: string;
@@ -13,6 +12,8 @@ export async function createBrowserStorage(
   cleanup?: () => Promise<void>;
 }> {
   const { namespace = "kyro", ttl } = options;
+
+  const { default: indexedbDriver } = await import("unstorage/drivers/indexedb");
 
   const store = createStorage({
     driver: indexedbDriver({

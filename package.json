@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.13.7",
+  "version": "0.13.8",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
@@ -202,6 +202,7 @@
     "postgres": "^3.4.8",
     "prompts": "^2.4.2",
     "sharp": "^0.34.5",
+    "idb-keyval": "^6.2.1",
     "unstorage": "^1.17.5",
     "ws": "^8.18.0",
     "zod": "^3.24.0",

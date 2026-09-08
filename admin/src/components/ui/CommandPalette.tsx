@@ -19,8 +19,8 @@ import {
   Database,
   Network as NetworkIcon,
   Hexagon,
-  DynamicIcon,
 } from "./icons";
+import { DynamicIcon } from "./DynamicIcon";
 import { useAuthStore } from "../../lib/stores";
 import { useTranslation } from "react-i18next";
 
