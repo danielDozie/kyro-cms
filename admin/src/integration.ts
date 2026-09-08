@@ -391,6 +391,13 @@ export default EventEmitter;
             },
             optimizeDeps: {
               include: [
+                'lucide-react',
+                '@kyro-cms/admin > lucide-react',
+                '@heroicons/react',
+                '@heroicons/react/24/outline',
+                '@heroicons/react/24/solid',
+                '@kyro-cms/admin > @heroicons/react/24/outline',
+                '@kyro-cms/admin > @heroicons/react/24/solid',
                 '@kyro-cms/admin > recharts',
                 '@kyro-cms/admin > recharts > decimal.js-light',
                 '@kyro-cms/admin > react-i18next',

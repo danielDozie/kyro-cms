@@ -2,6 +2,8 @@ import React from "react";
 import * as Icons from "lucide-react";
 import * as HeroOutline from "@heroicons/react/24/outline";
 import * as HeroSolid from "@heroicons/react/24/solid";
+import { IconDot } from "./icons";
+import * as CuratedIcons from "./icons";
 
 export interface DynamicIconProps {
   name?: string | null | React.ComponentType<any>;
@@ -21,7 +23,7 @@ export function DynamicIcon({
   className = "w-4 h-4",
   strokeWidth = 2,
   size,
-  fallback: Fallback = Icons.Dot,
+  fallback: Fallback = IconDot,
 }: DynamicIconProps) {
   if (!name) {
     return <Fallback className={className} />;
