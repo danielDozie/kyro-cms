@@ -153,7 +153,7 @@ export {
   fieldToDrizzleType,
   collectionToDrizzleSchema,
 } from "./database/index.js";
-export { MongoDBAdapter, createMongoDBAdapter } from "./database/index.js";
+export { MongoDBAdapter, createMongoDBAdapter, getMongoDb, getMongoClient } from "./database/index.js";
 export { LocalAdapter, createLocalAdapter } from "./database/index.js";
 
 // API Gateways

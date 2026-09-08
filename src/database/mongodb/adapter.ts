@@ -18,6 +18,20 @@ import type {
 import type { TenantContext } from '../../auth/rls/tenant.js';
 import { applyRLS, DEFAULT_RLS_CONFIG, canAccessDocument } from '../../auth/rls/tenant.js';
 import { sanitizeDoc } from '../../utils/sanitize.js';
+import type { MongoDBAdapterOptions } from '../types.js';
+
+interface GlobalMongoClientCacheEntry {
+  client: any;
+  connectPromise?: Promise<any>;
+}
+
+function getGlobalClientMap(): Map<string, GlobalMongoClientCacheEntry> {
+  const g = globalThis as any;
+  if (!g.__KYRO_MONGO_CLIENTS__) {
+    g.__KYRO_MONGO_CLIENTS__ = new Map<string, GlobalMongoClientCacheEntry>();
+  }
+  return g.__KYRO_MONGO_CLIENTS__;
+}
 
 export class MongoDBAdapter extends AbstractBaseAdapter {
   public dialect = 'mongodb' as const;
@@ -25,41 +39,100 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
   public db: any;
   private database: string;
   private connectionString?: string;
+  private options: MongoDBAdapterOptions;
   // NOTE: draftsCollectionName removed — autosave now uses versions table with autosave flag
 
-  constructor(options: {
-    client?: any;
-    database?: string;
-    connectionString?: string;
-  }) {
+  constructor(options: MongoDBAdapterOptions) {
     super();
+    this.options = options || {};
     if (options.connectionString) {
       this.connectionString = options.connectionString;
       try {
         const url = new URL(options.connectionString);
-        this.database = url.pathname.replace(/^\//, '') || 'kyro_cms';
+        this.database = options.database || url.pathname.replace(/^\//, '') || 'kyro_cms';
       } catch {
-        this.database = 'kyro_cms';
+        this.database = options.database || 'kyro_cms';
       }
     } else {
       this.client = options.client;
-      this.database = options.database!;
+      this.database = options.database || 'kyro_cms';
     }
+  }
+
+  /**
+   * Resolves the default connection pool options for MongoDB to prevent
+   * connection pool exhaustion in serverless / Astro / Next.js environments.
+   */
+  private getPoolOptions(): Record<string, any> {
+    const envMaxPool = process.env.MONGODB_MAX_POOL_SIZE
+      ? parseInt(process.env.MONGODB_MAX_POOL_SIZE, 10)
+      : undefined;
+    const envMinPool = process.env.MONGODB_MIN_POOL_SIZE
+      ? parseInt(process.env.MONGODB_MIN_POOL_SIZE, 10)
+      : undefined;
+    const envMaxIdle = process.env.MONGODB_MAX_IDLE_TIME_MS
+      ? parseInt(process.env.MONGODB_MAX_IDLE_TIME_MS, 10)
+      : undefined;
+
+    return {
+      // Default to 10 connections max instead of MongoDB driver default of 100.
+      // Shared clusters like MongoDB Atlas M0 only allow 500 connections across the ENTIRE cluster.
+      maxPoolSize: this.options.maxPoolSize ?? envMaxPool ?? 10,
+      minPoolSize: this.options.minPoolSize ?? envMinPool ?? 1,
+      maxIdleTimeMS: this.options.maxIdleTimeMS ?? envMaxIdle ?? 30000,
+      serverSelectionTimeoutMS: this.options.serverSelectionTimeoutMS ?? 5000,
+      connectTimeoutMS: this.options.connectTimeoutMS ?? 10000,
+      ...(this.options.socketTimeoutMS ? { socketTimeoutMS: this.options.socketTimeoutMS } : {}),
+      ...(this.options.clientOptions || {}),
+    };
   }
 
   async connect(): Promise<void> {
     if (this.connectionString && !this.client) {
-      let MongoClient;
-      try {
-        const mongoMod: any = await import(/* @vite-ignore */ 'mongodb' as any);
-        MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
-      } catch (e) {
-        autoInstall(["mongodb"]);
-        const mongoMod: any = await import(/* @vite-ignore */ 'mongodb' as any);
-        MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
+      const cacheKey = this.connectionString;
+      const useCache = !this.options.disableGlobalClientCache;
+      const clientMap = getGlobalClientMap();
+
+      if (useCache && clientMap.has(cacheKey)) {
+        const entry = clientMap.get(cacheKey)!;
+        this.client = entry.client;
+        if (entry.connectPromise) {
+          try {
+            await entry.connectPromise;
+          } catch (err) {
+            clientMap.delete(cacheKey);
+            throw err;
+          }
+        }
+      } else {
+        let MongoClient;
+        try {
+          const mongoMod: any = await import(/* @vite-ignore */ 'mongodb' as any);
+          MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
+        } catch (e) {
+          autoInstall(["mongodb"]);
+          const mongoMod: any = await import(/* @vite-ignore */ 'mongodb' as any);
+          MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
+        }
+
+        const poolOptions = this.getPoolOptions();
+        const client = new MongoClient(this.connectionString, poolOptions);
+        const connectPromise = client.connect();
+
+        if (useCache) {
+          clientMap.set(cacheKey, { client, connectPromise });
+        }
+
+        try {
+          await connectPromise;
+          this.client = client;
+        } catch (err) {
+          if (useCache) {
+            clientMap.delete(cacheKey);
+          }
+          throw err;
+        }
       }
-      this.client = new MongoClient(this.connectionString);
-      await this.client.connect();
     } else if (this.client && typeof this.client.connect === "function") {
       try {
         await this.client.connect();
@@ -67,17 +140,80 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
         // Already connected or connect in progress
       }
     }
+
     if (this.client) {
       this.db = this.client.db(this.database);
       this.connected = true;
     }
   }
 
-  async disconnect(): Promise<void> {
+  async disconnect(options?: { force?: boolean }): Promise<void> {
     if (this.client) {
-      await this.client.close();
+      const cacheKey = this.connectionString;
+      const clientMap = getGlobalClientMap();
+      const isShared = !this.options.disableGlobalClientCache && cacheKey && clientMap.has(cacheKey);
+      const isProduction = process.env.NODE_ENV === 'production';
+      const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
+      const shouldClose = options?.force || !isShared || isProduction || isTest;
+
+      if (shouldClose) {
+        try {
+          await this.client.close();
+        } catch {
+          // Ignore
+        }
+        if (cacheKey) {
+          clientMap.delete(cacheKey);
+        }
+      }
       this.connected = false;
     }
+  }
+
+  /**
+   * Helper to retrieve or initialize a singleton MongoDB Db instance.
+   */
+  static async getDb(options?: MongoDBAdapterOptions | string): Promise<any> {
+    const opts: MongoDBAdapterOptions = typeof options === 'string'
+      ? { connectionString: options }
+      : (options || {});
+
+    const g = globalThis as any;
+    if (g.__KYRO_INSTANCE__?.db?.dialect === 'mongodb' && g.__KYRO_INSTANCE__.db.db) {
+      return g.__KYRO_INSTANCE__.db.db;
+    }
+
+    const uri = opts.connectionString || process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('[Kyro CMS] MONGODB_URI is required to get Mongo database');
+    }
+
+    const adapter = new MongoDBAdapter({ ...opts, connectionString: uri });
+    await adapter.connect();
+    return adapter.db;
+  }
+
+  /**
+   * Helper to retrieve or initialize a singleton MongoClient instance.
+   */
+  static async getClient(options?: MongoDBAdapterOptions | string): Promise<any> {
+    const opts: MongoDBAdapterOptions = typeof options === 'string'
+      ? { connectionString: options }
+      : (options || {});
+
+    const g = globalThis as any;
+    if (g.__KYRO_INSTANCE__?.db?.dialect === 'mongodb' && g.__KYRO_INSTANCE__.db.client) {
+      return g.__KYRO_INSTANCE__.db.client;
+    }
+
+    const uri = opts.connectionString || process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('[Kyro CMS] MONGODB_URI is required to get MongoClient');
+    }
+
+    const adapter = new MongoDBAdapter({ ...opts, connectionString: uri });
+    await adapter.connect();
+    return adapter.client;
   }
 
   private getMongoCollection(slug: string): any {
@@ -633,13 +769,23 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
 }
 
 // ============================================================================
-// Factory Function
+// Factory & Helper Functions
 // ============================================================================
 
-export function createMongoDBAdapter(options: {
-  client?: any;
-  database?: string;
-  connectionString?: string;
-}): MongoDBAdapter {
+export function createMongoDBAdapter(options: MongoDBAdapterOptions): MongoDBAdapter {
   return new MongoDBAdapter(options);
+}
+
+/**
+ * Global helper to access or initialize a pooled MongoDB Db singleton instance.
+ */
+export async function getMongoDb(options?: MongoDBAdapterOptions | string): Promise<any> {
+  return MongoDBAdapter.getDb(options);
+}
+
+/**
+ * Global helper to access or initialize a pooled MongoClient singleton instance.
+ */
+export async function getMongoClient(options?: MongoDBAdapterOptions | string): Promise<any> {
+  return MongoDBAdapter.getClient(options);
 }

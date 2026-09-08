@@ -89,6 +89,7 @@ function detectDatabaseType(): DatabaseType {
 
 async function createAuthAdapter(
   databaseType: DatabaseType,
+  db?: any,
 ): Promise<AuthAdapter> {
   const cwd = process.cwd();
   const rootDir = cwd.endsWith("admin") ? join(cwd, "..") : cwd;
@@ -122,23 +123,29 @@ async function createAuthAdapter(
       });
     }
     case "mongodb": {
+      if (db) {
+        return new MongoDBAuthAdapter({
+          db: db.db || (typeof db === "function" ? db : undefined),
+          adapter: db,
+          client: db.client,
+        });
+      }
+      const g = globalThis as any;
+      if (g.__KYRO_INSTANCE__?.db?.dialect === "mongodb" && g.__KYRO_INSTANCE__.db.db) {
+        return new MongoDBAuthAdapter({
+          db: g.__KYRO_INSTANCE__.db.db,
+          adapter: g.__KYRO_INSTANCE__.db,
+          client: g.__KYRO_INSTANCE__.db.client,
+        });
+      }
       const mongoUri = getEnv("MONGODB_URI", "");
       if (mongoUri) {
-        let MongoClient;
-        try {
-          const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
-          MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
-        } catch (e) {
-          autoInstall(["mongodb"]);
-          const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
-          MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
-        }
-        const client = new MongoClient(mongoUri);
-        await client.connect();
+        const { getMongoClient } = await import("../database/mongodb/index.js");
+        const client = await getMongoClient({ connectionString: mongoUri });
         const url = new URL(mongoUri);
         const dbName = url.pathname.replace(/^\//, "") || "kyro_cms";
         const mongoDb = client.db(dbName);
-        return new MongoDBAuthAdapter({ db: mongoDb });
+        return new MongoDBAuthAdapter({ db: mongoDb, client });
       }
       return new SQLiteAuthAdapter({
         path: getEnv("KYRO_AUTH_DB_PATH", defaultAuthDbPath),
@@ -167,7 +174,7 @@ export async function createAuthConfig(
     authAdapter = redisAdapter as any;
   } else {
     const initialDbType = (databaseType || detectDatabaseType()) as any;
-    authAdapter = await createAuthAdapter(initialDbType);
+    authAdapter = await createAuthAdapter(initialDbType, db);
     if ((authAdapter as any).connect) {
       await (authAdapter as any).connect();
     }

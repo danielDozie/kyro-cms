@@ -237,10 +237,14 @@ authCommand
         const { MongoDBAuthAdapter } = await import("../database/mongodb/mongo-auth-adapter.js");
         const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
         const MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
-        const client = new MongoClient(databaseUrl);
+        const client = new MongoClient(databaseUrl, {
+          maxPoolSize: 1,
+          minPoolSize: 0,
+          serverSelectionTimeoutMS: 5000,
+        });
         await client.connect();
         const db = client.db();
-        adapter = new MongoDBAuthAdapter({ db });
+        adapter = new MongoDBAuthAdapter({ db, client });
 
       } else {
         const { SQLiteAuthAdapter } = await import("../auth/sqlite-adapter.js");
@@ -298,16 +302,25 @@ program
 
       }
     } else if (isMongo) {
+      let client: any;
       try {
         const mongoMod: any = await import(/* @vite-ignore */ "mongodb" as any);
         const MongoClient = mongoMod.MongoClient ?? mongoMod.default?.MongoClient;
-        const client = new MongoClient(databaseUrl);
+        client = new MongoClient(databaseUrl, {
+          maxPoolSize: 1,
+          minPoolSize: 0,
+          serverSelectionTimeoutMS: 5000,
+        });
         await client.connect();
         await client.db().admin().ping();
-
-        await client.close();
       } catch {
 
+      } finally {
+        if (client) {
+          try {
+            await client.close();
+          } catch {}
+        }
       }
     } else if (isSQLite) {
       try {
