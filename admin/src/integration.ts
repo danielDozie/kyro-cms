@@ -98,6 +98,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
             loader: { '.ts': 'ts', '.tsx': 'tsx' },
             resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json'],
             external: ['@kyro-cms/*'],
+            packages: 'external',
             plugins: [stubPlugin],
           });
           tmpFile = resolvedConfig.replace(/\.ts$/, ".admin.mjs");

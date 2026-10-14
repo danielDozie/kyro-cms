@@ -19,37 +19,16 @@ function normalizeGlobals(
   return Object.values(globals);
 }
 
-export function defineConfig(config: {
+export type UserKyroConfig = Omit<KyroConfig, "collections" | "globals"> & {
   collections?: CollectionConfig[] | Record<string, CollectionConfig>;
   globals?: GlobalConfig[] | Record<string, GlobalConfig>;
-  adapter: KyroConfig["adapter"];
-  storage?: KyroConfig["storage"];
-  plugins?: KyroConfig["plugins"];
-  auth?: KyroConfig["auth"];
-  cors?: KyroConfig["cors"];
-  admin?: KyroConfig["admin"];
-  upload?: KyroConfig["upload"];
-  graphQL?: KyroConfig["graphQL"];
-  typescript?: KyroConfig["typescript"];
-  localization?: KyroConfig["localization"];
-  rateLimit?: KyroConfig["rateLimit"];
-  debug?: KyroConfig["debug"];
-}): KyroConfig {
+};
+
+export function defineConfig(config: UserKyroConfig): KyroConfig {
   return {
+    ...config,
     collections: normalizeCollections(config.collections),
     globals: normalizeGlobals(config.globals),
-    adapter: config.adapter,
-    storage: config.storage,
-    plugins: config.plugins,
-    auth: config.auth,
-    cors: config.cors,
-    admin: config.admin,
-    upload: config.upload,
-    graphQL: config.graphQL,
-    typescript: config.typescript,
-    localization: config.localization,
-    rateLimit: config.rateLimit,
-    debug: config.debug,
   };
 }
 

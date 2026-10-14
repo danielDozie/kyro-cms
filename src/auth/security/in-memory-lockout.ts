@@ -77,7 +77,7 @@ export class InMemoryAccountLockout {
     record.lastAttempt = now;
 
     // Add to history
-    let history = this.history.get(userId) || [];
+    const history = this.history.get(userId) || [];
     history.push(now);
     // Keep only last 100 attempts
     if (history.length > 100) {

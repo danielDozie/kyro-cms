@@ -280,7 +280,7 @@ export function mountGlobalRoutes(
         const versionData = typeof versionRec.data === "string" ? JSON.parse(versionRec.data) : versionRec.data;
         const { id: _ignoreId, createdAt: _ignoreCreated, updatedAt: _ignoreUpdated, ...restoreFields } = versionData;
 
-        let existing = await db.findOne({
+        const existing = await db.findOne({
           collection: collectionSlug,
           where: {},
           tenantId: ctxTenantID,
@@ -342,7 +342,7 @@ export function mountGlobalRoutes(
       const isDraft = url.searchParams.get("draft") === "true" || c.req.header("x-draft") === "true" || body.draft === true;
       const collectionSlug = `_globals_${slug}`;
 
-      let existing = await db.findOne({
+      const existing = await db.findOne({
         collection: collectionSlug,
         where: {},
         tenantId: ctxTenantID,

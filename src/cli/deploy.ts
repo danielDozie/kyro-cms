@@ -94,11 +94,12 @@ export function createDeployCommand() {
       const randomSuffix = generateRandomHex();
       const randomPass = generateRandomPassword();
 
-      let { database, databaseUrl, name, r2Bucket, email, password, nonInteractive, quiet, json: jsonOutput } = options;
+      const { quiet, json: jsonOutput } = options;
+      let { database, databaseUrl, name, r2Bucket, email, password, nonInteractive } = options;
       // Quiet mode suppresses prompts and spinners
       if (quiet) nonInteractive = true;
       
-      let hyperdriveName = `kyro-postgres-hd-${randomSuffix}`;
+      const hyperdriveName = `kyro-postgres-hd-${randomSuffix}`;
 
       // If a wrangler.toml already exists, treat this as a redeploy: reuse the
       // configured project name, database bindings and storage instead of

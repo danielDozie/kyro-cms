@@ -8,6 +8,8 @@ function getDatabaseSync() {
   return DatabaseSync;
 }
 import { randomBytes } from 'node:crypto';
+import fs from "node:fs";
+import path from "node:path";
 import { AbstractBaseAdapter } from "../base.js";
 import type {
   CollectionConfig,
@@ -83,13 +85,29 @@ export class LocalAdapter extends AbstractBaseAdapter {
   }
 
   async connect(): Promise<void> {
+    let targetPath = this.path || ":memory:";
+    if (targetPath !== ":memory:") {
+      try {
+        if (!fs.existsSync(targetPath) && fs.existsSync(path.resolve("..", targetPath))) {
+          targetPath = path.resolve("..", targetPath);
+        }
+        const dir = path.dirname(path.resolve(targetPath));
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        this.path = targetPath;
+      } catch {
+        // Ignore errors in environments without filesystem access
+      }
+    }
+
     if (!this.db) {
-      this.db = new (getDatabaseSync())(this.path || ":memory:");
+      this.db = new (getDatabaseSync())(targetPath);
     } else {
       try {
         this.db.exec("SELECT 1");
       } catch {
-        this.db = new (getDatabaseSync())(this.path || ":memory:");
+        this.db = new (getDatabaseSync())(targetPath);
       }
     }
 

@@ -12,7 +12,7 @@ import { logger } from "./utils/logger.js";
 // @ts-ignore - handled by vite alias
 import projectConfig from "kyro:config";
 
-declare var __KYRO_API_PATH__: string;
+declare let __KYRO_API_PATH__: string;
 
 export let kyroInstance: any = null;
 let initPromise: Promise<void> | null = null;

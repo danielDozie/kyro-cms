@@ -297,89 +297,6 @@ export class SEOPlugin extends KyroPlugin {
   }
 }
 
-// Analytics Plugin
-export class AnalyticsPlugin extends KyroPlugin {
-  constructor() {
-    super("analytics");
-    this.displayName = "Core Analytics";
-    this.description =
-      "Built-in privacy-friendly analytics and dashboards";
-
-    this.collections.push({
-      slug: "analytics-events",
-      label: "Analytics Events",
-      fields: [
-        { name: "name", type: "text", required: true },
-        { name: "properties", type: "json", label: "Event Properties" },
-        { name: "timestamp", type: "date", required: true },
-        { name: "userId", type: "text", label: "User ID" },
-        { name: "sessionId", type: "text", label: "Session ID" },
-      ],
-    });
-
-    this.adminComponents["AnalyticsDashboard"] = {};
-  }
-}
-
-// Comments Plugin
-export class CommentsPlugin extends KyroPlugin {
-  constructor() {
-    super("comments");
-    this.description = "Commenting system for products and posts";
-
-    this.collections.push({
-      slug: "comments",
-      label: "Comments",
-      fields: [
-        { name: "content", type: "richtext", required: true },
-        { name: "author", type: "text", required: true },
-        { name: "email", type: "email" },
-        { name: "approved", type: "checkbox", defaultValue: false },
-        { name: "parent", type: "text", label: "Parent Comment ID" },
-        { name: "resourceType", type: "text", required: true },
-        { name: "resourceId", type: "text", required: true },
-      ],
-    });
-
-    this.adminComponents["CommentModeration"] = {};
-  }
-}
-
-// Reviews Plugin
-export class ReviewsPlugin extends KyroPlugin {
-  constructor() {
-    super("reviews");
-    this.description = "Product reviews and ratings";
-
-    this.collections.push({
-      slug: "reviews",
-      label: "Reviews",
-      fields: [
-        { name: "rating", type: "number", required: true, min: 1, max: 5 },
-        { name: "title", type: "text" },
-        { name: "content", type: "richtext", required: true },
-        { name: "author", type: "relationship", relationTo: "customers" },
-        {
-          name: "product",
-          type: "relationship",
-          relationTo: "products",
-          required: true,
-        },
-        { name: "approved", type: "checkbox", defaultValue: false },
-        { name: "verified", type: "checkbox", label: "Verified Purchase" },
-        {
-          name: "helpful",
-          type: "number",
-          label: "Helpful Count",
-          defaultValue: 0,
-        },
-      ],
-    });
-
-    this.adminComponents["ReviewModeration"] = {};
-  }
-}
-
 // Wishlist Plugin
 export class WishlistPlugin extends KyroPlugin {
   constructor() {
@@ -439,8 +356,6 @@ export class WishlistPlugin extends KyroPlugin {
 // Export preset plugins
 export const presetPlugins = {
   SEO: SEOPlugin,
-  Analytics: AnalyticsPlugin,
-  Comments: CommentsPlugin,
-  Reviews: ReviewsPlugin,
   Wishlist: WishlistPlugin,
 };
+

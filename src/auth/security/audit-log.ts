@@ -127,7 +127,7 @@ export class AuditLogger {
       now,
     );
 
-    let allIds: [string, number][] = [];
+    const allIds: [string, number][] = [];
 
     for (const key of keys) {
       const items = await this.redis.zrange(key, 0, -1, "WITHSCORES");

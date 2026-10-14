@@ -114,7 +114,7 @@ export async function checkCollectionAccess(
     : null;
 
   if (reqObj && cacheKey) {
-    let cacheMap = reqAccessCache.get(reqObj);
+    const cacheMap = reqAccessCache.get(reqObj);
     if (cacheMap && cacheMap.has(cacheKey)) {
       return cacheMap.get(cacheKey)!;
     }
@@ -182,7 +182,7 @@ export async function checkGlobalAccess(
     : null;
 
   if (reqObj && cacheKey) {
-    let cacheMap = reqAccessCache.get(reqObj);
+    const cacheMap = reqAccessCache.get(reqObj);
     if (cacheMap && cacheMap.has(cacheKey)) {
       return cacheMap.get(cacheKey)!;
     }

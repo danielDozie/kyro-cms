@@ -680,7 +680,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     if (!draft && table.status && hasPublished) conditions.push(eq(table.status, "published"));
     
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
-    let allRows = await this.client.select().from(table).where(whereClause);
+    const allRows = await this.client.select().from(table).where(whereClause);
     if (allRows.length === 0) return null;
     let doc = this.processResult(allRows[0], config) as T;
 
@@ -1025,7 +1025,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       conditions.push(eq(table.tenantId, tenantId));
     }
 
-    for (let [rawKey, value] of Object.entries(where)) {
+    for (const [rawKey, rawValue] of Object.entries(where)) {
+      let value = rawValue;
       const key = rawKey;
       const upperKey = key.toUpperCase();
 

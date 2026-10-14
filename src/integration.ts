@@ -98,7 +98,7 @@ export default function kyro(options: KyroIntegrationOptions = {}): AstroIntegra
 
         const resolvedConfigPath = path.resolve(config.root.pathname, configPath);
         
-        let finalConfigPath = resolvedConfigPath;
+        const finalConfigPath = resolvedConfigPath;
         if (!fs.existsSync(resolvedConfigPath)) {
           logger.warn(`Kyro config file not found at ${configPath}. The API will fail to boot if collections are needed.`);
         }

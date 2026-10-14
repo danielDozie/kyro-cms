@@ -4,18 +4,6 @@ Welcome to the future roadmap for Kyro CMS. Having achieved our core foundation 
 
 ---
 
-## Strategic Pillars
-
-```mermaid
-graph LR
-    A[AI & MCP Ecosystem] --> E[Next-Gen Kyro CMS]
-    B[Multiplayer Real-Time Editing] --> E
-    C[Org & Project Hierarchy] --> E
-    D[Local-First & Edge Content Mesh] --> E
-```
-
----
-
 ## 1. Multi-User Real-Time Collaboration (Multiplayer CMS)
 
 Bringing concurrent editing, presence, and editorial workflows directly into the Kyro Admin Dashboard.
@@ -131,6 +119,11 @@ Scaling Kyro from single-site configurations to enterprise-grade multi-project g
 
 ### Universal Content Mesh
 - [ ] **Federated API Stitching**: Merge Kyro collection schemas with external third-party GraphQL/REST APIs (Shopify, Stripe, Supabase) into a single unified client SDK (`@kyro-cms/connect`).
+
+### Modular Community & Official Plugin Ecosystem
+- [ ] **First-Class Analytics Plugin (`@kyro-cms/plugin-analytics`)**: Privacy-friendly event tracking, pageview metrics, and native Admin analytics dashboard charts with time-series filtering.
+- [ ] **Interactive Comments & Moderation Plugin (`@kyro-cms/plugin-comments`)**: Threaded discussion system, spam filtering, moderation queue Admin UI, and email notification hooks.
+- [ ] **Product Reviews & Ratings Plugin (`@kyro-cms/plugin-reviews`)**: Verified buyer badges, 5-star scoring breakdown, helpfulness voting, and moderation dashboard.
 
 ---
 

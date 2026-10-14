@@ -33,6 +33,7 @@ import {
 import { s3StoragePlugin } from "./plugins/storage-s3.js";
 import { cloudinaryStoragePlugin } from "./plugins/storage-cloudinary.js";
 import { storageSettingsGlobal } from "./templates/settings/storage.js";
+import { setDbAdapter, loadSecrets } from "./lib/secret.js";
 
 const builtinStoragePlugins: KyroPlugin[] = [
   s3StoragePlugin,
@@ -209,6 +210,10 @@ export class Kyro {
       ],
       allGlobals,
     );
+
+    // Initialize secret manager with DB adapter
+    setDbAdapter(this.db);
+    await loadSecrets();
 
     // Load plugin enable/disable state from database
     await this.loadPluginState();

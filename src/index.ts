@@ -184,9 +184,6 @@ export {
   type PluginHooks,
   type PluginAPI,
   SEOPlugin,
-  AnalyticsPlugin,
-  CommentsPlugin,
-  ReviewsPlugin,
   WishlistPlugin,
   presetPlugins,
 } from "./plugins/index.js";

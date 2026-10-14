@@ -462,7 +462,7 @@ export class MediaService {
     if (this.dialect === "postgres") {
       id = formatUuid(id);
     }
-    let item: MediaRow | null = await this.findById(id, origin);
+    const item: MediaRow | null = await this.findById(id, origin);
 
     if (!item) return;
     await this.deleteFile(item.url);
@@ -500,7 +500,7 @@ export class MediaService {
     if (this.dialect === "postgres") {
       id = formatUuid(id);
     }
-    let item: MediaRow | null = await this.findById(id, origin);
+    const item: MediaRow | null = await this.findById(id, origin);
 
     if (!item) return null;
 
