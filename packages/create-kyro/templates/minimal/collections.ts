@@ -3,6 +3,7 @@ import type { CollectionConfig } from '@kyro-cms/core';
 export const minimalCollections: Record<string, CollectionConfig> = {
   posts: {
     slug: 'posts',
+    versions: { drafts: true },
     label: 'Posts',
     labelPlural: 'Posts',
     singularLabel: 'Post',

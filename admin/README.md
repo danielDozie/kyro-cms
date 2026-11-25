@@ -223,3 +223,17 @@ const finalTheme = mergeThemes(DARK_THEME, customBrandTheme);
 ## 📄 License
 
 MIT © [Daniel Dozie](https://github.com/danielDozie)
+
+## Workspace updates
+
+The admin includes light, dark, and system appearance, collapsed-sidebar folder flyouts, keyboard-driven search, shared custom selectors, and consistent nested-field spacing. Developer diagnostics use compact summaries and inline audit-event details. Media details open inside the library with original-image access and selectable crop/hotspot previews.
+
+Draft-enabled collections expose Save draft and Publish changes. Immediate-save collections expose Save changes. See the documentation site’s Admin Workspace, Media Storage, and Drafts & Versioning guides.
+
+## 0.15.0 workspace changes
+
+Layout inspectors use compact Content / Design / Misc tabs with contextual controls for backgrounds, spacing, typography, responsive behavior and wrapper CSS. Typography includes 14 curated Google Fonts and supported weights; icon fields offer Lucide/Heroicons. Headless mode hides layout authoring and marks preserved layouts Read-only.
+
+Draft persistence uses sync feedback. New drafts are gray; Published · Modified requires a published baseline. Changed block borders use `--kyro-sidebar-text-active` until publication. **More actions → Convert / recover** uses the sidebar's active text/surface tokens and exposes one protected recovery slot. Conversion and recovery create drafts without publishing.
+
+History displays the latest 15 snapshots without deleting older history. The document API tab separates authenticated published/draft responses from editor data, with copy URL/JSON, download, refresh and wrapping controls. See the documentation site's Admin Workspace and Studio guides for the complete mode and recovery contract.

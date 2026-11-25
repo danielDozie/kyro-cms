@@ -107,12 +107,12 @@ export function VersionHistoryPanel({
                 key={version.id}
                 className={`p-4 rounded-xl border transition-all duration-200 group relative overflow-hidden ${
                   isCurrent
-                    ? "border-[var(--kyro-primary)] bg-[var(--kyro-primary)]/5 shadow-sm"
-                    : "border-[var(--kyro-border)] hover:border-[var(--kyro-primary)]/30 hover:bg-[var(--kyro-surface-accent)] hover:shadow-sm bg-[var(--kyro-surface)]"
+                    ? "border-[var(--kyro-primary)] bg-[var(--kyro-primary)]/5 "
+                    : "border-[var(--kyro-border)] hover:border-[var(--kyro-primary)]/30 hover:bg-[var(--kyro-surface-accent)]  bg-[var(--kyro-surface)]"
                 }`}
               >
                 {isCurrent && (
-                  <div className="absolute top-0 left-0 w-1 h-full bg-[var(--kyro-primary)] shadow-[0_0_8px_var(--kyro-primary)]" />
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[var(--kyro-primary)] " />
                 )}
                 
                 <div className="flex items-start justify-between gap-4">

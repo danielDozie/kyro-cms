@@ -1,3 +1,4 @@
+import "../styles/developer-workspace.css";
 import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/api";
@@ -266,10 +267,9 @@ export function WebhookManager() {
   };
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-32">
+    <div className="developer-workspace w-full space-y-4">
       <PageHeader
         title={t("tooltips.webhooks", { defaultValue: "Webhooks" })}
-        description="Get notified when your content changes."
         actions={[
           {
             label: "New webhook",
@@ -287,7 +287,7 @@ export function WebhookManager() {
       />
 
       {/* Info Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-6">
+      <div className="relative overflow-hidden rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-6">
         <div className="flex flex-col md:flex-row items-center gap-6 relative z-10">
           <div className="flex-1 text-center md:text-left">
             <p className="text-sm text-[var(--kyro-text-secondary)] opacity-70 max-w-2xl leading-relaxed">
@@ -313,11 +313,8 @@ export function WebhookManager() {
         {loading ? (
           <SkeletonGrid count={2} />
         ) : webhooks.length === 0 ? (
-          <div className="p-16 text-center rounded-2xl border border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface)]/50">
-            <div className="w-16 h-16 mx-auto mb-5 bg-[var(--kyro-primary)]/10 rounded-2xl flex items-center justify-center">
-              <Webhook className="w-8 h-8 text-[var(--kyro-primary)]" />
-            </div>
-            <h3 className="text-lg font-bold mb-2">No webhooks yet</h3>
+          <div className="p-16 text-center rounded-lg border border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface)]/50">
+            <h3 className="text-lg font-medium mb-2">No webhooks yet</h3>
             <p className="text-sm text-[var(--kyro-text-secondary)] opacity-60 mb-6 max-w-sm mx-auto">
               Create a webhook to get notified when your content changes.
             </p>
@@ -327,7 +324,7 @@ export function WebhookManager() {
                 resetCreateModal();
                 setShowCreateModal(true);
               }}
-              className="kyro-btn kyro-btn-primary inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium"
+              className="kyro-btn kyro-btn-primary inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
               Create webhook
@@ -338,16 +335,16 @@ export function WebhookManager() {
             {webhooks.map((webhook) => (
               <div
                 key={webhook.id}
-                className="group relative overflow-hidden bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-2xl p-5 hover:border-[var(--kyro-primary)]/30 transition-all duration-200"
+                className="group relative overflow-hidden bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg p-4 hover:border-[var(--kyro-primary)]/30 transition-all duration-200"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="p-2 bg-[var(--kyro-surface-accent)] rounded-lg">
                         <Webhook className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold">{webhook.name}</h3>
+                        <h3 className="text-sm font-medium">{webhook.name}</h3>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className={`w-1.5 h-1.5 rounded-full ${webhook.status === "active" ? "bg-green-500" : "bg-amber-500"}`} />
                           <span className={`text-[10px] font-medium ${webhook.status === "active" ? "text-green-500" : "text-amber-500"}`}>
@@ -499,7 +496,7 @@ export function WebhookManager() {
       >
         <ModalContent>
           <div className="space-y-5">
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4">
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium mb-1.5 text-[var(--kyro-text-secondary)]">Name</label>
@@ -637,14 +634,14 @@ export function WebhookManager() {
         title={t("tooltips.testWebhook", { defaultValue: "Test webhook" })}
       >
         <ModalContent>
-          <div className="p-6 rounded-xl bg-[var(--kyro-surface)] border border-[var(--kyro-border)] text-center">
+          <div className="p-6 rounded-md bg-[var(--kyro-surface)] border border-[var(--kyro-border)] text-center">
             {testResult ? (
               <div className="space-y-4">
-                <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center ${testResult.success ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
+                <div className={`w-12 h-12 mx-auto rounded-md flex items-center justify-center ${testResult.success ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}>
                   {testResult.success ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold mb-1">{testResult.success ? "Delivered" : "Failed"}</h4>
+                  <h4 className="text-sm font-medium mb-1">{testResult.success ? "Delivered" : "Failed"}</h4>
                   <p className="text-xs text-[var(--kyro-text-secondary)] opacity-60">
                     {testResult.message}
                   </p>
@@ -654,7 +651,7 @@ export function WebhookManager() {
               <div className="space-y-4 py-4">
                 <RefreshCw className="w-8 h-8 text-[var(--kyro-primary)] animate-spin mx-auto opacity-40" />
                 <div>
-                  <h4 className="text-sm font-semibold mb-1">Sending test payload</h4>
+                  <h4 className="text-sm font-medium mb-1">Sending test payload</h4>
                   <p className="text-xs text-[var(--kyro-text-secondary)] opacity-50">Dispatching...</p>
                 </div>
               </div>
@@ -665,7 +662,7 @@ export function WebhookManager() {
           <button
             type="button"
             onClick={() => setShowTestModal(false)}
-            className="w-full py-2.5 rounded-lg text-sm font-medium bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] transition-colors"
+            className="w-full py-2 rounded-lg text-sm font-medium bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] transition-colors"
           >
             Close
           </button>
@@ -721,7 +718,7 @@ export function WebhookManager() {
           <button
             type="button"
             onClick={() => setShowHelpModal(false)}
-            className="kyro-btn kyro-btn-primary w-full py-2.5 rounded-lg text-sm font-medium"
+            className="kyro-btn kyro-btn-primary w-full py-2 rounded-lg text-sm font-medium"
           >
             Got it
           </button>
@@ -796,7 +793,7 @@ export function WebhookManager() {
           <button
             type="button"
             onClick={() => setShowHistoryModal(false)}
-            className="w-full py-2.5 rounded-lg text-sm font-medium bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] transition-colors"
+            className="w-full py-2 rounded-lg text-sm font-medium bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] transition-colors"
           >
             Close
           </button>

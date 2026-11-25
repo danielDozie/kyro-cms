@@ -1,19 +1,11 @@
+import "../styles/health-workspace.css";
 import "../lib/i18n";
 import React, { useState, useEffect, useCallback } from "react";
 import { apiGet } from "../lib/api";
 import {
-  Activity,
-  CheckCircle2,
-  XCircle,
   RefreshCcw,
   Server,
-  Clock,
   Database,
-  Shield,
-  Zap,
-  AlertTriangle,
-  Globe,
-  Box,
 } from "./ui/icons";
 import { PageHeader } from "./ui/PageHeader";
 import { Badge } from "./ui/Badge";
@@ -57,24 +49,17 @@ function timeSince(iso: string): string {
 }
 
 interface StatCardProps {
-  icon: React.ReactNode;
   label: string;
   value: string | number;
   sub?: string;
-  color: string;
   loading?: boolean;
 }
 
-function StatCard({ icon, label, value, sub, color, loading }: StatCardProps) {
+function StatCard({ label, value, sub, loading }: StatCardProps) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-5 flex flex-col gap-3 hover:border-[var(--kyro-border-hover,var(--kyro-border))] transition-colors"
+      className="health-stat relative overflow-hidden rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-3 flex flex-col gap-3 hover:border-[var(--kyro-border-hover,var(--kyro-border))] transition-colors"
     >
-      <div
-        className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}
-      >
-        {icon}
-      </div>
       {loading ? (
         <div className="space-y-1.5">
           <Shimmer variant="text" className="w-16" />
@@ -83,14 +68,14 @@ function StatCard({ icon, label, value, sub, color, loading }: StatCardProps) {
       ) : (
         <>
           <div>
-            <p className="text-2xl font-bold text-[var(--kyro-text-primary)] leading-none tracking-tight">
+            <p className="text-2xl font-medium text-[var(--kyro-text-primary)] leading-none tracking-tight">
               {value}
             </p>
             {sub && (
               <p className="text-[11px] text-[var(--kyro-text-muted)] mt-1">{sub}</p>
             )}
           </div>
-          <p className="text-xs font-medium text-[var(--kyro-text-secondary)] uppercase tracking-wider">
+          <p className="text-xs font-medium text-[var(--kyro-text-secondary)] tracking-normal">
             {label}
           </p>
         </>
@@ -101,14 +86,12 @@ function StatCard({ icon, label, value, sub, color, loading }: StatCardProps) {
 
 interface ServiceRowProps {
   name: string;
-  description: string;
   status: "online" | "offline" | "unknown";
   detail?: string;
-  icon: React.ReactNode;
   loading?: boolean;
 }
 
-function ServiceRow({ name, description, status, detail, icon, loading }: ServiceRowProps) {
+function ServiceRow({ name, status, detail, loading }: ServiceRowProps) {
   const statusConfig = {
     online: {
       dot: "bg-emerald-500",
@@ -129,13 +112,9 @@ function ServiceRow({ name, description, status, detail, icon, loading }: Servic
   const cfg = statusConfig[status];
 
   return (
-    <div className="flex items-center gap-4 py-3.5 px-4 rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-colors group my-4">
-      <div className="w-9 h-9 rounded-lg bg-[var(--kyro-surface-accent)] group-hover:bg-[var(--kyro-surface)] flex items-center justify-center text-[var(--kyro-text-secondary)] transition-colors flex-shrink-0">
-        {icon}
-      </div>
+    <div className="flex items-center gap-4 py-3.5 px-4 rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-colors group">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[var(--kyro-text-primary)]">{name}</p>
-        <p className="text-xs text-[var(--kyro-text-muted)] truncate">{description}</p>
+        <p className="text-sm font-medium text-[var(--kyro-text-primary)]">{name}</p>
       </div>
       {loading ? (
         <Shimmer variant="text" className="w-16" />
@@ -145,7 +124,7 @@ function ServiceRow({ name, description, status, detail, icon, loading }: Servic
             <span className="text-xs text-[var(--kyro-text-muted)] hidden sm:block">{detail}</span>
           )}
           <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${cfg.dot} animate-pulse`} />
+            <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
             <Badge variant={cfg.badge}>{cfg.label}</Badge>
           </div>
         </div>
@@ -154,7 +133,7 @@ function ServiceRow({ name, description, status, detail, icon, loading }: Servic
   );
 }
 
-export function ApiHealth() {
+export function ApiHealth({ system = false }: { system?: boolean } = {}) {
   const { t } = useTranslation();
   const [health, setHealth] = useState<HealthData | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
@@ -220,15 +199,14 @@ export function ApiHealth() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="health-workspace">
       <PageHeader
-        title={t("tooltips.apiHealth", { defaultValue: "API Health" })}
-        description="Real-time status and diagnostics for the Kyro CMS API"
+        title={system ? "System health" : t("tooltips.apiHealth", { defaultValue: "API Health" })}
         actions={
           <button
             onClick={refresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--kyro-surface-accent)] hover:bg-[var(--kyro-border)] border border-[var(--kyro-border)] text-sm font-medium text-[var(--kyro-text-primary)] transition-all active:scale-95 disabled:opacity-60"
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--kyro-surface-accent)] hover:bg-[var(--kyro-border)] border border-[var(--kyro-border)] text-sm font-medium text-[var(--kyro-text-primary)] transition-all active:scale-95 disabled:opacity-60"
           >
             <RefreshCcw
               className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
@@ -238,33 +216,16 @@ export function ApiHealth() {
         }
       />
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Overall status banner */}
         <div
-          className={`relative overflow-hidden rounded-2xl border p-6 flex items-center gap-5 ${healthLoading
+          className={`relative overflow-hidden rounded-lg border p-4 flex items-center gap-3 ${healthLoading
             ? "border-[var(--kyro-border)] bg-[var(--kyro-surface)]"
             : isHealthy
               ? "border-emerald-500/20 bg-[var(--kyro-surface)]"
               : "border-red-500/20 bg-[var(--kyro-surface)]"
             }`}
         >
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${healthLoading
-              ? "bg-[var(--kyro-surface-accent)]"
-              : isHealthy
-                ? "bg-emerald-500/10 text-emerald-500"
-                : "bg-red-500/10 text-red-500"
-              }`}
-          >
-            {healthLoading ? (
-              <Activity className="w-6 h-6 text-[var(--kyro-text-muted)]" />
-            ) : isHealthy ? (
-              <CheckCircle2 className="w-6 h-6" />
-            ) : (
-              <XCircle className="w-6 h-6" />
-            )}
-          </div>
-
           <div className="flex-1 min-w-0">
             {healthLoading ? (
               <div className="space-y-2">
@@ -274,18 +235,13 @@ export function ApiHealth() {
             ) : (
               <>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h2 className="text-lg font-bold text-[var(--kyro-text-primary)] tracking-tight">
-                    {isHealthy ? "All Systems Operational" : "Service Disruption Detected"}
+                  <h2 className="text-lg font-medium text-[var(--kyro-text-primary)] tracking-tight">
+                    {isHealthy ? "API available" : "API unavailable"}
                   </h2>
                   <Badge variant={isHealthy ? "success" : "danger"} dot>
                     {isHealthy ? "Healthy" : "Degraded"}
                   </Badge>
                 </div>
-                <p className="text-sm text-[var(--kyro-text-secondary)] mt-1">
-                  {isHealthy
-                    ? `Kyro CMS v${health?.version} is running normally. API is reachable and responding correctly.`
-                    : "The API is not responding correctly. Check your server logs for more information."}
-                </p>
                 <p className="text-[11px] text-[var(--kyro-text-muted)] mt-2">
                   Last checked: {lastRefreshed.toLocaleTimeString()}
                 </p>
@@ -297,32 +253,32 @@ export function ApiHealth() {
         {/* Stats grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            icon={<Zap className="w-5 h-5" />}
-            color="bg-emerald-500/10 text-emerald-500"
+
+
             label="API Status"
             value={healthLoading ? "—" : health?.status === "ok" ? "OK" : "Error"}
             sub={health?.timestamp ? timeSince(health.timestamp) : undefined}
             loading={healthLoading}
           />
           <StatCard
-            icon={<Server className="w-5 h-5" />}
-            color="bg-blue-500/10 text-blue-500"
+
+
             label="CMS Version"
             value={health?.version ? `v${health.version}` : "—"}
             sub="kyro-cms core"
             loading={healthLoading}
           />
           <StatCard
-            icon={<Box className="w-5 h-5" />}
-            color="bg-violet-500/10 text-violet-500"
+
+
             label="Collections"
             value={health?.collections?.length ?? "—"}
             sub="registered schemas"
             loading={healthLoading}
           />
           <StatCard
-            icon={<Database className="w-5 h-5" />}
-            color="bg-orange-500/10 text-orange-500"
+
+
             label="Total Records"
             value={metrics ? metrics.totalStoredRecords.toLocaleString() : "—"}
             sub="across all collections"
@@ -331,56 +287,56 @@ export function ApiHealth() {
         </div>
 
         {/* Two-column detail section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Services */}
-          <div className="rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--kyro-border)] flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--kyro-text-primary)]">
+          <div className="rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--kyro-border)] flex items-center gap-2">
+
+              <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">
                 Service Status
               </h3>
             </div>
             <div className="p-2 divide-y divide-[var(--kyro-border)]">
               <ServiceRow
                 name="REST API"
-                description="Core HTTP endpoints for all collection operations"
+
                 status={overallStatus}
                 detail={health?.timestamp ? formatTimestamp(health.timestamp) : undefined}
-                icon={<Globe className="w-4 h-4" />}
+
                 loading={healthLoading}
               />
               <ServiceRow
                 name="Database"
-                description="Primary data store connection"
+
                 status={metrics ? "online" : healthLoading || metricsLoading ? "unknown" : "offline"}
                 detail={metrics ? `${metrics.totalStoredRecords.toLocaleString()} records` : undefined}
-                icon={<Database className="w-4 h-4" />}
+
                 loading={metricsLoading}
               />
               <ServiceRow
                 name="Auth Service"
-                description="Authentication and session management"
+
                 status={overallStatus}
                 detail={metrics?.totalUsers !== undefined ? `${metrics.totalUsers} users` : undefined}
-                icon={<Shield className="w-4 h-4" />}
+
                 loading={healthLoading}
               />
               <ServiceRow
                 name="Webhooks"
-                description="Event delivery and outbound notifications"
+
                 status={overallStatus}
                 detail={metrics?.totalWebhooks !== undefined ? `${metrics.totalWebhooks} configured` : undefined}
-                icon={<Zap className="w-4 h-4" />}
+
                 loading={metricsLoading}
               />
             </div>
           </div>
 
           {/* System info */}
-          <div className="rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--kyro-border)] flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--kyro-text-primary)]">
+          <div className="rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--kyro-border)] flex items-center gap-2">
+
+              <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">
                 System Info
               </h3>
             </div>
@@ -444,17 +400,17 @@ export function ApiHealth() {
 
         {/* Collection breakdown */}
         {(metricsLoading || collectionEntries.length > 0) && (
-          <div className="rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--kyro-border)] flex items-center gap-2">
-              <Box className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
-              <h3 className="text-sm font-semibold text-[var(--kyro-text-primary)]">
+          <div className="rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--kyro-border)] flex items-center gap-2">
+
+              <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">
                 Collection Breakdown
               </h3>
               <span className="ml-auto text-xs text-[var(--kyro-text-muted)]">
                 Document counts
               </span>
             </div>
-            <div className="p-5">
+            <div className="p-3">
               {metricsLoading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
@@ -496,8 +452,8 @@ export function ApiHealth() {
         )}
 
         {/* Raw endpoint callout */}
-        <div className="rounded-2xl border border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-5 flex items-start gap-3">
-          <AlertTriangle className="w-4 h-4 text-[var(--kyro-text-muted)] mt-0.5 flex-shrink-0" />
+        <details className="health-endpoint-details rounded-lg border border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-3 flex items-start gap-3">
+          <summary>Monitoring endpoint</summary>
           <div>
             <p className="text-sm font-medium text-[var(--kyro-text-primary)]">
               Raw Health Endpoint
@@ -515,7 +471,7 @@ export function ApiHealth() {
               — useful for external monitoring tools and uptime checks.
             </p>
           </div>
-        </div>
+        </details>
       </div>
     </div>
   );

@@ -106,28 +106,28 @@ export function IconPickerModal({ open, onClose, onSelect }: IconPickerModalProp
             <button
               type="button"
               onClick={() => setTab("all")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "all" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm" : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "all" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] " : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
             >
               All ({allCatalog.length})
             </button>
             <button
               type="button"
               onClick={() => setTab("lucide")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "lucide" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm" : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "lucide" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] " : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
             >
               Lucide
             </button>
             <button
               type="button"
               onClick={() => setTab("hero-outline")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "hero-outline" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm" : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "hero-outline" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] " : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
             >
               Heroicons
             </button>
             <button
               type="button"
               onClick={() => setTab("hero-solid")}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "hero-solid" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm" : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${tab === "hero-solid" ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] " : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"}`}
             >
               Solid
             </button>
@@ -152,7 +152,7 @@ export function IconPickerModal({ open, onClose, onSelect }: IconPickerModalProp
                       onSelect(item.id);
                       onClose();
                     }}
-                    className="flex flex-col items-center justify-center p-3 gap-2 rounded-xl border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface-accent)] hover:border-[var(--kyro-primary)] transition-all group"
+                    className="flex flex-col items-center justify-center p-3 gap-2 rounded-md border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface-accent)] hover:border-[var(--kyro-primary)] transition-all group"
                     title={`${item.label} (${item.id})`}
                   >
                     <IconComponent

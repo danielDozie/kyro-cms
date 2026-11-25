@@ -48,7 +48,7 @@ export default function IconField({
           type="button"
           onClick={() => setPickerOpen(true)}
           disabled={disabled || isReadOnly}
-          className="flex items-center gap-2 h-10 px-4 shrink-0 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl text-sm font-bold text-[var(--kyro-text-primary)] hover:border-[var(--kyro-primary)] hover:bg-[var(--kyro-primary-alpha)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 h-10 px-4 shrink-0 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-md text-sm font-medium text-[var(--kyro-text-primary)] hover:border-[var(--kyro-primary)] hover:bg-[var(--kyro-primary-alpha)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {normalizedValue ? (
             <DynamicIcon name={normalizedValue} className="w-5 h-5" fallback={Search} />

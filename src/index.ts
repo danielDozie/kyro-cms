@@ -18,6 +18,7 @@ export {
 } from "./registry/index.js";
 export type {
   KyroConfig,
+  StudioConfig,
   ExperimentalConfig,
   CollectionConfig,
   GlobalConfig,
@@ -248,6 +249,46 @@ export type {
 
 export { SQLiteAuthAdapter } from "./auth/sqlite-adapter.js";
 
+// Studio Backend & Delivery
+export {
+  isStudioCollection,
+  validateStudioDocument,
+  enforceStudioValidation,
+} from "./studio/validation.js";
+export {
+  checkOptimisticConcurrency,
+  type ConcurrencyCheckOptions,
+} from "./studio/occ.js";
+export {
+  resolveStudioReferencesServer,
+  sanitizePublicForm,
+  formatMediaMetadata,
+} from "./studio/references.js";
+export {
+  handleFormSubmission,
+  type SubmitFormOptions,
+  type FormSubmissionResponse,
+} from "./studio/forms.js";
+export {
+  getStudioSiteCapabilities,
+  resolvePagePublicUrl,
+  resolvePagePreviewUrl,
+  createPreviewToken,
+  verifyPreviewToken,
+} from "./studio/capabilities.js";
+export {
+  PublishDeliveryCoordinator,
+  getDeliveryCoordinator,
+} from "./studio/delivery.js";
+export type {
+  StudioSiteCapabilities,
+  StudioValidationIssue,
+  StudioValidateOptions,
+  StudioBridgeMessage,
+  PublishDeliveryRecord,
+  DeliveryStatus,
+} from "./studio/types.js";
+
 export {
   bootstrapAdmin,
   getBootstrapFromEnv,
@@ -421,6 +462,14 @@ export {
   type HierarchyNode,
   type BuildTreeOptions,
 } from "./utils/hierarchy.js";
+
+// Image Placement Framing & Target Dimensions
+export {
+  imageFrame,
+  type ImageRegion,
+  type MediaPlacement,
+  type MediaPlacementMetadata,
+} from "./storage/image-framing.js";
 
 
 

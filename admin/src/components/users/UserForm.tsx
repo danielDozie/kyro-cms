@@ -1,3 +1,4 @@
+import { CustomSelect } from "../ui/CustomSelect";
 import "../../lib/i18n";
 import React, { useState } from "react";
 import { apiPost, apiPatch } from "../../lib/api";
@@ -82,7 +83,7 @@ export function UserForm({ mode, apiPath, adminPath, user }: UserFormProps) {
     <div className="flex-1 overflow-y-auto  space-y-8">
       <div className="surface-tile p-6 flex items-center justify-between rounded-lg">
         <div>
-          <h1 className="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
+          <h1 className="text-2xl font-medium tracking-tight text-[var(--kyro-text-primary)]">
             {mode === "create" ? "Create User" : "Edit User"}
           </h1>
           <p className="text-sm text-[var(--kyro-text-secondary)] mt-1 font-medium">
@@ -168,7 +169,7 @@ export function UserForm({ mode, apiPath, adminPath, user }: UserFormProps) {
             >
               Role
             </label>
-            <select
+            <CustomSelect
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
@@ -179,7 +180,7 @@ export function UserForm({ mode, apiPath, adminPath, user }: UserFormProps) {
                   {r}
                 </option>
               ))}
-            </select>
+            </CustomSelect>
           </div>
 
           <div>
@@ -209,7 +210,7 @@ export function UserForm({ mode, apiPath, adminPath, user }: UserFormProps) {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl text-sm font-bold hover:bg-opacity-90 transition-colors shadow-lg shadow-black/10 disabled:opacity-50"
+              className="px-3 py-2 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-md text-sm font-medium hover:bg-opacity-90 transition-colors   disabled:opacity-50"
             >
               {loading
                 ? "Saving..."

@@ -1,3 +1,4 @@
+import { enforceStudioValidation } from "../../../studio/validation.js";
 import { Hono } from "hono";
 import { verify, sign } from "hono/jwt";
 import type { KyroAppOptions } from "../kyro-app.js";
@@ -336,7 +337,7 @@ export function mountGlobalRoutes(
         enablePublicAccess,
       );
 
-      const body = await c.req.json();
+      let body = await c.req.json();
       const url = new URL(c.req.url);
       const isAutosave = url.searchParams.get("autosave") === "true" || c.req.header("x-autosave") === "true" || body.autosave === true;
       const isDraft = url.searchParams.get("draft") === "true" || c.req.header("x-draft") === "true" || body.draft === true;
@@ -348,6 +349,7 @@ export function mountGlobalRoutes(
         tenantId: ctxTenantID,
       });
 
+      body = enforceStudioValidation(body, globalConfig as any, { studioEnabled: (options.studio || settings?.studio)?.enabled === true, originalDoc: existing || undefined, user: ctxUser });
       let updated;
       if (existing) {
         updated = await db.update({

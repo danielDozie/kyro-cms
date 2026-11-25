@@ -1,11 +1,15 @@
+import { isStudioEnabled } from "../../lib/config";
+import { CompositionActions } from "./CompositionActions";
 import "../../lib/i18n";
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronRight, ExternalLink, Check } from "../ui/icons";
+import { ExternalLink, Check } from "../ui/icons";
 import { Dropdown, DropdownItem, DropdownSeparator } from "../ui/Dropdown";
 import { SplitButton } from "../ui/SplitButton";
 import type { SplitButtonStatus } from "../ui/SplitButton";
 import { useAutoFormStore } from "../../lib/autoform-store";
 import { useClickOutside } from "../../hooks/useClickOutside";
+import { isStudioCollection } from "../../lib/studio";
+import { confirmEditorSwitch } from "../../lib/editor-switch";
 import { adminPath as ADMIN_BASE } from "../../lib/paths";
 import { useTranslation } from "react-i18next";
 import { CollaboratorAvatars } from "../collaboration/CollaboratorAvatars";
@@ -14,6 +18,7 @@ type View = "edit" | "version" | "api";
 
 interface AutoFormHeaderProps {
   config?: any;
+  studio?: boolean;
   collectionSlug?: string;
   globalSlug?: string;
   documentStatus: string;
@@ -48,7 +53,7 @@ export function AutoFormHeader({
   handleConflictOverride,
 }: AutoFormHeaderProps) {
   const { t } = useTranslation();
-  const [now, setNow] = useState(Date.now());
+  const [compositionOpen, setCompositionOpen] = useState(false);
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -69,10 +74,6 @@ export function AutoFormHeader({
 
   const isNew = !formData.id;
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 10_000);
-    return () => clearInterval(id);
-  }, []);
 
   useClickOutside(scheduleRef, () => {
     if (showSchedulePicker) setShowSchedulePicker(false);
@@ -107,29 +108,18 @@ export function AutoFormHeader({
     ? new Date(formData.createdAt as string).toLocaleString()
     : "Just now";
 
-  const statusLabel = hasUnpublishedChanges
-    ? 'Draft (unpublished changes)'
+  const draftsEnabled = config?.versions?.drafts === true;
+  const statusLabel = !draftsEnabled ? (hasUnsavedChanges ? "Unsaved changes" : "Synced") : (hasUnpublishedChanges || hasUnsavedChanges)
+    ? 'Unpublished draft'
     : documentStatus === 'published'
       ? 'Published'
       : 'Draft';
 
-  const statusLabelMobile = hasUnpublishedChanges
-    ? 'Unpublished'
-    : documentStatus === 'published'
-      ? 'Published'
-      : 'Draft';
-
-  const statusColor = documentStatus === 'published' && !hasUnsavedChanges
+  const statusColor = documentStatus === 'published' && !hasUnsavedChanges && !hasUnpublishedChanges
     ? 'bg-[var(--kyro-success)]'
     : hasUnpublishedChanges
       ? 'bg-[var(--kyro-warning)]'
       : 'bg-[var(--kyro-text-muted)]';
-
-  const statusBadgeBg = documentStatus === 'published' && !hasUnpublishedChanges
-    ? 'bg-[var(--kyro-success)]/10 text-[var(--kyro-success)] border-[var(--kyro-success)]/20'
-    : hasUnpublishedChanges
-      ? 'bg-[var(--kyro-warning)]/10 text-[var(--kyro-warning)] border-[var(--kyro-warning)]/20'
-      : 'bg-[var(--kyro-text-muted)]/10 text-[var(--kyro-text-muted)] border-[var(--kyro-text-muted)]/20';
 
   const renderAutoSaveStatus = (compact = false) => (
     <>
@@ -139,15 +129,15 @@ export function AutoFormHeader({
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          {compact ? "Saving…" : "Saving draft..."}
+          {draftsEnabled ? (compact ? "Syncing…" : "Syncing…") : "Syncing…"}
         </span>
       )}
-      {autoSaveStatus === "success" && (
+      {(autoSaveStatus === "success" || (autoSaveStatus === "idle" && lastSavedAt && hasUnpublishedChanges)) && (
         <span className="text-[var(--kyro-success)] flex items-center gap-1">
           <Check className="w-3.5 h-3.5 shrink-0" />
           {compact
-            ? "Saved"
-            : lastSavedAt ? `Saved ${Math.floor((Date.now() - lastSavedAt) / 60000)}m ago` : "Draft saved"}
+            ? (draftsEnabled ? "Synced" : "Synced")
+            : lastSavedAt ? `${draftsEnabled ? "Synced" : "Synced"} ${Math.floor((Date.now() - lastSavedAt) / 60000)}m ago` : "Synced"}
         </span>
       )}
       {autoSaveStatus === "retrying" && (
@@ -207,7 +197,8 @@ export function AutoFormHeader({
       trigger={
         <button
           type="button"
-          className="kyro-btn p-2 md:p-2.5 rounded-xl border border-[var(--kyro-border)] hover:bg-[var(--kyro-bg-secondary)] transition-all"
+          className="kyro-btn p-2 md:p-2.5 rounded-md border border-[var(--kyro-border)] hover:bg-[var(--kyro-bg-secondary)] transition-all"
+          aria-label="Document actions"
           title={t("tooltips.moreActions", { defaultValue: "More actions" })}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -218,6 +209,8 @@ export function AutoFormHeader({
         </button>
       }
       direction="down"
+      density="compact"
+      menuClassName="editor-document-menu"
     >
       <DropdownItem
         onClick={handleSaveDraft}
@@ -229,7 +222,7 @@ export function AutoFormHeader({
           </svg>
         }
       >
-        Save Draft
+        {draftsEnabled ? "Save draft" : "Save changes"}
       </DropdownItem>
       {!globalSlug && (
         <DropdownItem
@@ -241,7 +234,7 @@ export function AutoFormHeader({
             </svg>
           }
         >
-          Create New
+          Create new
         </DropdownItem>
       )}
       {!globalSlug && (
@@ -258,7 +251,7 @@ export function AutoFormHeader({
           {isDuplicating ? "Duplicating..." : "Duplicate"}
         </DropdownItem>
       )}
-      <DropdownItem
+      {draftsEnabled && (<DropdownItem
         onClick={() => setShowSchedulePicker(true)}
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -269,9 +262,9 @@ export function AutoFormHeader({
           </svg>
         }
       >
-        Schedule Publish
-      </DropdownItem>
-      {documentStatus === "published" && (
+        Schedule publish
+      </DropdownItem>)}
+      {draftsEnabled && documentStatus === "published" && (
         <DropdownItem
           onClick={handleUnpublish}
           icon={
@@ -284,6 +277,17 @@ export function AutoFormHeader({
           Unpublish
         </DropdownItem>
       )}
+      {!globalSlug && collectionSlug && draftsEnabled && <>
+        <DropdownSeparator />
+        <DropdownItem
+          onClick={() => setCompositionOpen(true)}
+          disabled={hasUnsavedChanges || autoSaveStatus === "saving"}
+          className="editor-composition-action"
+          icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+        >
+          <span className="flex items-center justify-between gap-3"><span>Convert / recover</span><small className="editor-action-tag">Advanced</small></span>
+        </DropdownItem>
+      </>}
       {!globalSlug && (
         <>
           <DropdownSeparator />
@@ -306,7 +310,7 @@ export function AutoFormHeader({
 
   const renderSchedulePicker = () => showSchedulePicker && (
     <div ref={scheduleRef} className="relative">
-      <div className="absolute right-0 top-2 p-4 rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] shadow-2xl z-50 min-w-[260px]">
+      <div className="absolute right-0 top-2 p-4 rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)]  z-50 min-w-[260px]">
         <p className="text-xs font-medium mb-2">Schedule Publish</p>
         <input
           type="datetime-local"
@@ -338,203 +342,51 @@ export function AutoFormHeader({
   );
 
   return (
-    <>
-      {/* MOBILE HEADER */}
-      <header className="md:hidden border-b border-[var(--kyro-border)] z-30 bg-[var(--kyro-surface)] backdrop-blur-md rounded-lg">
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          <a
-            href={`${ADMIN_BASE}/${collectionSlug}`}
-            className="p-1.5 rounded-lg hover:bg-[var(--kyro-bg-secondary)] transition-colors shrink-0"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </a>
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <h1 className="text-base font-bold tracking-tight truncate min-w-0">{docTitle}</h1>
-            <span className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${statusBadgeBg}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
-              {statusLabelMobile}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <SplitButton
-              status={documentStatus as SplitButtonStatus}
-              saveStatus={localSaveStatus}
-              hasChanges={hasUnsavedChanges}
-              onPublish={handlePublish}
-              disabled={localSaveStatus === "saving"}
-            />
-            {renderKebabMenu()}
-            {renderSchedulePicker()}
-          </div>
+    <header className="editor-header">
+      {!isNew && collectionSlug && config?.versions?.drafts && <CompositionActions collection={collectionSlug} open={compositionOpen} onClose={() => setCompositionOpen(false)} />}
+      <div className="editor-heading-row">
+        <div className="editor-identity">
+          <h1 title={docTitle}>{docTitle}</h1>
         </div>
-
-        <div className="flex items-center justify-between px-3 py-1.5 border-t border-[var(--kyro-border)]/50 bg-[var(--kyro-bg-secondary)]/30">
-          <div className="flex items-center gap-0.5 bg-[var(--kyro-bg-secondary)] p-0.5 rounded-lg border border-[var(--kyro-border)]/50">
-            {(["edit", "version", "api"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setView(v as View)}
-                className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${view === v
-                  ? "bg-[var(--kyro-surface)] shadow-sm border border-[var(--kyro-border)] text-[var(--kyro-text-primary)]"
-                  : "text-[var(--kyro-text-secondary)] opacity-50 active:opacity-100"
-                  }`}
-              >
-                {v === "edit" ? "Edit" : v === "version" ? "History" : "API"}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2 text-[10px] font-medium">
-            {renderAutoSaveStatus(true)}
-            {hasUnsavedChanges && autoSaveStatus !== "saving" && autoSaveStatus !== "retrying" && autoSaveStatus !== "conflict" && (
-              <button
-                type="button"
-                onClick={() => {
-                  useAutoFormStore.getState().loadDocument(lastSavedData, lastSavedData);
-                }}
-                className="text-[var(--kyro-primary)] text-[10px] font-medium hover:underline"
-              >
-                Revert
-              </button>
-            )}
-            <div className="h-4 w-px bg-[var(--kyro-border)] mx-0.5" />
+        <div className="editor-publish-actions">
+          {!globalSlug && collectionSlug && config && isStudioEnabled && isStudioCollection(config) && (
             <button
               type="button"
-              onClick={() => setShowPreview(!showPreview)}
-              className={`p-1.5 rounded-lg transition-all ${showPreview
-                ? "bg-[var(--kyro-primary)]/10 text-[var(--kyro-primary)]"
-                : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-bg-secondary)]"
-                }`}
+              aria-haspopup="dialog"
+              className="kyro-btn kyro-btn-md kyro-btn-secondary"
+              onClick={() => confirmEditorSwitch(`${ADMIN_BASE}/studio/${collectionSlug}/${formData.id || "new"}`, "Studio", {
+                editingDocument: true,
+                saving: localSaveStatus === "saving",
+              })}
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              Open Studio
             </button>
-          </div>
-        </div>
-      </header>
-
-      {/* DESKTOP HEADER */}
-      <header className="hidden md:flex surface-tile px-8 py-6 items-center justify-between sticky top-0 border-b border-[var(--kyro-border)] mb-4 bg-[var(--kyro-surface)] z-50 backdrop-blur-md rounded-lg">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          {collectionSlug && (
-            <div className="flex items-center gap-1.5 text-xs text-[var(--kyro-text-secondary)] font-medium ml-12">
-              <a
-                href={`${ADMIN_BASE}/${collectionSlug}`}
-                className="hover:text-[var(--kyro-text-primary)] transition-colors capitalize"
-              >
-                {collectionSlug}
-              </a>
-              {Boolean(formData.parent && typeof formData.parent === "object") && (
-                <>
-                  <span className="opacity-40 text-[10px]">/</span>
-                  <a
-                    href={`${ADMIN_BASE}/${collectionSlug}/${(formData.parent as any)?.id || ""}`}
-                    className="hover:text-[var(--kyro-text-primary)] transition-colors"
-                  >
-                    {String((formData.parent as any)?.title || (formData.parent as any)?.name || (formData.parent as any)?.label || (formData.parent as any)?.id || "Parent")}
-                  </a>
-                </>
-              )}
-              <span className="opacity-40 text-[10px]">/</span>
-              <span className="text-[var(--kyro-text-primary)] font-semibold truncate max-w-[220px]">
-                {docTitle}
-              </span>
-            </div>
           )}
-          <div className="flex items-center gap-3 flex-wrap min-w-0">
-            <a
-              href={`${ADMIN_BASE}/${collectionSlug}`}
-              className="p-2 border border-[var(--kyro-border)] rounded-xl hover:bg-[var(--kyro-bg-secondary)] transition-colors shrink-0"
-              title={`Back to ${collectionSlug}`}
-            >
-              <ChevronRight className="w-4 h-4 rotate-180" />
-            </a>
-            <h1 className="text-xl font-bold tracking-tighter truncate min-w-0">{docTitle}</h1>
-            <span className={`shrink-0 inline-flex items-center gap-1.5 px-2 rounded-full text-[10px] font-regular border ${statusBadgeBg}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
-              {statusLabel}
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] font-medium tracking-wide opacity-60 ml-12">
-            {renderAutoSaveStatus(false)}
-            {hasUnsavedChanges && autoSaveStatus !== "saving" && autoSaveStatus !== "retrying" && autoSaveStatus !== "conflict" && (
-              <>
-                <span className="opacity-30">—</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    useAutoFormStore.getState().loadDocument(lastSavedData, lastSavedData);
-                  }}
-                  className="text-[var(--kyro-primary)] hover:underline"
-                >
-                  Revert changes
-                </button>
-              </>
-            )}
-            {lastSavedAt && autoSaveStatus !== "saving" && autoSaveStatus !== "retrying" && autoSaveStatus !== "success" && (
-              <span className="border-l border-[var(--kyro-border)] pl-4">
-                Draft saved {(() => {
-                  const diffMs = now - lastSavedAt;
-                  const diffMin = Math.floor(diffMs / 60_000);
-                  const diffSec = Math.floor(diffMs / 1_000);
-                  if (diffMin >= 1) return `${diffMin}m ago`;
-                  if (diffSec >= 5) return `${diffSec}s ago`;
-                  return "just now";
-                })()}
-              </span>
-            )}
-            <span className="border-l border-[var(--kyro-border)] pl-4">
-              Modified {lastModified}
-            </span>
-            <span className="border-l border-[var(--kyro-border)] pl-4">
-              Created {createdAt}
-            </span>
-          </div>
+          <CollaboratorAvatars documentId={formData.id as string} collectionSlug={collectionSlug} />
+          <button type="button" aria-pressed={showPreview} onClick={() => setShowPreview(!showPreview)} className="kyro-btn kyro-btn-md kyro-btn-secondary">
+            <ExternalLink className="w-4 h-4" aria-hidden="true" />{showPreview ? "Close preview" : "Preview"}
+          </button>
+          {renderKebabMenu()}
+          {renderSchedulePicker()}
+          {isNew && draftsEnabled && <button type="button" className="kyro-btn kyro-btn-md kyro-btn-secondary" disabled={localSaveStatus === "saving"} onClick={handleSaveDraft}>Save draft</button>}
+          {draftsEnabled ? <SplitButton status={documentStatus as SplitButtonStatus} saveStatus={localSaveStatus} hasChanges={hasUnsavedChanges || hasUnpublishedChanges} onPublish={handlePublish} disabled={localSaveStatus === "saving"} /> :
+            <button type="button" className="kyro-btn kyro-btn-md kyro-btn-primary" onClick={handleSaveDraft}
+              disabled={localSaveStatus === "saving" || (!isNew && !hasUnsavedChanges)}>
+              {localSaveStatus === "saving" ? "Syncing…" : "Save changes"}
+            </button>}
         </div>
-
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-1 bg-[var(--kyro-bg-secondary)] p-1 rounded-xl border border-[var(--kyro-border)]">
-            {["edit", "version", "api"].map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setView(v as View)}
-                className={`px-5 py-2 text-xs font-bold rounded-lg transition-all ${view === v ? "bg-[var(--kyro-surface)] shadow-sm border border-[var(--kyro-border)] text-[var(--kyro-text-primary)]" : "text-[var(--kyro-text-secondary)] opacity-50 hover:opacity-100"}`}
-              >
-                {v.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <div className="h-8 w-px bg-[var(--kyro-border)] mx-2" />
-
-          <div className="flex items-center gap-3">
-            <CollaboratorAvatars documentId={formData.id as string} collectionSlug={collectionSlug} />
-            <button
-              type="button"
-              onClick={() => setShowPreview(!showPreview)}
-              className={`kyro-btn p-2.5 rounded-lg transition-all flex items-center gap-2 ${showPreview ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] border border-[var(--kyro-border)]" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-bg-secondary)]"}`}
-              title={t("tooltips.livePreview", { defaultValue: "Live Preview" })}
-            >
-              <ExternalLink className="w-4 h-4" />
-              {showPreview && (
-                <span className="text-[10px] font-bold tracking-widest pr-1">
-                  Active
-                </span>
-              )}
-            </button>
-            {renderKebabMenu()}
-            {renderSchedulePicker()}
-            <SplitButton
-              status={documentStatus as SplitButtonStatus}
-              saveStatus={localSaveStatus}
-              hasChanges={hasUnsavedChanges}
-              onPublish={handlePublish}
-              disabled={localSaveStatus === "saving"}
-            />
-          </div>
+      </div>
+      <div className="editor-context-row">
+        <div className="editor-view-tabs" aria-label="Document view">
+          {(["edit", "version", "api"] as const).map(v => <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}>{v === "edit" ? "Content" : v === "version" ? "History" : "API"}</button>)}
         </div>
-      </header>
-    </>
+        <div className="editor-document-state">
+          <span className="editor-status-label"><span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} aria-hidden="true" />{statusLabel}</span>
+          <span role="status" aria-live="polite">{renderAutoSaveStatus(true)}</span>
+          {hasUnsavedChanges && autoSaveStatus !== "saving" && autoSaveStatus !== "conflict" && <button type="button" onClick={() => useAutoFormStore.getState().loadDocument(lastSavedData, lastSavedData)} className="editor-revert">Revert changes</button>}
+          <details className="editor-document-info"><summary>Details</summary><dl><dt>Modified</dt><dd>{lastModified}</dd><dt>Created</dt><dd>{createdAt}</dd></dl></details>
+        </div>
+      </div>
+    </header>
   );
 }

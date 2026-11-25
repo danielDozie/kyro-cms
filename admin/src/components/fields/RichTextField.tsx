@@ -49,8 +49,8 @@ export default function RichTextField({
     return (
       <FieldLayout field={field} error={error}>
         <div
-          className={`border rounded-lg bg-[var(--kyro-bg)] overflow-hidden border-[var(--kyro-border)] flex flex-col shadow-sm transition-all duration-200
-          ${error ? "border-[var(--kyro-error)] shadow-[0_0_0_1px_var(--kyro-error)]" : "border-[var(--kyro-border)]"}
+          className={`border rounded-lg bg-[var(--kyro-bg)] overflow-hidden border-[var(--kyro-border)] flex flex-col  transition-all duration-200
+          ${error ? "border-[var(--kyro-error)] " : "border-[var(--kyro-border)]"}
           ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
         >
           <div className="flex flex-wrap items-center gap-1.5 p-1.5 border-b border-[var(--kyro-border)] bg-[var(--kyro-bg-secondary)] rounded-t-lg h-[40px]"></div>
@@ -169,14 +169,14 @@ function RichTextEditor({
     <FieldLayout field={field} error={error}>
       {isExpanded ? (
         // Maximize mode placeholder inside form
-        <div className="border rounded-lg bg-[var(--kyro-bg-secondary)] border-[var(--kyro-border)] p-4 text-center text-xs text-[var(--kyro-text-muted)] flex items-center justify-center gap-3 h-20 transition-all duration-200 shadow-inner">
+        <div className="border rounded-lg bg-[var(--kyro-bg-secondary)] border-[var(--kyro-border)] p-4 text-center text-xs text-[var(--kyro-text-muted)] flex items-center justify-center gap-3 h-20 transition-all duration-200 ">
           <span className="font-medium">
             Rich text editor workspace is currently maximized.
           </span>
           <button
             type="button"
             onClick={() => setIsExpanded(false)}
-            className="px-2.5 py-1 bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] text-xs rounded-md shadow-sm font-medium hover:scale-102 active:scale-98 transition-transform cursor-pointer"
+            className="px-2.5 py-1 bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] text-xs rounded-md  font-medium hover:scale-102 active:scale-98 transition-transform cursor-pointer"
           >
             Minimize Workspace
           </button>
@@ -184,8 +184,8 @@ function RichTextEditor({
       ) : (
         // Standard inline editor
         <div
-          className={`border rounded-lg bg-[var(--kyro-bg)] overflow-hidden border-[var(--kyro-border)] flex flex-col shadow-sm transition-all duration-200
-          ${error ? "border-[var(--kyro-error)] shadow-[0_0_0_1px_var(--kyro-error)]" : "border-[var(--kyro-border)] focus-within:border-[var(--kyro-primary)] focus-within:ring-1 focus-within:ring-[var(--kyro-primary)]"}
+          className={`border rounded-lg bg-[var(--kyro-bg)] overflow-hidden border-[var(--kyro-border)] flex flex-col  transition-all duration-200
+          ${error ? "border-[var(--kyro-error)] " : "border-[var(--kyro-border)] focus-within:border-[var(--kyro-primary)] focus-within:ring-1 focus-within:ring-[var(--kyro-primary)]"}
           ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
         >
           <MenuBar
@@ -220,7 +220,7 @@ function RichTextEditor({
               right: panelWidth > 0 ? `${panelWidth + 16}px` : "16px",
               zIndex: 9999,
             }}
-            className="flex flex-col bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 transition-all duration-300"
+            className="flex flex-col bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md  overflow-hidden animate-in fade-in zoom-in-95 duration-200 transition-all duration-300"
           >
             <MenuBar
               editor={editor}

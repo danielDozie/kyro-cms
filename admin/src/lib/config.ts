@@ -196,6 +196,9 @@ export const nonAuthCollections = Object.values(collections).filter(
   (c) => !authCollectionSlugs.includes(c.slug) && c.admin?.hidden !== true,
 );
 
+export const studioConfig = (projectCfg as any)?.studio;
+export const isStudioEnabled = Boolean(studioConfig?.enabled === true);
+
 export const projects = ((projectCfg as any).projects || []) as Array<{
   id: string;
   name: string;
@@ -234,9 +237,89 @@ export function getAllProjects(): Array<{
   ];
 }
 
+import { adminPath } from "./paths";
+
 export function findProjectByIdOrSlug(idOrSlug: string) {
   const all = getAllProjects();
-  return all.find((p) => p.id === idOrSlug || p.slug === idOrSlug) || null;
+  return (
+    all.find(
+      (p) =>
+        p.id === idOrSlug ||
+        p.slug === idOrSlug ||
+        p.name === idOrSlug ||
+        (p.orgName && `${p.orgName}/${p.name}` === idOrSlug),
+    ) || null
+  );
+}
+
+export function getActiveProjectFromRequest(request?: Request) {
+  const all = getAllProjects();
+  if (all.length === 0) return null;
+
+  if (request) {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const match = cookieHeader.match(/(?:^|;\s*)kyro-active-project=([^;]+)/);
+    if (match) {
+      const decoded = decodeURIComponent(match[1]);
+      const found = findProjectByIdOrSlug(decoded);
+      if (found) return found;
+    }
+  }
+
+  return all[0];
+}
+
+export function resolveProjectCollectionAccess(
+  collectionSlug: string,
+  request?: Request,
+): {
+  allowed: boolean;
+  activeProject: ReturnType<typeof getActiveProjectFromRequest>;
+  owningProject: ReturnType<typeof getActiveProjectFromRequest>;
+  redirectTo?: string;
+  setCookieHeader?: string;
+} {
+  const all = getAllProjects();
+  if (all.length === 0) {
+    return { allowed: true, activeProject: null, owningProject: null };
+  }
+
+  const activeProject = getActiveProjectFromRequest(request);
+  const allowedCols = activeProject?.collections;
+
+  // If active project has no collection restrictions or collection is in whitelist/auth, access is granted
+  if (
+    !allowedCols ||
+    allowedCols.length === 0 ||
+    allowedCols.includes(collectionSlug) ||
+    authCollectionSlugs.includes(collectionSlug)
+  ) {
+    return { allowed: true, activeProject, owningProject: activeProject };
+  }
+
+  // Collection is outside active project. Find if another project owns it
+  const owningProject = all.find((p) => p.collections?.includes(collectionSlug)) || null;
+
+  if (owningProject) {
+    const cookieVal = encodeURIComponent(
+      owningProject.id || (owningProject.orgName ? `${owningProject.orgName}/${owningProject.name}` : owningProject.name),
+    );
+    return {
+      allowed: true,
+      activeProject,
+      owningProject,
+      setCookieHeader: `kyro-active-project=${cookieVal}; Path=/; Max-Age=31536000; SameSite=Lax`,
+    };
+  }
+
+  // Not in active project and no project owns it -> redirect to active project's first allowed collection
+  const firstAllowed = allowedCols[0] || "";
+  return {
+    allowed: false,
+    activeProject,
+    owningProject: null,
+    redirectTo: firstAllowed ? `${adminPath}/${firstAllowed}` : adminPath,
+  };
 }
 
 export function getCollectionsForProject(projectIdOrSlug?: string): CollectionConfig[] {

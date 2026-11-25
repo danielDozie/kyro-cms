@@ -7,6 +7,7 @@ export interface NavItem {
   label: string;
   icon: string;
   order?: number;
+  projectScoped?: boolean;
 }
 
 interface Props {
@@ -25,7 +26,7 @@ const capitalized = fallback.charAt(0).toUpperCase() + fallback.slice(1);
 const itemText = i18next.t(item.label, { defaultValue: capitalized }) || capitalized;
 
 function checkIsActive(it: NavItem): boolean {
-  if (it.href === adminPath) return pageTitle === "Dashboard";
+  if (it.href === adminPath) return currentPath === adminPath || currentPath === `${adminPath}/`;
   if (it.href === adminPath + "/content-health")
     return pageTitle === "Content Health & Quality" || currentPath.includes("/content-health");
   if (it.href.startsWith(adminPath + "/settings")) return currentPath.startsWith(adminPath + "/settings");
@@ -47,18 +48,20 @@ const isItemActive = checkIsActive(item);
 const linkClass = isCollectionActive
   ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] active-nav-item"
   : isItemActive
-    ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md active-nav-item"
+    ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] active-nav-item"
     : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]";
 ---
 
 <a
   href={item.href}
   title={itemText}
+  aria-current={isItemActive || isCollectionActive ? "page" : undefined}
   data-nav-item
+  data-project-collection={item.projectScoped ? "true" : "false"}
   data-slug={slug}
   data-type={type}
   data-is-dashboard={item.href === adminPath ? "true" : "false"}
-  class={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all font-medium text-sm ${linkClass}`}
+  class={`sidebar-nav-link flex items-center gap-3 px-4 py-2.5 rounded-md transition-colors font-normal text-[13px] ${linkClass}`}
 >
   <div class="nav-icon-wrapper flex items-center justify-center flex-shrink-0">
     <SidebarIcon icon={item.icon} />

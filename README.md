@@ -262,3 +262,10 @@ Comprehensive guides, API references, and architecture docs are available in the
 ## License
 
 MIT © [Kyro CMS](https://kyro-cms.com)
+## Current workspace release
+
+Core and Admin 0.15.0 include the Studio page workflow, compact developer diagnostics, shared selectors, inline audit details, and preserved-original crop/hotspot editing. Studio renders the same page block document used by the structured editor. New generated posts and pages use drafts by default, respecting explicit settings. See [Studio](packages/kyro-studio/README.md) for rendering and collection configuration.
+
+Studio is globally opt-in. With `studio.enabled` omitted or false, layout authoring is hidden and public APIs deliver content only; enabling Studio delivers the full layout tree. Mode changes preserve stored documents but intentionally change response shape. Existing draft-enabled documents expose **More actions → Convert / recover** for explicit flattening with retention-protected recovery snapshots. See the [Studio mode contract](packages/kyro-studio/README.md#studio-mode-and-content-only-delivery).
+
+Layout inspectors now include Content / Design / Misc tabs, responsive design fields, Google Font selection and Lucide/Heroicons. Document History displays the latest 15 versions; the API tab separates saved responses from local editor JSON. See [Changelog](CHANGELOG.md) for the complete 0.15.0 workspace changes and migration contract.

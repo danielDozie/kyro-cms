@@ -1,10 +1,12 @@
 import "../../lib/i18n";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Image as ImageIcon, Film, FileText, Music, File, X, Loader2, Check } from "../ui/icons";
+import { Image as ImageIcon, Film, FileText, Music, File, X, Loader2, Check, Crop } from "../ui/icons";
 import { apiGet, withCacheBust, apiPost, apiUpload, resolveApi, resolveMedia } from "../../lib/api";
 import { toast } from "../../lib/stores";
 import { useTranslation } from "react-i18next";
+import { Modal } from "../ui/Modal";
+import { ImageFocalEditor } from "../ui/ImageFocalEditor";
 
 interface UploadFieldProps {
   field: any;
@@ -91,6 +93,7 @@ export function UploadField({
   const [urlValue, setUrlValue] = useState("");
   const [urlError, setUrlError] = useState("");
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
+  const [cropModalItem, setCropModalItem] = useState<{ raw: any; index?: number } | null>(null);
 
   const fieldLabel = field?.label || field?.name || "File";
   const maxCount = field.maxCount ?? (field.hasMany ? 999 : 1);
@@ -283,13 +286,14 @@ export function UploadField({
 
   const filteredMedia = useMemo(() => {
     return mediaItems.filter((item) => {
+      if (field.allowedTypes?.length && !field.allowedTypes.some((allowed: string) => allowed.endsWith("/*") ? item.mimeType?.startsWith(allowed.slice(0, -1)) : item.mimeType === allowed)) return false;
       return (
         !pickerSearch ||
         item.filename?.toLowerCase().includes(pickerSearch.toLowerCase()) ||
         item.title?.toLowerCase().includes(pickerSearch.toLowerCase())
       );
     });
-  }, [mediaItems, pickerSearch]);
+  }, [mediaItems, pickerSearch, field.allowedTypes]);
 
   if (uploading) {
     return (
@@ -299,12 +303,60 @@ export function UploadField({
     );
   }
 
+  const handleSavePlacementCropHotspot = (crop: any, hotspot: any) => {
+    if (!cropModalItem) return;
+    const { raw, index } = cropModalItem;
+    const id = typeof raw === "string" ? raw : (raw.id || raw.value);
+    const existingMetadata = typeof raw === "object" && raw?.metadata ? { ...raw.metadata } : {};
+
+    let updatedMetadata: any = undefined;
+    if (crop || hotspot) {
+      updatedMetadata = {
+        ...existingMetadata,
+        ...(crop ? { crop } : {}),
+        ...(hotspot ? { hotspot } : {}),
+      };
+      if (!crop) delete updatedMetadata.crop;
+      if (!hotspot) delete updatedMetadata.hotspot;
+    }
+
+    let updatedItem: any;
+    if (updatedMetadata && Object.keys(updatedMetadata).length > 0) {
+      updatedItem = typeof raw === "object"
+        ? { ...raw, id, metadata: updatedMetadata }
+        : { id, metadata: updatedMetadata };
+    } else {
+      // Reset transforms: preserve original clean representation
+      if (typeof raw === "string") {
+        updatedItem = id;
+      } else {
+        const copy = { ...raw, id };
+        delete copy.metadata;
+        delete copy.crop;
+        delete copy.hotspot;
+        updatedItem = copy;
+      }
+    }
+
+    if (index !== undefined && isMultiple) {
+      const next = [...currentValue];
+      next[index] = updatedItem;
+      onChange(next);
+    } else {
+      onChange(updatedItem);
+    }
+    setCropModalItem(null);
+    toast.success("Placement crop and focal hotspot updated");
+  };
+
   const renderImagePreview = (rawImg: any, index?: number) => {
     if (!rawImg) return null;
     const id = typeof rawImg === 'string' ? rawImg : rawImg.id;
     const img = fetchedDetails[id] || (typeof rawImg === 'object' ? rawImg : { id });
     const fileType = getFileType(img.mimeType, img.filename || img.url);
     const isImage = fileType === "image";
+    const hasCustomCrop = typeof rawImg === "object" && rawImg?.metadata?.crop;
+    const hasCustomHotspot = typeof rawImg === "object" && rawImg?.metadata?.hotspot;
 
     return (
       <div
@@ -326,23 +378,44 @@ export function UploadField({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-medium truncate text-[var(--kyro-text-primary)]">
-            {img.originalName || img.filename || "Unnamed File"}
+          <div className="text-[11px] font-medium truncate text-[var(--kyro-text-primary)] flex items-center gap-1.5">
+            <span>{img.originalName || img.filename || "Unnamed File"}</span>
+            {(hasCustomCrop || hasCustomHotspot) && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-mono bg-[var(--kyro-accent-soft)] text-[var(--kyro-primary)]">
+                {hasCustomCrop && hasCustomHotspot ? "Crop+Focus" : hasCustomCrop ? "Cropped" : "Focus"}
+              </span>
+            )}
           </div>
           <div className="text-[10px] text-[var(--kyro-text-muted)] tracking-wider font-bold">
             {fieldLabel}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            index !== undefined ? removeImage(index) : onChange(null)
-          }
-          disabled={disabled}
-          className="p-1.5 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-error)] hover:bg-[var(--kyro-danger-bg)] transition-all opacity-0 group-hover:opacity-100"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {isImage && (
+            <button
+              type="button"
+              onClick={() => setCropModalItem({ raw: rawImg, index })}
+              disabled={disabled}
+              title="Edit crop & focal hotspot"
+              aria-label="Edit crop & focal hotspot"
+              className="p-1.5 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-primary)] hover:bg-[var(--kyro-surface)] transition-all opacity-0 group-hover:opacity-100"
+            >
+              <Crop className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() =>
+              index !== undefined ? removeImage(index) : onChange(null)
+            }
+            disabled={disabled}
+            title="Remove asset"
+            aria-label="Remove asset"
+            className="p-1.5 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-error)] hover:bg-[var(--kyro-danger-bg)] transition-all opacity-0 group-hover:opacity-100"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   };
@@ -511,7 +584,7 @@ function MediaPickerContent({
     <div
       className={`${isFullscreen
         ? "fixed inset-0 z-[9999]"
-        : "relative z-[9999] w-[360px] max-h-[400px] mt-1 rounded-lg shadow-lg"
+        : "relative z-[9999] w-[360px] max-h-[400px] mt-1 rounded-lg "
         } overflow-hidden bg-[var(--kyro-surface)] border border-[var(--kyro-border)] flex flex-col`}
     >
       <div className="p-2 border-b border-[var(--kyro-border)] flex flex-col gap-2">

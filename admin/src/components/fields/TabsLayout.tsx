@@ -46,10 +46,12 @@ export function TabsLayout({
           return (
             <div
               key={idx}
-              className="border border-[var(--kyro-border)] rounded-[var(--kyro-radius-lg)] bg-[var(--kyro-surface-accent)]/15 overflow-hidden transition-all shadow-xs"
+              className="border border-[var(--kyro-border)] rounded-[var(--kyro-radius-lg)] bg-[var(--kyro-surface-accent)]/15 overflow-hidden transition-all "
             >
-              <div
-                className={`flex items-center justify-between p-4 bg-[var(--kyro-surface)] cursor-pointer hover:bg-[var(--kyro-surface-accent)]/30 transition-colors select-none ${
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                className={`w-full text-left flex items-center justify-between p-3 bg-[var(--kyro-surface)] cursor-pointer hover:bg-[var(--kyro-surface-accent)]/30 transition-colors select-none ${
                   isOpen ? "border-b border-[var(--kyro-border)]" : ""
                 }`}
                 onClick={() => {
@@ -62,7 +64,7 @@ export function TabsLayout({
                 }}
               >
                 <div className="flex items-center gap-2.5">
-                  <h3 className="text-xs font-bold tracking-wider uppercase text-[var(--kyro-text-primary)]">
+                  <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">
                     {tab.label}
                   </h3>
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-muted)] border border-[var(--kyro-border)]">
@@ -74,10 +76,10 @@ export function TabsLayout({
                     isOpen ? "rotate-180" : ""
                   }`}
                 />
-              </div>
+              </button>
 
               {isOpen && (
-                <div className="p-6 space-y-6">
+                <div className="field-stack p-4">
                   {(tab.fields || []).map((f: Field) =>
                     renderField(
                       f,
@@ -87,7 +89,7 @@ export function TabsLayout({
                   )}
                   {tab.label === "SEO Settings" && (
                     <div className="mt-8 pt-6 border-t border-[var(--kyro-border)]">
-                      <h4 className="text-[10px] font-bold text-[var(--kyro-text-secondary)] tracking-[0.2em] mb-4 opacity-50">
+                      <h4 className="text-xs font-semibold text-[var(--kyro-text-muted)] uppercase tracking-normal mb-3">
                         Live Google Preview
                       </h4>
                       <SeoPreview
@@ -125,11 +127,13 @@ export function TabsLayout({
             <button
               key={index}
               type="button"
-              className={`px-6 py-3 text-sm tracking-widest font-medium transition-all border-b-2 -mb-[1px] whitespace-nowrap ${
+              aria-pressed={activeTab === index}
+              className={`px-4 py-2 text-sm font-normal transition-all border-b-2 rounded-none -mb-[1px] whitespace-nowrap ${
                 activeTab === index
-                  ? "border-[var(--kyro-primary)] text-[var(--kyro-primary)]"
-                  : "border-transparent text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] opacity-60 hover:opacity-100"
+                  ? "border-[var(--kyro-primary)] text-[var(--kyro-accent-text)]"
+                  : "border-transparent text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
               }`}
+              style={{ borderRadius: 0 }}
               onClick={() => setActiveTab(index)}
             >
               {tab.label}
@@ -137,7 +141,7 @@ export function TabsLayout({
           ))}
         </div>
       </div>
-      <div className="space-y-6">
+      <div className="field-stack">
         {currentTab?.fields.map((f: Field) =>
           renderField(
             f,
@@ -149,7 +153,7 @@ export function TabsLayout({
 
       {currentTab?.label === "SEO Settings" && (
         <div className="mt-12 pt-8 border-t border-[var(--kyro-border)]">
-          <h4 className="text-[10px] font-bold text-[var(--kyro-text-secondary)] tracking-[0.2em] mb-6 opacity-50">
+          <h4 className="text-xs font-semibold text-[var(--kyro-text-muted)] uppercase tracking-normal mb-4">
             Live Google Preview
           </h4>
           <SeoPreview

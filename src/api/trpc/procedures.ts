@@ -1,3 +1,4 @@
+import { contentRepresentation, representationMode } from "../../studio/representation.js";
 import type {
   FindArgs,
   CreateArgs,
@@ -11,6 +12,8 @@ import type { Field } from "../../fields/types.js";
 import { WEBHOOK_EVENTS, type WebhookEvent } from "../../webhooks/types.js";
 import { populateRelationships } from "../../utils/populate.js";
 import { sanitizeDoc } from "../../utils/sanitize.js";
+import { enforceStudioValidation } from "../../studio/validation.js";
+import { checkOptimisticConcurrency } from "../../studio/occ.js";
 
 const COLLECTION_EVENT_MAP: Record<
   string,
@@ -140,6 +143,7 @@ export function createFindProcedure(ctx: KyroContext) {
     depth?: number;
     select?: string[];
     draft?: boolean;
+    representation?: "full" | "content";
   }) => {
     const { collection, where, sort, limit, page, depth, select, draft } = input;
     const config = ctx.registry.getCollection(collection);
@@ -193,7 +197,7 @@ export function createFindProcedure(ctx: KyroContext) {
 
     await populateRelationships(result.docs as any[], config.fields, ctx.db, ctx.registry, 1, depth || 0);
 
-    return sanitizeDoc(result);
+    return representationMode(ctx.settings?.studio?.enabled === true, input.representation) === "content" ? contentRepresentation(sanitizeDoc(result)) : sanitizeDoc(result);
   };
 }
 
@@ -204,6 +208,7 @@ export function createFindByIDProcedure(ctx: KyroContext) {
     depth?: number;
     select?: string[];
     draft?: boolean;
+    representation?: "full" | "content";
   }) => {
     const { collection, id, depth, select, draft } = input;
     const config = ctx.registry.getCollection(collection);
@@ -240,7 +245,7 @@ export function createFindByIDProcedure(ctx: KyroContext) {
 
     await populateRelationships([doc as any], config.fields, ctx.db, ctx.registry, 1, depth || 0);
 
-    return sanitizeDoc(doc);
+    return representationMode(ctx.settings?.studio?.enabled === true, input.representation) === "content" ? contentRepresentation(sanitizeDoc(doc)) : sanitizeDoc(doc);
   };
 }
 
@@ -258,7 +263,13 @@ export function createCreateProcedure(ctx: KyroContext) {
 
     // Validate with Zod
     const schema = ctx.registry.getCreateZodSchema(collection);
-    const validated = schema.parse(data);
+    let validated = schema.parse(data);
+    validated = enforceStudioValidation(validated, config, {
+      studioEnabled: ctx.settings?.studio?.enabled === true,
+      isPublish: (data as any)?.status === "published",
+      user: ctx.user,
+      req: ctx.req,
+    });
 
     // Add tenantId if scoped
     if (config.tenantScoped && ctx.tenantId) {
@@ -325,7 +336,7 @@ export function createCreateProcedure(ctx: KyroContext) {
       operation: "create",
     });
 
-    return { doc };
+    return { doc: ctx.settings?.studio?.enabled === true ? doc : contentRepresentation(doc) };
   };
 }
 
@@ -354,9 +365,12 @@ export function createUpdateProcedure(ctx: KyroContext) {
     if (!originalDoc)
       throw new Error(`Document not found: ${collection}/${id}`);
 
-    // Revision conflict detection
-    if (baseUpdatedAt && (originalDoc as Record<string, any>).updatedAt && baseUpdatedAt !== (originalDoc as Record<string, any>).updatedAt) {
-      throw new Error(`Revision conflict: document has changed since ${baseUpdatedAt}. Current updatedAt: ${(originalDoc as Record<string, any>).updatedAt}`);
+    // Concurrency check (OCC)
+    if (baseUpdatedAt) {
+      checkOptimisticConcurrency({
+        existingDoc: originalDoc as Record<string, any>,
+        baseUpdatedAt,
+      });
     }
 
     // Normalize empty strings for non-textual field types
@@ -364,7 +378,14 @@ export function createUpdateProcedure(ctx: KyroContext) {
 
     // Validate with Zod
     const schema = ctx.registry.getUpdateZodSchema(collection);
-    const validated = schema.parse(data);
+    let validated = schema.parse(data);
+    validated = enforceStudioValidation(validated, config, {
+      studioEnabled: ctx.settings?.studio?.enabled === true,
+      isPublish: (data as any)?.status === "published",
+      user: ctx.user,
+      req: ctx.req,
+      originalDoc,
+    });
 
     // Add tenantId if scoped
     if (config.tenantScoped && ctx.tenantId) {
@@ -479,7 +500,7 @@ export function createUpdateProcedure(ctx: KyroContext) {
       operation: "update",
     });
 
-    return { doc };
+    return { doc: ctx.settings?.studio?.enabled === true ? doc : contentRepresentation(doc) };
   };
 }
 

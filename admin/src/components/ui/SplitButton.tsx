@@ -37,24 +37,24 @@ export function SplitButton({
 
   // ── button colour ──────────────────────────────────────────────────────────
   const btnBase =
-    "kyro-btn kyro-btn-sm text-[11px] font-regular tracking-widest transition-all duration-300 rounded-lg";
+    "kyro-btn kyro-btn-md font-medium transition-all duration-150";
 
   const getBtnClass = () => {
-    if (saveStatus === "saving") return `${btnBase} bg-[var(--kyro-primary)]/70 border-[var(--kyro-primary)]/70 text-[var(--kyro-sidebar-text-active)] cursor-wait`;
-    if (saveStatus === "error")  return `${btnBase} bg-[var(--kyro-error)]   border-[var(--kyro-error)]   text-[var(--kyro-sidebar-text-active)]`;
+    if (saveStatus === "saving") return `${btnBase} bg-[var(--kyro-primary)]/70 border-[var(--kyro-primary)]/70 text-[var(--kyro-primary-text)] cursor-wait`;
+    if (saveStatus === "error") return `${btnBase} bg-[var(--kyro-error)] border-[var(--kyro-error)] text-white`;
     if (isPublishedAndClean)     return `${btnBase} bg-[var(--kyro-gray-200)] border-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] cursor-not-allowed`;
     // has changes or draft → primary action
-    return `${btnBase} bg-[var(--kyro-primary)] border-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] hover:bg-[var(--kyro-primary-hover)]`;
+    return `${btnBase} bg-[var(--kyro-primary)] border-[var(--kyro-primary)] text-[var(--kyro-primary-text)] hover:bg-[var(--kyro-primary-hover)]`;
   };
 
   const chevronBase =
-    "kyro-btn kyro-btn-md px-2 rounded-l-none border-l-[1px] border-white/20 transition-all duration-300";
+    "kyro-btn kyro-btn-md px-2 rounded-l-none border-l border-white/20 transition-all duration-150";
 
   const getChevronClass = () => {
-    if (saveStatus === "saving") return `${chevronBase} bg-[var(--kyro-primary)]/70 text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-primary)]/70`;
-    if (saveStatus === "error")  return `${chevronBase} bg-[var(--kyro-error)]   text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-error)]`;
+    if (saveStatus === "saving") return `${chevronBase} bg-[var(--kyro-primary)]/70 text-[var(--kyro-primary-text)] border-[var(--kyro-primary)]/70`;
+    if (saveStatus === "error")  return `${chevronBase} bg-[var(--kyro-error)]   text-[var(--kyro-primary-text)] border-[var(--kyro-error)]`;
     if (isPublishedAndClean)     return `${chevronBase} bg-[var(--kyro-gray-200)] text-[var(--kyro-text-muted)] border-[var(--kyro-gray-200)]`;
-    return `${chevronBase} bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-primary)] hover:bg-[var(--kyro-primary-hover)]`;
+    return `${chevronBase} bg-[var(--kyro-primary)] text-[var(--kyro-primary-text)] border-[var(--kyro-primary)] hover:bg-[var(--kyro-primary-hover)]`;
   };
 
   // ── label ──────────────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ export function SplitButton({
     if (saveStatus === "saving") return "Publishing...";
     if (saveStatus === "error")  return "Retry";
     if (isPublishedAndClean)     return "Published";
-    return "Publish Changes";
+    return status === "published" ? "Publish changes" : "Publish";
   };
 
   return (
@@ -72,7 +72,7 @@ export function SplitButton({
         type="button"
         onClick={onPublish}
         disabled={isDisabled}
-        className={`${getBtnClass()} ${!children ? "rounded-r-lg border-r border-[var(--kyro-border)]" : ""}`}
+        className={`${getBtnClass()} ${children ? "rounded-r-none" : ""}`}
       >
         {saveStatus === "saving" && <Spinner size="sm" className="inline mr-1.5" />}
         {isPublishedAndClean && (
@@ -87,7 +87,7 @@ export function SplitButton({
       {children && (
         <Dropdown
           trigger={
-            <button type="button" className={getChevronClass()} disabled={saveStatus === "saving"}>
+            <button type="button" aria-label="Publishing options" className={getChevronClass()} disabled={saveStatus === "saving"}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="m6 9 6 6 6-6" />
               </svg>

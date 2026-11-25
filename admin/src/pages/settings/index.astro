@@ -1,11 +1,28 @@
 ---
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { globals } from '../../lib/config';
-
 import { adminPath } from '../../lib/paths';
-
-const firstGlobal = Object.values(globals)[0];
-if (firstGlobal) {
-  return Astro.redirect(`${adminPath}/settings/${firstGlobal.slug}`);
-}
-return Astro.redirect(adminPath);
+import { getAuthServer, requireAuthServer } from '../../lib/auth-server';
+const redirect = await requireAuthServer(Astro.request, { requireAdmin: true });
+if (redirect) return redirect;
+const { user } = await getAuthServer(Astro.request);
+const tools = [
+  { slug: 'workspaces', title: 'Organizations and projects', description: 'See how projects and collections fit together.' },
+  { slug: 'users', title: 'People', description: 'Manage the people who use this workspace.' },
+  ...(user?.role === 'super_admin' ? [{ slug: 'roles', title: 'Roles and permissions', description: 'Define what each role can access.' }] : []),
+  { slug: 'keys', title: 'API keys', description: 'Manage credentials for your integrations.' },
+  { slug: 'webhooks', title: 'Webhooks', description: 'Connect content changes to other services.' },
+  { slug: 'audit', title: 'Activity log', description: 'Review changes made in your workspace.' },
+  { slug: 'health', title: 'System health', description: 'Inspect the status of your APIs and services.' },
+];
 ---
+<AdminLayout title="Settings">
+  <div class="settings-hub">
+    <header class="workspace-page-header"><p class="workspace-eyebrow">Workspace</p><h1>Settings</h1><p class="workspace-description">Your site, team, and connections.</p></header>
+    <section aria-labelledby="site-settings-title"><h2 id="site-settings-title" class="workspace-section-title">Site configuration</h2><p class="workspace-description">Shared content and preferences used across your website.</p>
+      <div class="settings-directory">{Object.values(globals).map(config => <a href={`${adminPath}/settings/${config.slug}`} class="settings-directory-item"><span class="settings-item-icon" aria-hidden="true">◇</span><span><strong>{config.label || config.slug}</strong><span>{(config.admin as { description?: string } | undefined)?.description || `Manage ${String(config.label || config.slug).toLowerCase()}.`}</span></span><span aria-hidden="true">↗</span></a>)}</div>
+      {Object.keys(globals).length === 0 && <p class="dashboard-empty">No global settings are configured for this project.</p>}
+    </section>
+    <section aria-labelledby="workspace-settings-title"><h2 id="workspace-settings-title" class="workspace-section-title">Workspace management</h2><div class="settings-directory">{tools.map(tool => <a class="settings-directory-item" href={`${adminPath}/${tool.slug}`}><span class="settings-item-icon" aria-hidden="true">↗</span><span><strong>{tool.title}</strong><span>{tool.description}</span></span><span aria-hidden="true">→</span></a>)}</div></section>
+  </div>
+</AdminLayout>

@@ -1,7 +1,7 @@
 import type { AstroIntegration } from "astro";
 import path from "path";
 import fs from "fs";
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { build } from "esbuild";
 import { config as loadDotEnv } from "dotenv";
 import { Worker } from "worker_threads";
@@ -27,7 +27,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
   return {
     name: "@kyro-cms/admin",
     hooks: {
-      "astro:config:setup": async ({ config, updateConfig, injectRoute, logger }) => {
+      "astro:config:setup": async ({ config, updateConfig, injectRoute, logger, command }) => {
         logger.info(`Kyro Admin mounted at ${basePath} (API: ${apiPath})`);
 
         const fallbackConfig = path.resolve(
@@ -55,6 +55,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
         // The JSON path is injected via Vite's define so the admin can read it reliably.
         const configFile = path.join(path.dirname(resolvedConfig), ".kyro-admin-config.json");
         let tmpFile = "";
+        let configDependencies: string[] = [];
         try {
           const envPath = path.join(path.dirname(resolvedConfig), ".env");
           if (fs.existsSync(envPath)) {
@@ -94,6 +95,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
             platform: "node",
             target: "es2022",
             write: false,
+            metafile: true,
             sourcemap: false,
             loader: { '.ts': 'ts', '.tsx': 'tsx' },
             resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json'],
@@ -101,6 +103,7 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
             packages: 'external',
             plugins: [stubPlugin],
           });
+          configDependencies = Object.keys(result.metafile?.inputs || {}).filter(file => !file.includes(":")).map(file => path.resolve(file));
           tmpFile = resolvedConfig.replace(/\.ts$/, ".admin.mjs");
           fs.writeFileSync(tmpFile, result.outputFiles[0].text, "utf8");
 
@@ -203,17 +206,30 @@ export function kyroAdmin(options: KyroAdminOptions = {}): AstroIntegration {
         // Set up Vite aliases, defines, and plugins for runtime use
         updateConfig({
           vite: {
+            // Astro check runs sync; keep its optimizer separate from the live server.
+            ...(command === "sync" && {
+              cacheDir: fileURLToPath(new URL("kyro-check-vite/", config.cacheDir)),
+            }),
             plugins: [
               useSyncExternalStoreShimPlugin(),
               {
                 name: "kyro-plugins-virtual",
+                configureServer(server: any) {
+                  server.watcher.add(configDependencies);
+                  const refreshConfig = (file: string) => {
+                    if (configDependencies.includes(path.resolve(file))) void server.restart();
+                  };
+                  server.watcher.on("change", refreshConfig);
+                  server.httpServer?.once("close", () => server.watcher.off("change", refreshConfig));
+                },
                 resolveId(id: string) {
                   if (id === "virtual:kyro-plugins" || id.endsWith("virtual-kyro-plugins") || id.endsWith("virtual-kyro-plugins.ts") || id.endsWith("virtual-kyro-plugins.js")) {
                     return "\0virtual-kyro-plugins";
                   }
                 },
-                load(id: string) {
+                load(this: any, id: string) {
                   if (id === "\0virtual-kyro-plugins") {
+                    this.addWatchFile(configFile);
                     try {
                       const configData = JSON.parse(fs.readFileSync(configFile, "utf8"));
                       const pluginsWithAdmin = (configData.plugins || []).filter((p: any) => p.adminEntry);
@@ -400,6 +416,7 @@ export default EventEmitter;
                 '@kyro-cms/admin > @heroicons/react/24/outline',
                 '@kyro-cms/admin > @heroicons/react/24/solid',
                 '@kyro-cms/admin > recharts',
+                '@kyro-cms/admin > react-image-crop',
                 '@kyro-cms/admin > recharts > decimal.js-light',
                 '@kyro-cms/admin > react-i18next',
                 '@kyro-cms/admin > react-i18next > html-parse-stringify',
@@ -455,6 +472,9 @@ export default EventEmitter;
           { pattern: "/auth/reset-password", entrypoint: "./pages/auth/reset-password.astro" },
           { pattern: "/auth/verify-email", entrypoint: "./pages/auth/verify-email.astro" },
           { pattern: "/media", entrypoint: "./pages/media.astro" },
+          { pattern: "/studio", entrypoint: "./pages/studio.astro" },
+          { pattern: "/studio/[collection]/[id]", entrypoint: "./pages/studio/[collection]/[id].astro" },
+          { pattern: "/workspaces", entrypoint: "./pages/workspaces.astro" },
           { pattern: "/users", entrypoint: "./pages/users/index.astro" },
           { pattern: "/users/new", entrypoint: "./pages/users/new.astro" },
           { pattern: "/users/[id]", entrypoint: "./pages/users/[id].astro" },

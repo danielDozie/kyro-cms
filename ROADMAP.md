@@ -1,5 +1,10 @@
 # Kyro CMS — Product & Innovation Roadmap
 
+## November 2026 workspace update
+
+Studio page composition is implemented as an opt-in editor over the existing document and draft workflow. The admin includes editor choice, adaptive panels, media framing tools, compact developer diagnostics, and inline audit details. Future Astro source-code synchronization and deployment integrations remain separate roadmap items. See the Studio and Admin Workspace guides for the implemented workflow.
+
+
 Welcome to the future roadmap for Kyro CMS. Having achieved our core foundation — multi-database adapters, multi-protocol APIs (REST, GraphQL, tRPC, WebSockets), high-performance batched relationship engine, zero-latency access control, and native Astro integration — our focus transitions toward full AI adoption & MCP server ecosystem, multi-user real-time collaboration (multiplayer CMS), enterprise project & organization hierarchy, and agentic content workflows.
 
 ---

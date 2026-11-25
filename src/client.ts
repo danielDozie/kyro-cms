@@ -108,3 +108,5 @@ export {
   flattenDocumentTree,
 } from "./utils/hierarchy.js";
 
+
+export { layoutBlockTypes, blockKind, contentRepresentation, layoutSummary, layoutSignature } from "./studio/representation.js";

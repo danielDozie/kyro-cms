@@ -1,3 +1,4 @@
+import { CustomSelect } from "../ui/CustomSelect";
 import "../../lib/i18n";
 import React from "react";
 import {
@@ -82,7 +83,7 @@ export const CodeBlock: React.FC<{ block: { id: string; data?: Record<string, un
               Syntax Highlighting
             </label>
             <div className="relative">
-              <select
+              <CustomSelect
                 value={data.language || "javascript"}
                 onChange={(e) => handleChange("language", e.target.value)}
                 className="w-full pl-4 pr-10 py-2.5 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-xl text-xs font-medium text-[var(--kyro-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--kyro-primary)]/20 focus:border-[var(--kyro-primary)] transition-all appearance-none cursor-pointer"
@@ -97,7 +98,7 @@ export const CodeBlock: React.FC<{ block: { id: string; data?: Record<string, un
                 <option value="sql">SQL</option>
                 <option value="rust">Rust</option>
                 <option value="markdown">Markdown</option>
-              </select>
+              </CustomSelect>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--kyro-text-muted)]">
                 <ChevronRight className="w-4 h-4 rotate-90" />
               </div>

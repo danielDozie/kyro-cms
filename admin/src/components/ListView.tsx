@@ -1,3 +1,4 @@
+import { CustomSelect } from "./ui/CustomSelect";
 import "../lib/i18n";
 import { Search, Filter, Columns3, X, Trash2, Archive, ChevronUp, ChevronDown, ChevronRight, Edit2, List, FolderTree, Folder, FileText, CornerDownRight } from "./ui/icons";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -11,6 +12,7 @@ import { buildDocumentTree, type HierarchyNode } from "@kyro-cms/core/client";
 import { useAuthStore, toast } from "../lib/stores";
 import { useUIStore } from "../lib/stores";
 import { adminPath as ADMIN_BASE } from "../lib/paths";
+import { isStudioCollection } from "../lib/studio";
 import { PageHeader } from "./ui/PageHeader";
 import { Badge } from "./ui/Badge";
 import { Pagination } from "./ui/Pagination";
@@ -72,6 +74,7 @@ function ListViewInner({
   config,
 }: ListViewProps) {
   const collectionSlug = providedSlug || collection?.slug || "";
+  const hasEditorChoice = isStudioCollection(collection);
 
   const { t } = useTranslation();
   const { permissions } = useAuthStore();
@@ -437,15 +440,16 @@ function ListViewInner({
   const hasActiveFilters = search || filters.length > 0 || sort;
 
   return (
-    <div className="space-y-6">
+    <div className="collection-workspace space-y-6">
       <PageHeader
         title={collection.label || collectionSlug}
-        description={collection.admin?.description || `Manage your ${collection.label || collectionSlug}`}
+        description={hasEditorChoice ? "Structured editor" : collection.admin?.description || `Manage your ${collection.label || collectionSlug}`}
         metadata={totalDocs > 0 ? [
           <span key="count" className="text-xs font-bold opacity-60">
             {totalDocs} documents
           </span>
         ] : undefined}
+        actions={hasEditorChoice ? <a href={`${ADMIN_BASE}/${collectionSlug}`} className="kyro-btn kyro-btn-md kyro-btn-secondary">Change editor</a> : undefined}
         action={canCreate ? {
           label: t("actions.create", { defaultValue: "Create {{item}}", item: collection.singularLabel || collection.label || collectionSlug }),
           href: providedOnCreate ? undefined : `${ADMIN_BASE}/${collectionSlug}/new`,
@@ -457,12 +461,13 @@ function ListViewInner({
 
 
       {/* Toolbar */}
-      <div className="surface-tile p-4 flex flex-col lg:flex-row gap-4 items-start lg:items-center rounded-lg">
+      <div className="collection-toolbar flex flex-col lg:flex-row gap-4 items-start lg:items-center">
         {/* Search */}
         <div className="relative flex-1 w-full lg:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--kyro-text-muted)]" />
           <input
             type="text"
+            aria-label="Search this collection"
             placeholder={t("listView.searchPlaceholder", { defaultValue: "Search..." })}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -474,8 +479,9 @@ function ListViewInner({
           {/* Filter Toggle */}
           <button
             type="button"
+            aria-expanded={showFilters}
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${showFilters || filters.length > 0
+            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${showFilters || filters.length > 0
               ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)]"
               : "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
               }`}
@@ -493,14 +499,15 @@ function ListViewInner({
           <div className="relative">
             <button
               type="button"
+              aria-expanded={showColumns}
               onClick={() => setShowColumns(!showColumns)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-all"
             >
               <Columns3 className="w-4 h-4" />
               {t("listView.columns", { defaultValue: "Columns" })}
             </button>
             {showColumns && (
-              <div className="absolute right-0 top-full mt-2 w-56 surface-tile border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-56 surface-tile border border-[var(--kyro-border)] rounded-lg  z-50 overflow-hidden">
                 <div className="p-3 border-b border-[var(--kyro-border)]">
                   <span className="text-xs font-bold  tracking-wider text-[var(--kyro-text-secondary)]">
                     {t("listView.toggleColumns", { defaultValue: "Toggle Columns" })}
@@ -516,6 +523,7 @@ function ListViewInner({
                       >
                         <input
                           type="checkbox"
+                          aria-label={`Show ${field.label || field.name}`}
                           checked={visibleColumns.has(field.name)}
                           onChange={() => toggleColumn(field.name!)}
                           className="w-4 h-4 rounded border-[var(--kyro-border)] text-[var(--kyro-sidebar-active)] focus:ring-[var(--kyro-sidebar-active)]"
@@ -526,6 +534,7 @@ function ListViewInner({
                       </label>
                     );
                   })}
+                  {collection.timestamps && ["createdAt", "updatedAt"].map(name => <label key={name} className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[var(--kyro-surface-accent)] cursor-pointer"><input type="checkbox" checked={visibleColumns.has(name)} onChange={() => toggleColumn(name)} /><span className="text-sm">{name === "createdAt" ? "Created" : "Last modified"}</span></label>)}
                 </div>
               </div>
             )}
@@ -539,7 +548,7 @@ function ListViewInner({
                 onClick={() => setViewMode("table")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   viewMode === "table"
-                    ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] shadow-sm"
+                    ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] "
                     : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
                 }`}
                 title="Table View"
@@ -552,7 +561,7 @@ function ListViewInner({
                 onClick={() => setViewMode("tree")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   viewMode === "tree"
-                    ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] shadow-sm"
+                    ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] "
                     : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
                 }`}
                 title="Hierarchy Tree View"
@@ -568,7 +577,7 @@ function ListViewInner({
             <button
               type="button"
               onClick={clearAll}
-              className="px-4 py-2 rounded-xl font-bold text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+              className="kyro-btn kyro-btn-sm kyro-btn-ghost"
             >
               {t("listView.clearAll", { defaultValue: "Clear All" })}
             </button>
@@ -578,7 +587,7 @@ function ListViewInner({
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="surface-tile p-4 border-l-4 border-[var(--kyro-sidebar-active)] rounded-lg">
+        <div className="collection-filter-panel">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-[var(--kyro-text-primary)]">
               {t("listView.advancedFilters", { defaultValue: "Advanced Filters" })}
@@ -586,7 +595,7 @@ function ListViewInner({
             <button
               type="button"
               onClick={addFilter}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold text-[var(--kyro-sidebar-active)] hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[var(--kyro-sidebar-active)] hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-all"
             >
               <Plus className="w-4 h-4" />
               {t("listView.addFilter", { defaultValue: "Add Filter" })}
@@ -595,7 +604,8 @@ function ListViewInner({
           <div className="space-y-3">
             {filters.map((filter, index) => (
               <div key={index} className="flex flex-wrap gap-2 items-center">
-                <select
+                <CustomSelect
+                  aria-label="Filter field"
                   value={filter.field}
                   onChange={(e) =>
                     updateFilter(index, { field: e.target.value })
@@ -607,8 +617,9 @@ function ListViewInner({
                       {field.label || field.name}
                     </option>
                   ))}
-                </select>
-                <select
+                </CustomSelect>
+                <CustomSelect
+                  aria-label="Filter operator"
                   value={filter.operator}
                   onChange={(e) =>
                     updateFilter(index, {
@@ -624,9 +635,10 @@ function ListViewInner({
                   <option value="gte">Greater Than or Equal</option>
                   <option value="lte">Less Than or Equal</option>
                   <option value="in">In</option>
-                </select>
+                </CustomSelect>
                 <input
                   type="text"
+                  aria-label="Filter value"
                   value={filter.value}
                   onChange={(e) =>
                     updateFilter(index, { value: e.target.value })
@@ -636,6 +648,7 @@ function ListViewInner({
                 />
                 <button
                   type="button"
+                  aria-label="Remove filter"
                   onClick={() => removeFilter(index)}
                   className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
                 >
@@ -654,7 +667,7 @@ function ListViewInner({
 
       {/* Bulk Actions */}
       {selectedIds.size > 0 && (
-        <div className="surface-tile p-4 flex items-center justify-between border-l-4 border-[var(--kyro-sidebar-active)]">
+        <div className="collection-selection-bar">
           <span className="text-sm font-medium text-[var(--kyro-text-primary)]">
             {t("listView.selectedCount", { defaultValue: "{{count}} selected", count: selectedIds.size })}
           </span>
@@ -663,7 +676,7 @@ function ListViewInner({
               <button
                 type="button"
                 onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg font-bold text-sm hover:bg-red-600 transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg font-medium text-sm hover:bg-red-600 transition-all"
               >
                 <Trash2 className="w-4 h-4" />
                 {t("listView.deleteSelected", { defaultValue: "Delete Selected" })}
@@ -672,7 +685,7 @@ function ListViewInner({
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
-              className="px-4 py-2 text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] font-bold text-sm transition-all"
+              className="px-4 py-2 text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] font-medium text-sm transition-all"
             >
               {t("actions.cancel", { defaultValue: "Cancel" })}
             </button>
@@ -681,7 +694,7 @@ function ListViewInner({
       )}
 
       {/* Data Table / Tree Hierarchy */}
-      <div className="surface-tile overflow-hidden rounded-lg">
+      <div className="collection-table overflow-hidden">
         {loading ? (
           <div className="space-y-2 p-4">
             <Shimmer variant="table-row" count={8} />
@@ -703,7 +716,7 @@ function ListViewInner({
               <button
                 type="button"
                 onClick={handleCreate}
-                className="mt-4 kyro-btn kyro-btn-md kyro-btn-primary shadow-md flex items-center gap-2"
+                className="mt-4 kyro-btn kyro-btn-md kyro-btn-primary  flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 {t("actions.create", { defaultValue: "Create {{item}}", item: String(collection.singularLabel || collection.label || collectionSlug) })}
@@ -714,10 +727,11 @@ function ListViewInner({
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[var(--kyro-text-secondary)] font-bold text-[10px] tracking-[0.3em] border-b border-[var(--kyro-border)] whitespace-nowrap">
+                <tr className="text-[var(--kyro-text-secondary)] font-medium text-xs border-b border-[var(--kyro-border)] whitespace-nowrap">
                   <th className="px-4 py-4 w-10">
                     <input
                       type="checkbox"
+                          aria-label="Select document"
                       checked={
                         selectedIds.size === docs.length && docs.length > 0
                       }
@@ -727,7 +741,7 @@ function ListViewInner({
                   </th>
                   <th className="px-4 py-4 min-w-[280px]">Document / Hierarchy</th>
                   <th className="px-4 py-4">Path / Slug</th>
-                  {collection.timestamps ? (
+                  {collection.timestamps && visibleColumns.has("updatedAt") ? (
                     <th className="px-4 py-4">{t("listView.lastModifiedCol", { defaultValue: "Last Modified" })}</th>
                   ) : null}
                   <th className="px-4 py-4 text-right">{t("listView.actionsCol", { defaultValue: "Actions" })}</th>
@@ -748,6 +762,7 @@ function ListViewInner({
                       >
                         <input
                           type="checkbox"
+                          aria-label="Select document"
                           checked={selectedIds.has(node.id)}
                           onChange={() => handleSelectOne(node.id)}
                           className="w-4 h-4 rounded border-[var(--kyro-border-strong)] text-[var(--kyro-sidebar-active)] focus:ring-[var(--kyro-sidebar-active)]"
@@ -801,7 +816,7 @@ function ListViewInner({
                       <td className="px-4 py-3 text-xs font-mono text-[var(--kyro-text-secondary)]">
                         {node.nestedPath || `/${node.slug || node.id}`}
                       </td>
-                      {collection.timestamps ? (
+                      {collection.timestamps && visibleColumns.has("updatedAt") ? (
                         <td className="px-4 py-3 text-sm text-[var(--kyro-text-secondary)]">
                           {doc?.updatedAt
                             ? new Date(doc.updatedAt as string).toLocaleDateString(
@@ -819,7 +834,7 @@ function ListViewInner({
                         className="px-4 py-3 text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity">
                           {canCreate && (
                             <button
                               type="button"
@@ -837,7 +852,7 @@ function ListViewInner({
                           <button
                             type="button"
                             onClick={() => handleEdit(node.id)}
-                            className="flex items-center gap-2 px-2 py-1 hover:bg-[var(--kyro-surface-accent)] rounded-lg text-sm font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-all"
+                            className="flex items-center gap-2 px-2 py-1 hover:bg-[var(--kyro-surface-accent)] rounded-lg text-sm font-medium text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-all"
                             title={canUpdate ? t("actions.edit", { defaultValue: "Edit" }) : t("actions.view", { defaultValue: "View" })}
                           >
                             <Edit2 className="w-4 h-4" />
@@ -867,10 +882,11 @@ function ListViewInner({
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[var(--kyro-text-secondary)] font-bold text-[10px]  tracking-[0.3em] border-b border-[var(--kyro-border)] whitespace-nowrap">
+                <tr className="text-[var(--kyro-text-secondary)] font-medium text-xs border-b border-[var(--kyro-border)] whitespace-nowrap">
                   <th className="px-4 py-4 w-10">
                     <input
                       type="checkbox"
+                          aria-label="Select document"
                       checked={
                         selectedIds.size === docs.length && docs.length > 0
                       }
@@ -893,10 +909,10 @@ function ListViewInner({
                       </div>
                     </th>
                   ))}
-                  {collection.timestamps ? (
+                  {collection.timestamps && visibleColumns.has("createdAt") ? (
                     <th className="px-4 py-4">{t("listView.createdCol", { defaultValue: "Created" })}</th>
                   ) : null}
-                  {collection.timestamps ? (
+                  {collection.timestamps && visibleColumns.has("updatedAt") ? (
                     <th className="px-4 py-4">{t("listView.lastModifiedCol", { defaultValue: "Last Modified" })}</th>
                   ) : null}
                   <th className="px-4 py-4 text-right">{t("listView.actionsCol", { defaultValue: "Actions" })}</th>
@@ -915,6 +931,7 @@ function ListViewInner({
                     >
                       <input
                         type="checkbox"
+                          aria-label="Select document"
                         checked={selectedIds.has(doc.id)}
                         onChange={() => handleSelectOne(doc.id)}
                         className="w-4 h-4 rounded border-[var(--kyro-border-strong)] text-[var(--kyro-sidebar-active)] focus:ring-[var(--kyro-sidebar-active)]"
@@ -932,11 +949,11 @@ function ListViewInner({
                           key={field.name}
                           className={`px-4 py-3 ${fieldContainsTitle(field) ? "font-medium text-[var(--kyro-text-primary)]" : "text-[var(--kyro-text-secondary)]"}`}
                         >
-                          {cellValue}
+                          {fieldContainsTitle(field) ? <a className="collection-document-link" title={typeof cellValue === "string" ? cellValue : undefined} href={`${ADMIN_BASE}/${collectionSlug}/${doc.id}`} onClick={e => { e.stopPropagation(); if (providedOnEdit) { e.preventDefault(); handleEdit(doc.id); } }}>{cellValue}</a> : cellValue}
                         </td>
                       );
                     })}
-                    {collection.timestamps ? (
+                    {collection.timestamps && visibleColumns.has("createdAt") ? (
                       <td className="px-4 py-3 text-sm text-[var(--kyro-text-secondary)]">
                         {doc.createdAt
                           ? new Date(doc.createdAt as string).toLocaleDateString(
@@ -950,7 +967,7 @@ function ListViewInner({
                           : "—"}
                       </td>
                     ) : null}
-                    {collection.timestamps ? (
+                    {collection.timestamps && visibleColumns.has("updatedAt") ? (
                       <td className="px-4 py-3 text-sm text-[var(--kyro-text-secondary)]">
                         {doc.updatedAt
                           ? new Date(doc.updatedAt as string).toLocaleDateString(
@@ -968,11 +985,11 @@ function ListViewInner({
                       className="px-4 py-3 text-right"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity">
                         <button
                           type="button"
                           onClick={() => handleEdit(doc.id)}
-                          className="flex items-center gap-2 px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg text-sm font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-all"
+                          className="flex items-center gap-2 px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg text-sm font-medium text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-all"
                           title={canUpdate ? t("actions.edit", { defaultValue: "Edit" }) : t("actions.view", { defaultValue: "View" })}
                         >
                           <Edit2 className="w-4 h-4" />

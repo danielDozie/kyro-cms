@@ -4,6 +4,6 @@ import i18next from '../lib/i18n';
 import { ApiHealth } from "../components/ApiHealth";
 ---
 
-<AdminLayout title={i18next.t("pages." + "API Health".replace(/ /g, ""), { defaultValue: "API Health" })}> 
-  <ApiHealth client:only="react" />
+<AdminLayout title={i18next.t("pages.SystemHealth", { defaultValue: "System health" })}>
+  <ApiHealth system client:only="react" />
 </AdminLayout>

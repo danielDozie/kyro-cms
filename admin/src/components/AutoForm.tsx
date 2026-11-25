@@ -1,5 +1,5 @@
 import { Check, AlertTriangle } from "./ui/icons";
-import { useState, useRef, useEffect } from "react";
+import { lazy, Suspense, useState, useRef, useEffect } from "react";
 import type {
   CollectionConfig,
   GlobalConfig,
@@ -20,6 +20,7 @@ import { useAutoFormState } from "../hooks/useAutoFormState";
 import { useUIStore, toast } from "../lib/stores";
 
 import { adminPath as ADMIN_BASE } from "../lib/paths";
+import { isStudioCollection, structuredCollectionUrl, studioCollectionUrl } from "../lib/studio";
 
 import { RelationshipBlockField } from "./fields/RelationshipBlockField";
 import { FieldRenderer } from "./FieldRenderer";
@@ -47,10 +48,12 @@ interface AutoFormProps {
   onActionError?: (message: string) => void;
   justSaved?: boolean;
   documentStatus?: string;
+  studio?: boolean;
 }
 
 import { getNestedValue, evaluateDeclarativeCondition } from "../lib/condition-evaluator";
 
+const StudioEditor = lazy(() => import("./studio/StudioEditor"));
 const EMPTY_OBJECT = {};
 
 function AutoFormSkeleton() {
@@ -64,6 +67,7 @@ function AutoFormSkeleton() {
 }
 
 function AutoFormInner({
+  studio = false,
   config: propConfig,
   data: initialData = EMPTY_OBJECT,
   errors = EMPTY_OBJECT as Record<string, string>,
@@ -77,6 +81,30 @@ function AutoFormInner({
   onActionError,
 }: AutoFormProps) {
   const isMounted = useIsMounted();
+  const editorBase = `${ADMIN_BASE}${studio ? "/studio" : ""}`;
+  const collectionConfig = collectionSlug ? collections[collectionSlug] : undefined;
+  const collectionUrl = studio
+    ? studioCollectionUrl(ADMIN_BASE, collectionSlug || "")
+    : collectionConfig && isStudioCollection(collectionConfig)
+      ? structuredCollectionUrl(ADMIN_BASE, collectionConfig.slug)
+      : `${ADMIN_BASE}/${collectionSlug}`;
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (!useAutoFormStore.getState().hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const beforeNavigation = (event: Event) => {
+      if (useAutoFormStore.getState().hasUnsavedChanges && !window.confirm("You have unsaved changes. Leave this document?")) event.preventDefault();
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    document.addEventListener("astro:before-preparation", beforeNavigation);
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      document.removeEventListener("astro:before-preparation", beforeNavigation);
+    };
+  }, []);
+
 
   // Use the serialized config from the Astro page prop (SSR + client match).
   // Only fall back to the live client-side config when no prop was passed.
@@ -161,7 +189,6 @@ function AutoFormInner({
   const [fetchError, setFetchError] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const docCacheRef = useRef(new Map<string, { data: Record<string, unknown>; ts: number }>());
-  const CACHE_TTL = 30_000;
 
   // Client-side fetch with cache, stale-while-revalidate, and abort
   useEffect(() => {
@@ -171,17 +198,9 @@ function AutoFormInner({
     if (initialData && Object.keys(initialData).length > 0) return;
 
     const cached = docCacheRef.current.get(cacheKey);
-    const isFresh = cached && Date.now() - cached.ts < CACHE_TTL;
-    const isStale = cached && !isFresh;
 
-    // Fresh cache — skip fetch, render immediately
-    if (isFresh) {
-      useAutoFormStore.getState().loadDocument(cached.data, cached.data);
-      return;
-    }
-
-    // Stale cache — render cached data (no shimmer), re-fetch in background
-    if (isStale) {
+    // Reuse cached data only while requesting the latest server draft.
+    if (cached) {
       useAutoFormStore.getState().loadDocument(cached.data, cached.data);
     }
 
@@ -195,14 +214,15 @@ function AutoFormInner({
     if (!cached) setClientLoading(true);
 
     const url = globalSlug
-      ? `/api/globals/${globalSlug}`
-      : `/api/${collectionSlug}/${encodeURIComponent(String(documentId))}`;
+      ? `/api/globals/${globalSlug}?draft=true`
+      : `/api/${collectionSlug}/${encodeURIComponent(String(documentId))}?draft=true`;
 
-    apiGet<{ data?: Record<string, unknown> }>(url, { autoToast: false, signal: abort.signal })
+    apiGet<{ data?: Record<string, unknown> }>(url + "&_=" + Date.now(), { autoToast: false, signal: abort.signal, cache: "no-store" })
       .then((result) => {
         const docData = result.data || {};
         docCacheRef.current.set(cacheKey, { data: docData, ts: Date.now() });
-        useAutoFormStore.getState().loadDocument(docData, docData);
+        const state = useAutoFormStore.getState();
+        if (!state.hasUnsavedChanges) state.loadDocument(docData, docData);
         setClientLoading(false);
       })
       .catch((err) => {
@@ -385,11 +405,11 @@ function AutoFormInner({
         onConfirm: async () => {
           await handleSaveDraft();
           await new Promise((r) => setTimeout(r, 1000));
-          navigate(`${ADMIN_BASE}/${collectionSlug}/new`);
+          navigate(`${editorBase}/${collectionSlug}/new`);
         },
       });
     } else {
-      navigate(`${ADMIN_BASE}/${collectionSlug}/new`);
+      navigate(`${editorBase}/${collectionSlug}/new`);
     }
   };
 
@@ -410,9 +430,9 @@ function AutoFormInner({
           const result = await response.json();
           onActionSuccess?.("Document duplicated successfully");
           if (result.data?.id) {
-            navigate(`${ADMIN_BASE}/${collectionSlug}/${result.data.id}`);
+            navigate(`${editorBase}/${collectionSlug}/${result.data.id}`);
           } else {
-            navigate(`${ADMIN_BASE}/${collectionSlug}`);
+            navigate(collectionUrl);
           }
         } else {
           const err = await response.json();
@@ -455,7 +475,7 @@ function AutoFormInner({
         autoSaveSkipRef.current = true;
         try {
           await apiDelete(`/api/${collectionSlug}/${formData.id}`);
-          navigate(`${ADMIN_BASE}/${collectionSlug}`);
+          navigate(collectionUrl);
         } catch (err) {
           toast.error((err as Error).message || "Failed to delete document");
         } finally {
@@ -510,13 +530,13 @@ function AutoFormInner({
         ? await fetchWithAuth(`/api/${collectionSlug}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify((config?.versions as { drafts?: boolean } | undefined)?.drafts ? { ...data, status: "draft" } : data),
         })
-        : await saveDocument(data);
+        : await saveDocument(data, (config?.versions as { drafts?: boolean } | undefined)?.drafts === true);
 
       if (response.ok) {
         const result = await response.json();
-        const savedData = result.data || data;
+        const savedData = { ...(result.data || data), ...((config?.versions as { drafts?: boolean } | undefined)?.drafts ? { _hasUnpublishedChanges: true } : {}) };
         useAutoFormStore.getState().loadDocument(savedData, savedData);
         lastAutoSaveTimeRef.current = Date.now();
         setAutoSaveStatus("success");
@@ -527,15 +547,15 @@ function AutoFormInner({
           setLocalSaveStatus("idle");
         }, 2000);
         onActionSuccess?.(
-          isPost ? "Document created successfully" : "Changes saved",
+          isPost ? "Document created successfully" : "Draft saved",
         );
-        toast.success(isPost ? "Document created successfully" : "Changes saved successfully");
+        toast.success(isPost ? "Document created successfully" : "Draft saved");
         if (globalSlug) {
           window.dispatchEvent(new Event("kyro:soft-reload"));
         }
         if (isPost) {
           setTimeout(() => {
-            navigate(`${ADMIN_BASE}/${collectionSlug}/${result.data.id}`);
+            navigate(`${editorBase}/${collectionSlug}/${result.data.id}`);
           }, 800);
         }
       } else {
@@ -593,7 +613,7 @@ function AutoFormInner({
 
       if (response?.ok) {
         const result = await response.json().catch(() => ({}));
-        const savedData = result.data || data;
+        const savedData = { ...(result.data || data), _hasUnpublishedChanges: false };
         useAutoFormStore.getState().loadDocument(savedData, savedData);
         setLocalSaveStatus("saved");
         onActionSuccess?.("Published successfully");
@@ -605,7 +625,7 @@ function AutoFormInner({
 
         if (isNewDoc && !globalSlug && dataToPublish.id) {
           setTimeout(() => {
-            navigate(`${ADMIN_BASE}/${collectionSlug}/${dataToPublish.id}`);
+            navigate(`${editorBase}/${collectionSlug}/${dataToPublish.id}`);
           }, 800);
         }
       } else {
@@ -615,7 +635,7 @@ function AutoFormInner({
           const error = await response?.json().catch(() => ({}));
           toast.warning("Document saved as draft. Publishing failed: " + (error?.error || "Unknown error"));
           setTimeout(() => {
-            navigate(`${ADMIN_BASE}/${collectionSlug}/${dataToPublish.id}`);
+            navigate(`${editorBase}/${collectionSlug}/${dataToPublish.id}`);
           }, 1200);
           return;
         }
@@ -1010,7 +1030,7 @@ function AutoFormInner({
             setClientLoading(true);
             setRetryTick((n) => n + 1);
           }}
-          className="kyro-btn kyro-btn-primary px-6 py-2 rounded-xl text-sm font-bold"
+          className="kyro-btn kyro-btn-primary px-3 py-2 rounded-md text-sm font-medium"
         >
           Retry
         </button>
@@ -1028,10 +1048,21 @@ function AutoFormInner({
     );
   }
 
+  if (studio && collectionSlug) {
+    return <Suspense fallback={<AutoFormSkeleton />}><ErrorBoundary><StudioEditor
+      config={config as CollectionConfig} collectionSlug={collectionSlug} documentId={documentId} disabled={disabled}
+      saveStatus={localSaveStatus} documentStatus={documentStatus || "draft"} hasUnpublishedChanges={hasUnpublishedChanges}
+      onSaveDraft={handleSaveDraft} onPublish={handlePublish}
+      contentView={<div className="studio-structured-content">{config.fields.map((field: Field) => renderField(field))}</div>}
+      historyView={<AutoFormVersionView handleRestoreVersion={handleRestoreVersion} handleCompareVersions={handleCompareVersions} toggleCompareSelection={toggleCompareSelection} />}
+    /></ErrorBoundary></Suspense>;
+  }
+
   return (
     <div className="flex flex-col h-full">
       {layout !== "single" && (
         <AutoFormHeader
+          studio={studio}
           config={config}
           collectionSlug={collectionSlug}
           globalSlug={globalSlug}
@@ -1051,7 +1082,7 @@ function AutoFormInner({
       )}
       {layout === "single" && (
         <>
-          <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)]">
+          <div className="flex items-center justify-between py-2">
             <div className="flex items-center gap-3 text-[11px] font-medium">
               {autoSaveStatus === "saving" && (
                 <span className="flex items-center gap-1.5 text-[var(--kyro-text-muted)]">
@@ -1131,6 +1162,7 @@ function AutoFormInner({
         <ErrorBoundary>
           {view === "edit" && (
             <AutoFormEditView
+              studio={studio}
               config={config}
               layout={layout}
               collectionSlug={collectionSlug}

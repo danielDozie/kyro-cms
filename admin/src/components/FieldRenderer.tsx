@@ -1,3 +1,5 @@
+import { isStudioEnabled } from "../lib/config";
+import { LayoutControls, supportsLayoutControls } from "./fields/LayoutControls";
 import React, { lazy, Suspense } from "react";
 import type {
   Field,
@@ -265,6 +267,8 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     case "blocks":
       return (
         <BlocksField
+          collectionSlug={collectionSlug}
+          globalSlug={globalSlug}
           field={field as BlocksFieldType}
           value={value as unknown[]}
           onChange={onChangeKeystroke}
@@ -273,6 +277,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
         />
       );
     case "group":
+      if (field.name === "layout" && supportsLayoutControls((field as any).fields)) {
+        if (!isStudioEnabled) return null;
+        return <LayoutControls fields={(field as any).fields} value={(value || {}) as Record<string, any>} disabled={disabled} onChange={onChange} />;
+      }
       return (
         <GroupLayout
           field={field}
@@ -358,7 +366,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           <summary className="cursor-pointer font-medium text-sm text-[var(--kyro-text-primary)] select-none">
             {field.label || field.name || "Details"}
           </summary>
-          <div className="pt-3 space-y-4">
+          <div className="field-stack pt-3">
             {((field as any).fields || []).map((f: Field) => (
               <FieldRenderer
                 key={f.name}

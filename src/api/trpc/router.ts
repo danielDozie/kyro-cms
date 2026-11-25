@@ -1,3 +1,5 @@
+import { contentRepresentation, representationMode } from "../../studio/representation.js";
+import { enforceStudioValidation } from "../../studio/validation.js";
 import type { KyroContext } from "./context.js";
 import {
   createFindProcedure,
@@ -59,7 +61,7 @@ export function createDynamicRouter(ctx: KyroContext) {
     const slug = global.slug;
 
     router[`_globals_${slug}`] = {
-      get: async (input?: { depth?: number; draft?: boolean; select?: string[] }) => {
+      get: async (input?: { depth?: number; draft?: boolean; select?: string[]; representation?: "full" | "content" }) => {
         await checkGlobalAccessTRPC(global, "read", ctx);
 
         const doc = await ctx.db.findOne({
@@ -70,13 +72,13 @@ export function createDynamicRouter(ctx: KyroContext) {
           draft: input?.draft,
           select: input?.select,
         });
-        return doc;
+        return representationMode(ctx.settings?.studio?.enabled === true, input?.representation) === "content" ? contentRepresentation(doc) : doc;
       },
       update: async (input: { data: Record<string, any> }) => {
         await checkGlobalAccessTRPC(global, "update", ctx);
 
         const schema = ctx.registry.getZodSchema(slug);
-        const validated = schema.parse(input.data);
+        let validated = schema.parse(input.data);
 
         const existing = await ctx.db.findOne({
           collection: `_globals_${slug}`,
@@ -85,6 +87,7 @@ export function createDynamicRouter(ctx: KyroContext) {
           draft: true,
         });
 
+        validated = enforceStudioValidation(validated, global as any, { studioEnabled: ctx.settings?.studio?.enabled === true, originalDoc: existing || undefined });
         let doc;
         if (existing) {
           doc = await ctx.db.update({
@@ -101,7 +104,7 @@ export function createDynamicRouter(ctx: KyroContext) {
           });
         }
 
-        return doc;
+        return ctx.settings?.studio?.enabled === true ? doc : contentRepresentation(doc);
       },
     };
   }
@@ -123,6 +126,7 @@ export interface KyroRouter {
       depth?: number;
       select?: string[];
       draft?: boolean;
+      representation?: "full" | "content";
     }) => Promise<{
       docs: any[];
       totalDocs: number;
@@ -140,6 +144,7 @@ export interface KyroRouter {
       depth?: number;
       select?: string[];
       draft?: boolean;
+      representation?: "full" | "content";
     }) => Promise<any>;
     create: (input: {
       data: Record<string, any>;

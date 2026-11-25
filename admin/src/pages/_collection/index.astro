@@ -1,9 +1,10 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import i18next from '../../lib/i18n';
-import { collections } from "../../lib/config";
+import { ArrowRight, FileText, PanelsTopLeft } from "lucide-react";
+import { collections, isStudioEnabled, resolveProjectCollectionAccess } from "../../lib/config";
 import { ListView } from "../../components/ListView";
 import { adminPath, apiPath } from "../../lib/paths";
+import { isStudioCollection, structuredCollectionUrl, studioCollectionUrl } from "../../lib/studio";
 
 const { collection } = Astro.params;
 
@@ -18,6 +19,14 @@ if (!isSettings) {
   if (collection === "users") return Astro.redirect(`${adminPath}/users`);
   if (collection === "audit_logs") return Astro.redirect(`${adminPath}/audit`);
 
+  const projectAccess = resolveProjectCollectionAccess(collection, Astro.request);
+  if (!projectAccess.allowed && projectAccess.redirectTo) {
+    return Astro.redirect(projectAccess.redirectTo);
+  }
+  if (projectAccess.setCookieHeader) {
+    Astro.response.headers.set("Set-Cookie", projectAccess.setCookieHeader);
+  }
+
   config = collections[collection];
 }
 
@@ -30,10 +39,31 @@ if (collection) {
 
 import SettingsIndexAstro from "../settings/index.astro";
 
+const chooseEditor = isStudioEnabled && !isSettings && !!collection && isStudioCollection(config)
+  && Astro.url.searchParams.get("view") !== "structured";
+const editorChoices = chooseEditor && collection ? [
+  {
+    title: "Studio",
+    description: "Build layouts on a live canvas and preview how they look on desktop, tablet, and mobile.",
+    action: "Open Studio",
+    href: studioCollectionUrl(adminPath, collection),
+    tone: "Layout",
+    Icon: PanelsTopLeft,
+  },
+  {
+    title: "Structured editor",
+    description: "Work directly with page fields, content blocks, and metadata in a form.",
+    action: "Open structured editor",
+    href: structuredCollectionUrl(adminPath, collection),
+    tone: "Content",
+    Icon: FileText,
+  },
+] : [];
+
 let docs: any[] = [];
 let totalDocs = 0;
 
-if (!isSettings) {
+if (!isSettings && !chooseEditor) {
   const page = parseInt(Astro.url.searchParams.get("page") || "1");
   const limit = parseInt(Astro.url.searchParams.get("limit") || "10");
 
@@ -61,14 +91,86 @@ if (!isSettings) {
   <SettingsIndexAstro />
 ) : (
   <AdminLayout title={config.label || collection || "Collection"}>
-    <div class="flex-1 overflow-y-auto">
-      <ListView
-        client:only="react"
-        collection={config}
-        collectionSlug={collection}
-        initialDocs={docs}
-        initialTotal={totalDocs}
-      />
-    </div>
+    {chooseEditor ? (
+      <section class="collection-editor-choice" aria-labelledby="collection-editor-title">
+        <header class="workspace-page-header">
+          <p class="workspace-eyebrow">{config.label || collection}</p>
+          <h1 id="collection-editor-title">Choose how to edit</h1>
+          <p class="workspace-description">Both editors work with the same pages and drafts. Choose the workspace that fits what you want to do.</p>
+        </header>
+        <ul class="collection-editor-options">
+          {editorChoices.map(({ title, description, action, href, tone, Icon }, index) => (
+            <li>
+              <button
+                type="button"
+                class="collection-editor-option"
+                data-insert-group={tone}
+                data-editor-name={tone === "Layout" ? "Studio" : "structured editor"}
+                data-editor-href={href}
+                aria-haspopup="dialog"
+                aria-labelledby={`editor-action-${index}`}
+                aria-describedby={`editor-description-${index}`}
+              >
+                <span class="collection-editor-art" aria-hidden="true">
+                  <span class="collection-editor-glyph"><Icon size={16} /></span>
+                  {tone === "Layout" ? (
+                    <svg viewBox="0 0 360 144" fill="none" focusable="false">
+                      <path class="editor-illustration-grid" d="M0 36h360M0 72h360M0 108h360M36 0v144M72 0v144M108 0v144M144 0v144M180 0v144M216 0v144M252 0v144M288 0v144M324 0v144" />
+                      <rect class="editor-illustration-window" x="100" y="24" width="176" height="106" rx="8" />
+                      <path class="editor-illustration-line" d="M100 44h176M132 44v86M109 53h14m-14 8h10m-10 8h14" />
+                      <circle class="editor-illustration-dot" cx="111" cy="34" r="2" /><circle class="editor-illustration-dot" cx="119" cy="34" r="2" /><circle class="editor-illustration-dot" cx="127" cy="34" r="2" />
+                      <rect class="editor-illustration-selection" x="144" y="54" width="119" height="35" rx="4" />
+                      <path class="editor-illustration-line" d="M156 66h43m-43 9h27" />
+                      <rect class="editor-illustration-tile" x="144" y="98" width="57" height="20" rx="3" />
+                      <rect class="editor-illustration-tile" x="207" y="98" width="56" height="20" rx="3" />
+                      <path class="editor-illustration-cursor editor-illustration-motion" d="m234 77 6 20 4-8 9-3z" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 360 144" fill="none" focusable="false">
+                      <path class="editor-illustration-grid" d="M0 36h360M0 72h360M0 108h360M36 0v144M72 0v144M108 0v144M144 0v144M180 0v144M216 0v144M252 0v144M288 0v144M324 0v144" />
+                      <rect class="editor-illustration-window" x="107" y="19" width="148" height="112" rx="8" />
+                      <path class="editor-illustration-line" d="M122 33h43m-43 12h24m-24 42h34m-34 25h20" />
+                      <rect class="editor-illustration-tile" x="121" y="51" width="120" height="16" rx="3" />
+                      <path class="editor-illustration-line" d="M128 59h47m-46 34h95m-95 6h79m-79 20h61" />
+                      <g class="editor-illustration-motion">
+                        <rect class="editor-illustration-selection" x="214" y="72" width="59" height="24" rx="5" />
+                        <path class="editor-illustration-line" d="M225 84h20m8 0 3 3 5-6" />
+                      </g>
+                    </svg>
+                  )}
+                </span>
+                <span class="collection-editor-body">
+                  <span class="collection-editor-name">{title}</span>
+                  <span id={`editor-description-${index}`} class="collection-editor-description">{description}</span>
+                  <span id={`editor-action-${index}`} class="collection-editor-action">{action}<ArrowRight size={16} aria-hidden="true" /></span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ) : (
+      <div class="flex-1 overflow-y-auto">
+        <ListView
+          client:only="react"
+          collection={config}
+          collectionSlug={collection}
+          initialDocs={docs}
+          initialTotal={totalDocs}
+        />
+      </div>
+    )}
   </AdminLayout>
 )}
+
+<script>
+  import { confirmEditorSwitch } from "../../lib/editor-switch";
+
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest<HTMLButtonElement>("button[data-editor-href]");
+    if (button?.dataset.editorHref && button.dataset.editorName) {
+      confirmEditorSwitch(button.dataset.editorHref, button.dataset.editorName);
+    }
+  });
+</script>

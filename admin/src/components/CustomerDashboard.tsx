@@ -106,7 +106,7 @@ export function CustomerDashboard({ collections, userName, userAvatar }: Custome
             )}
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-[var(--kyro-text-primary)]">Welcome back, {firstName}</h1>
+            <h1 className="text-xl md:text-2xl font-medium tracking-tight text-[var(--kyro-text-primary)]">Welcome back, {firstName}</h1>
             <p className="text-xs text-[var(--kyro-text-secondary)] mt-0.5">Account overview and recent activity</p>
           </div>
         </div>

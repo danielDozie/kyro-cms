@@ -218,7 +218,7 @@ export const JSONField: React.FC<JSONFieldProps> = ({
             type="button"
             onClick={() => setViewMode("fields")}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === "fields"
-                ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm"
+                ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] "
                 : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
               }`}
           >
@@ -229,7 +229,7 @@ export const JSONField: React.FC<JSONFieldProps> = ({
             type="button"
             onClick={() => setViewMode("tree")}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === "tree"
-                ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm"
+                ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] "
                 : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
               }`}
           >
@@ -240,7 +240,7 @@ export const JSONField: React.FC<JSONFieldProps> = ({
             type="button"
             onClick={() => setViewMode("json")}
             className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === "json"
-                ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm"
+                ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] "
                 : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
               }`}
           >
@@ -252,7 +252,7 @@ export const JSONField: React.FC<JSONFieldProps> = ({
 
       {/* Main Content Area */}
       <div
-        className={`border border-[var(--kyro-border)] rounded-lg overflow-hidden bg-[var(--kyro-surface)] shadow-xs ${disabled ? "opacity-60 cursor-not-allowed" : ""
+        className={`border border-[var(--kyro-border)] rounded-lg overflow-hidden bg-[var(--kyro-surface)]  ${disabled ? "opacity-60 cursor-not-allowed" : ""
           } ${error || parseError ? "border-[var(--kyro-error)]" : ""}`}
       >
         {/* Top Action Toolbar (when in JSON or Tree mode, or global copy) */}

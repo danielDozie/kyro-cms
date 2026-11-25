@@ -48,13 +48,13 @@ export function processFieldValue(row: any, field: Field): any {
           if (typeof item === "object" && item !== null) {
             return item;
           }
-          return { id: item };
+          return item;
         });
       } else {
-        value = typeof parsed === "object" ? parsed : { id: parsed };
+        value = parsed;
       }
     } catch {
-      value = typeof value === "string" ? { id: value } : value;
+      // Keep raw string or value intact
     }
   }
 

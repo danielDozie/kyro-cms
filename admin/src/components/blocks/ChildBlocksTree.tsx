@@ -1,3 +1,5 @@
+import { isStudioEnabled } from "../../lib/config";
+import { layoutBlockTypes } from "@kyro-cms/core/client";
 import React, { useState } from "react";
 import { Plus, X, ChevronRight, ChevronDown } from "../ui/icons";
 import {
@@ -7,7 +9,7 @@ import {
   getBlockDisplayLabel,
 } from "../fields/extensions/blockComponents";
 import { createNewBlock } from "../fields/extensions/blocksStore";
-import { BlockDrawer } from "../ui/BlockDrawer";
+import { BlockDrawer, BlockPickerIcon } from "../ui/BlockDrawer";
 import { BlockEditModal } from "./BlockEditModal";
 import { useStore } from "zustand";
 import { BlocksContext } from "../fields/extensions/blocksStore";
@@ -138,6 +140,7 @@ export const ChildBlocksTree: React.FC<ChildBlocksTreeProps> = ({
           )}
 
           <div className="flex-1 min-w-0">
+            {!isStudioEnabled && layoutBlockTypes.has(child.type) && <span className="block-readonly-label">Read-only</span>}
             <div className="text-xs font-medium text-[var(--kyro-text-secondary)] truncate">
               {getBlockDisplayLabel(child)}
               {typeof child.data?.text === 'string' ? ` - ${child.data.text.slice(0, 30)}` : ""}
@@ -240,7 +243,7 @@ export const ChildBlocksTree: React.FC<ChildBlocksTreeProps> = ({
             onSelect={handleAddChild}
           >
             {dynamicCategories.map((category) => (
-              <div key={category.title} className="mb-4">
+              <div key={category.title} className="mb-4" data-insert-group={category.title}>
                 <h3 className="text-xs font-semibold text-[var(--kyro-text-muted)]  tracking-wide mb-2">
                   {category.title}
                 </h3>
@@ -255,9 +258,7 @@ export const ChildBlocksTree: React.FC<ChildBlocksTreeProps> = ({
                       }}
                       className="flex flex-col items-center text-center gap-1 p-2 rounded-md border border-[var(--kyro-border)] hover:border-[var(--kyro-primary)]/60 hover:bg-[var(--kyro-surface-accent)]/30 transition-all cursor-pointer group"
                     >
-                      <div className="w-6 h-6 flex items-center justify-center rounded group-hover:bg-[var(--kyro-primary)]/10 group-hover:text-[var(--kyro-primary)] transition-all">
-                        {blockIcons[block.slug as keyof typeof blockIcons]}
-                      </div>
+                      <BlockPickerIcon>{blockIcons[block.slug]}</BlockPickerIcon>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium  tracking-tight text-[var(--kyro-text-primary)]">
                           {block.label}
@@ -418,6 +419,7 @@ const NestedChildBlocks: React.FC<NestedChildBlocksProps> = ({
           )}
 
           <div className="flex-1 min-w-0">
+            {!isStudioEnabled && layoutBlockTypes.has(child.type) && <span className="block-readonly-label">Read-only</span>}
             <div className="text-xs font-medium text-[var(--kyro-text-secondary)] truncate">
               {getBlockDisplayLabel(child)}
               {typeof child.data?.text === 'string' ? ` - ${child.data.text.slice(0, 30)}` : ""}
@@ -520,7 +522,7 @@ const NestedChildBlocks: React.FC<NestedChildBlocksProps> = ({
             onSelect={handleAddChild}
           >
             {dynamicCategories.map((category) => (
-              <div key={category.title} className="mb-4">
+              <div key={category.title} className="mb-4" data-insert-group={category.title}>
                 <h3 className="text-xs font-semibold text-[var(--kyro-text-muted)]  tracking-wide mb-2">
                   {category.title}
                 </h3>
@@ -535,9 +537,7 @@ const NestedChildBlocks: React.FC<NestedChildBlocksProps> = ({
                       }}
                       className="flex flex-col items-center text-center gap-1 p-2 rounded-md border border-[var(--kyro-border)] hover:border-[var(--kyro-primary)]/60 hover:bg-[var(--kyro-surface-accent)]/30 transition-all cursor-pointer group"
                     >
-                      <div className="w-6 h-6 flex items-center justify-center rounded group-hover:bg-[var(--kyro-primary)]/10 group-hover:text-[var(--kyro-primary)] transition-all">
-                        {blockIcons[block.slug as keyof typeof blockIcons]}
-                      </div>
+                      <BlockPickerIcon>{blockIcons[block.slug]}</BlockPickerIcon>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium  tracking-tight text-[var(--kyro-text-primary)]">
                           {block.label}

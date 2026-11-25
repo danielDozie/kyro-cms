@@ -206,6 +206,11 @@ admin?: {
 }
 
 declare module '@kyro-cms/core/client' {
+  export const layoutBlockTypes: Set<string>;
+  export function layoutSummary(value: unknown): { layouts: number; settings: number; blockTypes: Record<string, number>; settingNames: string[] };
+  export function layoutSignature(value: unknown): string;
+  export function contentRepresentation<T>(value: T): T;
+  export function blockKind(value: unknown): string | undefined;
   export * from '@kyro-cms/core';
 }
 

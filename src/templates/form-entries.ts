@@ -13,7 +13,10 @@ export const formEntriesCollection: CollectionConfig = {
     icon: "Inbox",
   },
   access: {
-    create: () => true,
+    read: ({ user }: any) => !!user,
+    create: ({ user }: any) => !!user,
+    update: ({ user }: any) => !!user && (user.role === "admin" || user.role === "super_admin"),
+    delete: ({ user }: any) => !!user && (user.role === "admin" || user.role === "super_admin"),
   },
   fields: [
     {

@@ -108,7 +108,7 @@ export function ActionBar({
         {tabs.map((v) => (
           <button key={v} type="button" onClick={() => setView(v)}
             className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${view === v
-                ? "bg-[var(--kyro-surface)] shadow-sm border border-[var(--kyro-border)] text-[var(--kyro-text-primary)]"
+                ? "bg-[var(--kyro-surface)]  border border-[var(--kyro-border)] text-[var(--kyro-text-primary)]"
                 : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
               }`}
           >
@@ -163,7 +163,7 @@ export function ActionBar({
             <IconMoreVertical className="w-3.5 h-3.5" />
           </button>
           {moreOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 py-1 max-h-[70vh] overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-48 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg  z-50 py-1 max-h-[70vh] overflow-y-auto">
               {saveText && (
                 <div className="px-3 py-2 text-[10px] text-[var(--kyro-text-muted)] border-b border-[var(--kyro-border)] flex items-center gap-1.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />

@@ -1,0 +1,42 @@
+.version-history { border: 1px solid var(--kyro-border); background: var(--kyro-surface); color: var(--kyro-text-primary); font-size: 12px; font-weight: 400; }
+.version-history-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--kyro-border); }
+.version-history-header h2 { margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; }
+.version-history-header p { margin: 3px 0 0; font-size: 11px; color: var(--kyro-text-secondary); }
+.version-history-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.version-history .version-history-action { min-height: 26px; height: 26px; padding: 3px 9px; font-size: 11px; line-height: 18px; font-weight: 400; border-radius: 0; box-shadow: none; }
+.version-history-columns, .version-history-row { display: grid; grid-template-columns: 52px minmax(0,1fr) 90px 150px 64px; align-items: center; gap: 12px; padding: 8px 16px; }
+.version-history-columns { color: var(--kyro-text-muted); font-size: 10px; background: var(--kyro-bg-secondary); }
+.version-history-list { margin: 0; padding: 0; list-style: none; }
+.version-history-row { min-height: 50px; border-top: 1px solid var(--kyro-border); }
+.version-history-row:hover { background: var(--kyro-bg-secondary); }
+.version-history-row[data-selected] { background: var(--kyro-sidebar-active); }
+.version-history-number { color: var(--kyro-text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.version-history-number input { width: 14px; height: 14px; accent-color: var(--kyro-sidebar-text-active); vertical-align: middle; }
+.version-history-change { min-width: 0; }
+.version-history-change > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; line-height: 18px; }
+.version-history-change small { display: block; color: var(--kyro-text-muted); font-size: 10px; line-height: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.version-history-status { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 400; text-transform: capitalize; color: var(--kyro-text-secondary); }
+.version-history-status i { width: 5px; height: 5px; border-radius: 50%; background: var(--kyro-warning); }
+.version-history-status[data-status="published"] i { background: var(--kyro-success); }
+.version-history-status[data-status="archived"] i { background: var(--kyro-text-muted); }
+.version-history-row time { color: var(--kyro-text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.version-history-restore { text-align: end; }
+.version-history-empty { margin: 0; padding: 28px 16px; color: var(--kyro-text-secondary); font-size: 12px; }
+.version-history-diffs { border-bottom: 1px solid var(--kyro-border); max-height: 360px; overflow-y: auto; }
+.version-history-diff-heading { display: flex; justify-content: space-between; gap: 12px; padding: 10px 16px; color: var(--kyro-text-secondary); font-size: 11px; }
+.version-history-clear { color: var(--kyro-sidebar-text-active); font: inherit; }
+.version-history-diffs details { border-top: 1px solid var(--kyro-border); padding: 8px 16px; }
+.version-history-diffs summary { cursor: pointer; font-size: 11px; }
+.version-history-values { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding-top: 10px; }
+.version-history-values span { font-size: 10px; color: var(--kyro-text-muted); }
+.version-history-values pre { margin: 4px 0; padding: 8px; background: var(--kyro-bg-secondary); font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 200px; overflow-y: auto; }
+@media(max-width: 700px) {
+  .version-history-columns { display: none; }
+  .version-history-row { grid-template-columns: 28px minmax(0,1fr) auto; gap: 4px 8px; padding: 10px 12px; }
+  .version-history-number { grid-row: 1 / 3; }
+  .version-history-change { grid-column: 2; }
+  .version-history-status { grid-column: 3; grid-row: 2; justify-self: end; }
+  .version-history-row time { grid-column: 2; grid-row: 2; font-size: 10px; }
+  .version-history-restore { grid-column: 3; grid-row: 1; }
+  .version-history-values { grid-template-columns: minmax(0,1fr); }
+}

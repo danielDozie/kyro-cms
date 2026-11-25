@@ -5,3 +5,4 @@ export { mountUserRoutes } from "./user-routes.js";
 export { mountSystemRoutes } from "./system-routes.js";
 export { mountAuthEndpoints } from "./auth-endpoints.js";
 export { mountDesignTokensRoutes } from "./design-tokens-routes.js";
+export { mountStudioRoutes } from "./studio-routes.js";

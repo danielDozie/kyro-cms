@@ -83,7 +83,7 @@ export function BrandingHub() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-4">
         <div>
-          <h1 className="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
+          <h1 className="text-2xl font-medium tracking-tight text-[var(--kyro-text-primary)]">
             Branding <span className="text-[var(--kyro-primary)]">Hub</span>
           </h1>
           <p className="text-[var(--kyro-text-secondary)] mt-1 font-medium opacity-60">
@@ -96,9 +96,9 @@ export function BrandingHub() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all active:scale-95 ${saved
+            className={`flex items-center gap-2 px-3 py-2 rounded-md font-medium text-sm  transition-all active:scale-95 ${saved
               ? "bg-green-500 text-white"
-              : "kyro-btn-primary hover:shadow-[var(--kyro-primary)]"
+              : "kyro-btn-primary "
               }`}
           >
             {saving ? (
@@ -187,7 +187,7 @@ export function BrandingHub() {
                     type="button"
                     key={c.name}
                     onClick={() => setPrimaryColor(c.hex)}
-                    className={`aspect-square rounded-xl transition-all border-4 ${primaryColor === c.hex ? "border-white ring-2 ring-[var(--kyro-primary)]" : "border-transparent opacity-60 hover:opacity-100"}`}
+                    className={`aspect-square rounded-md transition-all border-4 ${primaryColor === c.hex ? "border-white ring-2 ring-[var(--kyro-primary)]" : "border-transparent opacity-60 hover:opacity-100"}`}
                     style={{ backgroundColor: c.hex }}
                     title={c.name}
                   />

@@ -1,12 +1,12 @@
 ---
 import AdminLayout from "../layouts/AdminLayout.astro";
 import i18next from "../lib/i18n";
-import { collections } from "../lib/config";
-const authCollections = ["users", "audit_logs"];
+import { collections, getActiveProjectFromRequest, authCollectionSlugs } from "../lib/config";
 import { adminPath, apiPath } from "../lib/paths";
 import { DashboardMetrics, RevenueChart } from "../components/DashboardMetrics";
 import { CustomerDashboard } from "../components/CustomerDashboard";
 import { AuthorDashboard } from "../components/AuthorDashboard";
+import { RecentContent } from "../components/RecentContent";
 import { DashboardQuickSections } from "../components/DashboardQuickSections";
 
 import { getAuthServer } from "../lib/auth-server";
@@ -18,14 +18,37 @@ const isServerAdmin = serverRole === "admin" || isServerSuperAdmin;
 const isServerCustomer = serverRole === "customer";
 const isServerAuthor = serverRole === "author";
 
+const activeProject = getActiveProjectFromRequest(Astro.request);
+const projectCollectionSlugs =
+  activeProject?.collections && activeProject.collections.length > 0
+    ? new Set(activeProject.collections)
+    : null;
+
+// Filter collections based on the active project/organization
+const scopedCollections = projectCollectionSlugs
+  ? Object.fromEntries(
+      Object.entries(collections).filter(
+        ([slug]) => projectCollectionSlugs.has(slug) || authCollectionSlugs.includes(slug),
+      ),
+    )
+  : collections;
+
 // Serialize collections for client-side role-based dashboards
 const serializedCollections = JSON.parse(JSON.stringify(
   Object.fromEntries(
-    Object.entries(collections).map(([slug, config]) => [slug, { label: (config as any).label || slug, slug }])
+    Object.entries(scopedCollections).map(([slug, config]) => [slug, { label: (config as any).label || slug, slug }])
   )
 ));
 
-const permittedQuickLinks = Object.entries(collections)
+// Editorial collections only; keep customer, order, and account data out of this table.
+const recentCollections = Object.fromEntries(
+  Object.entries(scopedCollections)
+    .filter(([slug, config]) => !["users", "audit_logs", "media", "orders", "customers", "form-entries"].includes(slug) &&
+      ((config as any).admin?.useAsTitle === "title" || ((config as any).fields || []).some((field: any) => field.name === "title")))
+    .map(([slug, config]) => [slug, { label: (config as any).label || slug, titleField: (config as any).admin?.useAsTitle || "title" }])
+);
+
+const permittedQuickLinks = Object.entries(scopedCollections)
   .filter(([slug]) => !["users", "audit_logs", "media"].includes(slug))
   .filter(([slug]) => {
     if (!serverUser) return true;
@@ -33,15 +56,13 @@ const permittedQuickLinks = Object.entries(collections)
   })
   .slice(0, 6);
 
-const canSeeAudit = !serverUser || isServerAdmin || serverPermissions?.collections?.audit_logs?.read === true;
-const canSeeContentHealth = !serverUser || isServerAdmin || serverPermissions?.collections?.users?.read === true;
-const canSeeRoles = !serverUser || isServerSuperAdmin;
-const canSeeHealth = !serverUser || isServerAdmin;
-const hasAnySecurityAction = canSeeAudit || canSeeContentHealth || canSeeRoles || canSeeHealth;
+const isEcommerce = !!(scopedCollections["orders"] || scopedCollections["products"]);
+const allowedCollectionsParam = activeProject?.collections?.length ? activeProject.collections.join(",") : "";
+
 ---
 
 <AdminLayout title={i18next.t("pages." + "Dashboard".replace(/ /g, ""), { defaultValue: "Dashboard" })}>
-  <div class="flex-1 overflow-y-auto space-y-8">
+  <div class="dashboard-page flex-1 space-y-8">
     {/* ── Role-Based Dashboard Fork ── */}
     {isServerCustomer ? (
       <CustomerDashboard
@@ -61,45 +82,26 @@ const hasAnySecurityAction = canSeeAudit || canSeeContentHealth || canSeeRoles |
         />
     ) : (
     <>
-    <!-- Header -->
-    <div class="surface-tile p-6 flex items-center justify-between rounded-lg gap-8 rounded-lg">
-      <div class="relative flex-1 max-w-2xl">
-        <div class="absolute inset-y-0 left-6 flex items-center pointer-events-none text-[var(--kyro-text-muted)]">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2.5"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-        </div>
-        <input
-          type="text"
-          id="header-search-input"
-          placeholder="Search anything..."
-          class="w-full bg-[var(--kyro-surface-accent)] border border-transparent rounded-lg py-3 pl-16 pr-8 text-md font-medium focus:outline-none focus:bg-[var(--kyro-surface)] focus:border-[var(--kyro-border)] transition-all shadow-inner text-[var(--kyro-text-primary)] placeholder-[var(--kyro-text-muted)]"
-          autocomplete="off"
-        />
-        <div
-          id="header-search-results"
-          class="hidden absolute top-full left-0 right-0 mt-2 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg shadow-xl max-h-80 overflow-y-auto z-50 p-1.5"
-        >
-        </div>
+    <header class="dashboard-toolbar">
+      <p class="dashboard-breadcrumb">Workspace <span>/</span> Overview</p>
+      <div class="dashboard-search">
+        <label class="sr-only" for="header-search-input">Search collections and content</label>
+        <input type="search" id="header-search-input" placeholder="Search anything…" autocomplete="off" />
+        <button type="button" id="cmd-k-btn" aria-label="Open command palette">⌘ K</button>
+        <div id="header-search-results" class="hidden absolute top-full left-0 right-0 mt-2 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg  max-h-80 overflow-y-auto z-50 p-1.5"></div>
       </div>
-      <div class="flex p-1 bg-[var(--kyro-surface-accent)] rounded-lg">
-        <button
-          id="cmd-k-btn"
-          class="flex items-center gap-3 px-8 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-lg font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
-        >
-          <span>⌘ K</span>
-        </button>
-      </div>
+    </header>
+    <div class="dashboard-heading">
+      <div><h1>Overview</h1><p>Your site, at a glance.</p></div>
+      {permittedQuickLinks.length > 0 && <a class="dashboard-create" href={`${adminPath}/${permittedQuickLinks[0][0]}/new`}><span aria-hidden="true">+</span> Create content</a>}
     </div>
 
     <!-- CMS Metrics -->
-    <DashboardMetrics client:idle isEcommerce={!!collections["orders"] || !!collections["products"]} />
-    {(!!collections["orders"] || !!collections["products"]) && <RevenueChart client:only="react" />}
+    <DashboardMetrics client:idle isEcommerce={isEcommerce} allowedCollections={activeProject?.collections && activeProject.collections.length > 0 ? activeProject.collections : undefined} />
+    {isEcommerce && <RevenueChart client:only="react" />}
 
+
+    <RecentContent client:only="react" collections={recentCollections} serverUserRole={serverRole} serverPermissions={serverPermissions} />
 
     <!-- Role-filtered Quick Actions & Explore Content -->
     <DashboardQuickSections
@@ -109,167 +111,11 @@ const hasAnySecurityAction = canSeeAudit || canSeeContentHealth || canSeeRoles |
       serverPermissions={serverPermissions}
     />
 
-        <!-- Security Quick Actions -->
-    {hasAnySecurityAction && (
-      <div id="dashboard-security-section" class="surface-tile overflow-hidden rounded-lg rounded-lg mt-6">
-        <div class="p-6 border-b border-[var(--kyro-border)]">
-          <h2 class="text-xl font-bold tracking-tight text-[var(--kyro-text-primary)]">Security & Monitoring</h2>
-          <p class="text-xs text-[var(--kyro-text-secondary)] font-medium mt-1">
-            Rate limiting, audit logs, and account lockout settings
-          </p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-6">
-          {canSeeAudit && (
-            <a
-              href={`${adminPath}/audit`}
-              data-sec-card="audit"
-              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-            >
-              <div class="w-10 h-10 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center mb-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  ></path>
-                </svg>
-              </div>
-              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Audit Logs</h4>
-              <p class="text-xs text-[var(--kyro-text-secondary)]">View last 30 days</p>
-            </a>
-          )}
-
-          {canSeeContentHealth && (
-            <a
-              href={`${adminPath}/content-health`}
-              data-sec-card="content-health"
-              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-            >
-              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  ></path>
-                </svg>
-              </div>
-              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Content Health</h4>
-              <p class="text-xs text-[var(--kyro-text-secondary)]">SEO & Quality audit</p>
-            </a>
-          )}
-
-          {canSeeRoles && (
-            <a
-              href={`${adminPath}/roles`}
-              data-sec-card="roles"
-              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-            >
-              <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  ></path>
-                </svg>
-              </div>
-              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">Permissions</h4>
-              <p class="text-xs text-[var(--kyro-text-secondary)]">RBAC settings</p>
-            </a>
-          )}
-
-          {canSeeHealth && (
-            <a
-              href={`${adminPath}/health`}
-              data-sec-card="health"
-              class="p-5 bg-[var(--kyro-surface-accent)] rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-all border border-transparent hover:border-[var(--kyro-border)] group"
-            >
-              <div class="w-10 h-10 rounded-lg bg-green-500/10 text-green-500 flex items-center justify-center mb-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-              <h4 class="font-medium text-[var(--kyro-text-primary)] mb-1">API Health</h4>
-              <p class="text-xs text-[var(--kyro-text-secondary)]">System status</p>
-            </a>
-          )}
-        </div>
-      </div>
-    )}
-
-    <script is:inline define:vars={{ apiPath, adminPath }}>
+    <script is:inline define:vars={{ apiPath, adminPath, allowedCollectionsParam }}>
       (function () {
-        function pruneDashboardRBAC(user, permissions) {
-          if (!user) {
-            user = window.__kyroAuth?.user;
-            permissions = window.__kyroAuth?.permissions;
-          }
-          if (!user) return;
-
-          var userRole = user.role || "";
-          var isSuperAdmin = userRole === "super_admin";
-          var isAdmin = userRole === "admin" || isSuperAdmin;
-
-          // Prune Quick Links
-          var quickLinkItems = document.querySelectorAll("[data-quick-link]");
-          var visibleQuickLinks = 0;
-          quickLinkItems.forEach(function (el) {
-            var slug = el.getAttribute("data-quick-link");
-            var hasCreate = isAdmin || (permissions && permissions.collections && permissions.collections[slug] && permissions.collections[slug].create === true);
-            if (!hasCreate) {
-              el.style.display = "none";
-            } else {
-              el.style.display = "";
-              visibleQuickLinks++;
-            }
-          });
-          var quickLinksSection = document.getElementById("dashboard-quick-links-section");
-          if (quickLinksSection) {
-            quickLinksSection.style.display = visibleQuickLinks > 0 ? "" : "none";
-          }
-
-          // Prune Security Cards
-          var secCards = document.querySelectorAll("[data-sec-card]");
-          var visibleSecCards = 0;
-          secCards.forEach(function (el) {
-            var card = el.getAttribute("data-sec-card");
-            var hasAccess = false;
-            if (card === "audit") {
-              hasAccess = isAdmin || (permissions && permissions.collections && permissions.collections.audit_logs && permissions.collections.audit_logs.read === true);
-            } else if (card === "content-health" || card === "locked-users") {
-              hasAccess = isAdmin || isEditor || isAuthor || (permissions && permissions.collections && permissions.collections.users && permissions.collections.users.read === true);
-            } else if (card === "roles") {
-              hasAccess = isSuperAdmin;
-            } else if (card === "health") {
-              hasAccess = isAdmin;
-            }
-            if (!hasAccess) {
-              el.style.display = "none";
-            } else {
-              el.style.display = "";
-              visibleSecCards++;
-            }
-          });
-          var secSection = document.getElementById("dashboard-security-section");
-          if (secSection) {
-            secSection.style.display = visibleSecCards > 0 ? "" : "none";
-          }
-        }
-
-        window.addEventListener("kyro:auth-ready", function (e) {
-          var detail = e.detail || {};
-          pruneDashboardRBAC(detail.user, detail.permissions);
+        document.getElementById("cmd-k-btn")?.addEventListener("click", function () {
+          window.openCommandPalette?.();
         });
-
-        pruneDashboardRBAC();
         var searchInput = document.getElementById("header-search-input");
         var searchResults = document.getElementById("header-search-results");
         if (!searchInput || !searchResults) return;
@@ -344,7 +190,8 @@ const hasAnySecurityAction = canSeeAudit || canSeeContentHealth || canSeeRoles |
           if (debounceTimer) clearTimeout(debounceTimer);
           debounceTimer = setTimeout(function () {
             var xhr = new XMLHttpRequest();
-            xhr.open("GET", apiPath + "/search?q=" + encodeURIComponent(query) + "&limit=10", true);
+            var collectionsQuery = allowedCollectionsParam ? "&collections=" + encodeURIComponent(allowedCollectionsParam) : "";
+            xhr.open("GET", apiPath + "/search?q=" + encodeURIComponent(query) + "&limit=10" + collectionsQuery, true);
             xhr.onload = function () {
               if (xhr.status === 200) {
                 try {

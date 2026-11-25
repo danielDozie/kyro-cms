@@ -32,80 +32,21 @@ const description =
 ---
 
 <AdminLayout title={`Settings - ${title}`}>
-  <div class="flex-1 overflow-y-auto">
-    { !hasVersioning && (
-      <div class="surface-tile p-8 pb-0 mb-6 rounded-lg">
-        <div class="flex items-center justify-between mb-8">
-          <div>
-            <h1
-              class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]"
-            >
-              Settings
-            </h1>
-            <p
-              class="text-sm text-[var(--kyro-text-secondary)] mt-1 font-regular"
-            >
-              Global system configurations
-            </p>
-          </div>
-          <button
-            type="button"
-            id="settings-save-btn"
-            class="px-6 py-2.5 text-sm bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-full transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-black/10"
-          >
-            Save Changes
-          </button>
-        </div>
-
-        <!-- Tabs Bar -->
-        <div
-          class="flex items-center gap-8 border-b border-[var(--kyro-border)] overflow-x-auto no-scrollbar"
-        >
-          {
-            allGlobals.map((g) => (
-              <a
-                href={`${adminPath}/settings/${g.slug}`}
-                data-global-tab={g.slug}
-                class={`pb-4 text-sm font-bold transition-all border-b-2 whitespace-nowrap ${
-                  activeSlug === g.slug
-                    ? "text-[var(--kyro-text-primary)] border-[var(--kyro-text-primary)]"
-                    : "text-[var(--kyro-text-secondary)] border-transparent hover:text-[var(--kyro-text-primary)]"
-                }`}
-              >
-                {g.label || g.slug}
-              </a>
-            ))
-          }
-        </div>
-      </div>
-    )}
-
-    <!-- Form Section -->
-    <div class={hasVersioning ? "" : "surface-tile p-10 pt-4 mb-6 rounded-lg"}>
-      { !hasVersioning && (
-        <div class="mb-8">
-          <h2
-            class="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tight"
-          >
-            {config.label || slug}
-          </h2>
-          <p class="text-sm text-[var(--kyro-text-secondary)] mt-1">
-            {description}
-          </p>
-        </div>
-      )}
+  <div class="settings-workspace">
+    <aside class="settings-rail">
+      <a class="settings-back" href={`${adminPath}/settings`}>← All settings</a>
+      <nav aria-label="Site settings">{allGlobals.map(g => <a href={`${adminPath}/settings/${g.slug}`} data-global-tab={g.slug} aria-current={activeSlug === g.slug ? "page" : undefined}>{g.label || g.slug}</a>)}</nav>
+    </aside>
+    <section class="settings-panel">
+      {!hasVersioning && <header class="workspace-page-header">
+        <div class="workspace-title-row"><div><h1>{title}</h1><p class="workspace-description">{description}</p></div><button type="button" id="settings-save-btn" class="kyro-btn kyro-btn-md kyro-btn-primary">Save changes</button></div>
+      </header>}
       <form id="settings-form">
         <input type="hidden" id="form-slug" value={slug} />
-        <SettingsPage
-          client:only="react"
-          config={config}
-          globalSlug={slug}
-          layout={hasVersioning ? "split" : "single"}
-          data={data}
-        />
+        <SettingsPage client:only="react" config={config} globalSlug={slug} layout={hasVersioning ? "split" : "single"} data={data} />
         <input type="hidden" id="form-data" name="form-data" value="{}" />
       </form>
-    </div>
+    </section>
   </div>
 
   <script>

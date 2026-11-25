@@ -87,7 +87,7 @@ export function CollaboratorAvatars({
                 />
               ) : (
                 <div
-                  className="w-5 h-5 rounded-full ring-2 ring-[var(--kyro-surface)] flex items-center justify-center text-[8px] font-bold text-white shadow-sm"
+                  className="w-5 h-5 rounded-full ring-2 ring-[var(--kyro-surface)] flex items-center justify-center text-[8px] font-bold text-white "
                   style={{ backgroundColor: c.color || COLLABORATOR_COLORS[0] }}
                 >
                   {initials}

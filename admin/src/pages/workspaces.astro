@@ -1,0 +1,23 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import { organizations, projects, collections } from "../lib/config";
+import { adminPath } from "../lib/paths";
+import { requireAuthServer } from "../lib/auth-server";
+const redirect = await requireAuthServer(Astro.request, { requireAdmin: true });
+if (redirect) return redirect;
+const groups = [...organizations.map(org => ({ name: org.name, projects: (org.projects || []).map(project => ({ ...project, orgName: org.name })) })), ...(projects.length ? [{ name: "Independent projects", projects: projects.map(project => ({ ...project, orgName: "" })) }] : [])];
+---
+<AdminLayout title="Organizations & projects">
+  <div class="workspace-directory">
+    <header class="workspace-page-header"><p class="workspace-eyebrow">Workspace</p><h1>Organizations &amp; projects</h1><p class="workspace-description">Find a project and see which collections belong to it.</p></header>
+    <div class="workspace-structure" aria-label="Workspace organization"><span><strong>Organization</strong><small>A group of related projects</small></span><span aria-hidden="true">→</span><span><strong>Project</strong><small>A website or application</small></span><span aria-hidden="true">→</span><span><strong>Collections</strong><small>The content you manage</small></span></div>
+    <p class="workspace-scope-note">Choosing a project filters the collections in your sidebar. It does not change your role or create a separate copy of your content.</p>
+    <p id="workspace-active-summary" class="workspace-active-summary" aria-live="polite"></p>
+    {groups.map(group => <section class="organization-section"><header><div><h2>{group.name}</h2><p>{group.projects.length} {group.projects.length === 1 ? "project" : "projects"}</p></div></header>
+      <div class="project-directory-grid">{group.projects.map(project => <article class="project-directory-card"><div class="project-card-title"><h3>{project.name}</h3><span class="project-environment">{project.environment || "production"}</span></div><p class="project-collection-caption">{project.collections?.length ? `${project.collections.length} collections` : "All collections allowed by your role"}</p><div class="project-collection-list">{(project.collections?.length ? project.collections : Object.keys(collections)).map(slug => collections[slug] ? <a href={`${adminPath}/${slug}`}>{collections[slug].label || slug}</a> : <span>{slug}</span>)}</div><footer><button type="button" class="kyro-btn kyro-btn-md kyro-btn-secondary" data-project-choice data-proj-key={project.id || `${project.orgName}/${project.name}`} data-proj-id={project.id || ""} data-proj-name={project.name} data-proj-org={project.orgName} data-proj-env={project.environment || "Production"} data-proj-collections={JSON.stringify(project.collections || [])}><span data-project-action-label>Use project</span></button></footer></article>)}</div>
+      {group.projects.length === 0 && <p class="dashboard-empty">No projects are configured for this organization.</p>}
+    </section>)}
+    {groups.length === 0 && <p class="dashboard-empty">This workspace has no configured organizations or projects.</p>}
+    <section class="workspace-folder-explainer"><h2>What about folders?</h2><p><strong>Collection groups</strong> keep related collections together in the sidebar. Expand a group to see its collections.</p><p><strong>Media folders</strong> organize uploaded files inside the media library. They do not change your project or publishing state.</p><a href={`${adminPath}/media`} class="kyro-btn kyro-btn-sm kyro-btn-secondary">Open media library ↗</a></section>
+  </div>
+</AdminLayout>

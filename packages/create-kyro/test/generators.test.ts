@@ -81,6 +81,22 @@ describe("generators", () => {
       expect(kitchen).toContain('templateCollections["kitchen-sink"]');
     });
 
+    it("keys generated collection maps by slug and respects explicit draft opt-outs", () => {
+      const generated = generateKyroConfig(baseAnswers);
+      const expression = generated.match(/collections: (Object\.fromEntries\([\s\S]*?\n  \)),/i)?.[1];
+      expect(expression).toBeDefined();
+      const collections = [
+        { slug: "pages", fields: [] },
+        { slug: "posts", fields: [], versions: { drafts: false, maxPerDoc: 3 } },
+        { slug: "orders", fields: [] },
+      ];
+      const result = new Function("templateCollections", `return ${expression}`)({ blog: collections });
+      expect(Object.keys(result)).toEqual(["pages", "posts", "orders"]);
+      expect(result.pages.versions.drafts).toBe(true);
+      expect(result.posts.versions).toEqual({ drafts: false, maxPerDoc: 3 });
+      expect(result.orders.versions).toBeUndefined();
+    });
+
     it("imports settings globals per template", () => {
       const minimal = generateKyroConfig({ ...baseAnswers, template: "minimal" });
       expect(minimal).toContain("coreGlobalSettings");

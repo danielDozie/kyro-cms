@@ -51,6 +51,7 @@ export async function fetchWithAuth(
       if (!(options.body instanceof FormData)) {
         retryHeaders["Content-Type"] = "application/json";
       }
+      retryHeaders["x-kyro-admin"] = "true";
       Object.assign(retryHeaders, options.headers as Record<string, string> | undefined);
       const retryResponse = await fetch(resolveApi(url), {
         ...options,

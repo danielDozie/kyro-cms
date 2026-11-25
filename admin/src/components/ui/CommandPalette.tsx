@@ -1,3 +1,4 @@
+import "./overlays.css";
 import "../../lib/i18n";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { resolveUrl, apiGet } from "../../lib/api";
@@ -54,6 +55,8 @@ export function CommandPalette({
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const keyboardNavigation = useRef(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -104,6 +107,16 @@ export function CommandPalette({
     };
   }, [query, performSearch]);
 
+  useEffect(() => {
+    setSelectedIndex(0);
+    if (resultsRef.current) resultsRef.current.scrollTop = 0;
+  }, [query]);
+  useEffect(() => {
+    if (keyboardNavigation.current) {
+      resultsRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+      keyboardNavigation.current = false;
+    }
+  }, [selectedIndex]);
   if (!isOpen) return null;
 
   const collectionItems = Object.entries(collections)
@@ -252,11 +265,13 @@ export function CommandPalette({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((i) => (i + 1) % filteredItems.length);
+      keyboardNavigation.current = true;
+      setSelectedIndex((i) => filteredItems.length ? (i + 1) % filteredItems.length : 0);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      keyboardNavigation.current = true;
       setSelectedIndex(
-        (i) => (i - 1 + filteredItems.length) % filteredItems.length,
+        (i) => filteredItems.length ? (i - 1 + filteredItems.length) % filteredItems.length : 0,
       );
     } else if (e.key === "Enter") {
       const item = filteredItems[selectedIndex];
@@ -304,13 +319,13 @@ export function CommandPalette({
     <div className="fixed inset-0 z-[1000] flex items-start justify-center pt-[15vh] px-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 kyro-dialog-backdrop"
         onClick={onClose}
       />
 
       {/* Palette Body */}
-      <div className="relative w-full max-w-2xl bg-[var(--kyro-surface)] rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-300 ring-1 ring-white/10 border border-white/5">
-        <div className="flex items-center px-6 py-5 border-b border-[var(--kyro-border)]">
+      <div className="relative command-palette-panel" role="dialog" aria-modal="true" aria-label="Search anything">
+        <div className="command-palette-search">
           {loading ? (
             <Loader2 className="w-5 h-5 text-[var(--kyro-text-secondary)] opacity-50 mr-4 animate-spin" />
           ) : (
@@ -318,23 +333,29 @@ export function CommandPalette({
           )}
           <input
             ref={inputRef}
+            role="combobox"
+            aria-label="Search anything"
+            aria-autocomplete="list"
+            aria-expanded="true"
+            aria-controls="command-search-results"
+            aria-activedescendant={filteredItems[selectedIndex] ? `command-result-${selectedIndex}` : undefined}
             placeholder={t("fields.searchAnything", { defaultValue: "Search anything..." })}
-            className="flex-1 bg-transparent border-none focus:outline-none text-lg font-medium text-[var(--kyro-text-primary)] placeholder:text-[var(--kyro-text-muted)]"
+            className="flex-1 bg-transparent border-none focus:outline-none text-base font-normal text-[var(--kyro-text-primary)] placeholder:text-[var(--kyro-text-muted)]"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <div className="flex items-center gap-2 px-2 py-1 bg-[var(--kyro-bg-secondary)] rounded-lg border border-[var(--kyro-border)]">
-            <span className="text-[10px] font-bold opacity-40  tracking-widest">
+          <div className="flex items-center gap-2 px-2 py-1 bg-[var(--kyro-bg-secondary)] rounded-md border border-[var(--kyro-border)]">
+            <span className="text-[10px] font-semibold text-[var(--kyro-text-muted)]">
               ESC
             </span>
           </div>
         </div>
 
-        <div className="max-h-[400px] overflow-y-auto py-3">
+        <div id="command-search-results" ref={resultsRef} className="command-palette-results" role="listbox" aria-label="Search results">
           {filteredItems.length > 0 ? (
-            <div className="space-y-1 px-3">
-              <p className="px-3 text-[10px] font-bold tracking-[0.2em] opacity-40 mb-3">
+            <div className="space-y-1 px-2">
+              <p className="px-3 text-xs font-medium text-[var(--kyro-text-muted)] mb-2">
                 {getSectionLabel()}
               </p>
               {filteredItems.map((item, index) => (
@@ -342,38 +363,29 @@ export function CommandPalette({
                   key={item.id}
                   onClick={() => handleSelect(item)}
                   onMouseEnter={() => setSelectedIndex(index)}
-                  className={`flex items-center justify-between px-3.5 py-3 rounded-lg cursor-pointer transition-colors ${index === selectedIndex
-                    ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] shadow-md shadow-[var(--kyro-primary)]/20"
-                    : "hover:bg-[var(--kyro-bg-secondary)] text-[var(--kyro-text-secondary)]"
-                    }`}
+                  id={`command-result-${index}`}
+                  role="option"
+                  aria-selected={index === selectedIndex}
+                  className="command-palette-result"
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`p-1.5 rounded-lg ${index === selectedIndex ? "bg-white/20" : "bg-[var(--kyro-bg-secondary)] border border-[var(--kyro-border)]"}`}
+                      className={`p-1.5 rounded-md ${index === selectedIndex ? "bg-white/20" : "bg-[var(--kyro-bg-secondary)] border border-[var(--kyro-border)]"}`}
                     >
                       <DynamicIcon name={item.icon} className="w-4 h-4" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm">{(item as any).label}</span>
+                      <span className="font-normal text-sm">{(item as any).label}</span>
                       {item.type === "document" && (item as any).label2 && (
                         <span
-                          className={`text-[10px] font-bold  tracking-widest ${index === selectedIndex ? "text-[var(--kyro-sidebar-text-active)]/60" : "opacity-40"}`}
+                          className={`text-[11px] font-normal ${index === selectedIndex ? "text-[var(--kyro-text-secondary)]" : "text-[var(--kyro-text-muted)]"}`}
                         >
                           {(item as any).label2}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] font-bold  tracking-widest opacity-40 ${index === selectedIndex ? "text-[var(--kyro-sidebar-text-active)] p-1" : ""}`}
-                    >
-                      {item.type}
-                    </span>
-                    {index === selectedIndex && (
-                      <ArrowRight className="w-4 h-4 mr-2" />
-                    )}
-                  </div>
+
                 </div>
               ))}
             </div>
@@ -388,16 +400,16 @@ export function CommandPalette({
           )}
         </div>
 
-        <div className="px-8 py-4 bg-[var(--kyro-bg-secondary)] border-t border-[var(--kyro-border)] flex items-center justify-between text-[10px] font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-60">
+        <div className="command-palette-footer">
           <div className="flex gap-6">
-            <span className="flex items-center gap-2 underline underline-offset-4 decoration-2 decoration-[var(--kyro-primary)]">
+            <span className="flex items-center gap-2">
               ↑↓ Navigate
             </span>
-            <span className="flex items-center gap-2 underline underline-offset-4 decoration-2 decoration-[var(--kyro-primary)]">
+            <span className="flex items-center gap-2">
               ⏎ Select
             </span>
           </div>
-          <div>Kyro Universal Search</div>
+          <span>Esc to close</span>
         </div>
       </div>
     </div>

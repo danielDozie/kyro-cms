@@ -51,7 +51,7 @@ function SortableListItem({ id, text, onRemove }: SortableListItemProps) {
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-2 group/item p-1.5 hover:bg-[var(--kyro-surface-accent)]/50 rounded-md transition-colors ${
-        isDragging ? "bg-[var(--kyro-surface-accent)] shadow-sm" : ""
+        isDragging ? "bg-[var(--kyro-surface-accent)] " : ""
       }`}
     >
       <div

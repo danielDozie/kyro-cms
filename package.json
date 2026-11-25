@@ -1,6 +1,6 @@
 {
   "name": "@kyro-cms/core",
-  "version": "0.13.10",
+  "version": "0.15.0",
   "description": "Astro-native headless CMS with multi-database adapters, multi-protocol APIs, and multi-vendor support",
   "engines": {
     "node": ">=22"
@@ -122,7 +122,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsup",
     "build:pages": "pnpm build && pnpm --filter @kyro-cms/admin build:pages",
     "dev": "NODE_NO_WARNINGS=1 tsup --watch",
     "test": "vitest",

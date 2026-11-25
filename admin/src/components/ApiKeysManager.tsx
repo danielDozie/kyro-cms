@@ -1,3 +1,4 @@
+import "../styles/developer-workspace.css";
 import "../lib/i18n";
 import React, { useState } from "react";
 import { useResourceManager } from "../lib/useResourceManager";
@@ -56,24 +57,23 @@ export function ApiKeysManager() {
   };
 
   return (
-    <div className="w-full space-y-6 pb-24">
+    <div className="developer-workspace w-full space-y-4">
       {/* Header */}
       <PageHeader
         title={t("tooltips.apiKeys", { defaultValue: "API Keys" })}
-        description="Programmatic tokens for secure system integration and REST API access."
         actions={
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setShowHelpModal(true)}
-              className="px-4 py-2.5 bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] rounded-xl font-bold text-xs border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] hover:text-[var(--kyro-text-primary)] transition-colors"
+              className="px-4 py-2 bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] rounded-md font-medium text-xs border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)] hover:text-[var(--kyro-text-primary)] transition-colors"
             >
               <span>Integration Guide</span>
             </button>
             <button
               type="button"
               onClick={() => { setNewKeyName(""); setCreateError(""); setIsCreateModalOpen(true); }}
-              className="px-5 py-2.5 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-xs hover:opacity-95 transition-opacity"
+              className="px-5 py-2 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-md font-medium text-xs hover:opacity-95 transition-opacity"
             >
               <span>Create Access Key</span>
             </button>
@@ -81,16 +81,17 @@ export function ApiKeysManager() {
         }
       />
 
-      {/* Code Snippets */}
+      <details className="developer-reference">
+      <summary>Request examples</summary>
       <div className="grid md:grid-cols-2 gap-4">
         {/* cURL Example */}
-        <div className="surface-tile p-5 rounded-2xl border border-[var(--kyro-border)]">
+        <div className="surface-tile p-4 rounded-lg border border-[var(--kyro-border)]">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-blue-500/10 rounded-lg">
                 <Terminal className="w-4 h-4 text-blue-500" />
               </div>
-              <span className="text-xs font-bold text-[var(--kyro-text-primary)] tracking-wide">Shell / cURL</span>
+              <span className="text-xs font-medium text-[var(--kyro-text-primary)] tracking-wide">Shell / cURL</span>
             </div>
             <span className="text-[10px] font-mono text-[var(--kyro-text-secondary)] opacity-60">HTTP REST</span>
           </div>
@@ -98,7 +99,7 @@ export function ApiKeysManager() {
           <pre className="p-4 bg-[var(--kyro-bg)] rounded-lg border border-[var(--kyro-border)] font-mono text-xs leading-relaxed overflow-x-auto text-[var(--kyro-text-primary)]">
             <div className="flex gap-3">
               <span className="opacity-30 select-none">1</span>
-              <span><span className="text-blue-500 font-bold">curl</span> -X GET \</span>
+              <span><span className="text-blue-500 font-medium">curl</span> -X GET \</span>
             </div>
             <div className="flex gap-3">
               <span className="opacity-30 select-none">2</span>
@@ -112,13 +113,13 @@ export function ApiKeysManager() {
         </div>
 
         {/* JS SDK Example */}
-        <div className="surface-tile p-5 rounded-2xl border border-[var(--kyro-border)]">
+        <div className="surface-tile p-4 rounded-lg border border-[var(--kyro-border)]">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-indigo-500/10 rounded-lg">
                 <Code className="w-4 h-4 text-indigo-500" />
               </div>
-              <span className="text-xs font-bold text-[var(--kyro-text-primary)] tracking-wide">JavaScript / Node</span>
+              <span className="text-xs font-medium text-[var(--kyro-text-primary)] tracking-wide">JavaScript / Node</span>
             </div>
             <span className="text-[10px] font-mono text-[var(--kyro-text-secondary)] opacity-60">Fetch API</span>
           </div>
@@ -140,65 +141,36 @@ export function ApiKeysManager() {
         </div>
       </div>
 
+      </details>
       {/* Main Container */}
       <div className="space-y-6">
         {/* Security Notice */}
-        <div className="surface-tile p-5 rounded-2xl border border-[var(--kyro-border)]">
-          <div className="flex items-start gap-4">
-            <div className="p-2.5 bg-amber-500/10 rounded-xl shrink-0">
-              <Shield className="w-5 h-5 text-amber-500" />
-            </div>
-            <div className="space-y-3">
-              <div>
-                <h4 className="text-sm font-bold text-[var(--kyro-text-primary)]">Security Best Practices</h4>
-                <p className="text-xs text-[var(--kyro-text-secondary)] mt-0.5">
-                  API keys grant direct access to your CMS data. Treat them securely as secrets.
-                </p>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-2 text-xs text-[var(--kyro-text-secondary)] font-medium">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  <span>Never commit keys to version control repositories</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  <span>Rotate key credentials every 90 days</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  <span>Use environment variables for production keys</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  <span>Revoke unused or compromised keys immediately</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
+        <details className="developer-reference">
+          <summary>Key security guidance</summary>
+          <p className="text-xs text-[var(--kyro-text-secondary)] mt-3">Keep keys in environment variables, grant only required access, and revoke unused or compromised keys.</p>
+        </details>
         {/* Newly Created Key Alert */}
         {newKey && (
-          <div className="p-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-[var(--kyro-text-primary)]">
+          <div className="p-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-[var(--kyro-text-primary)]">
             <div className="flex items-start gap-4">
-              <div className="p-2.5 bg-emerald-500/20 rounded-xl shrink-0">
+              <div className="p-2.5 bg-emerald-500/20 rounded-md shrink-0">
                 <CheckCircle2 className="w-6 h-6 text-emerald-500" />
               </div>
               <div className="flex-1 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-emerald-500">API Key Generated Successfully</h3>
-                  <Badge variant="success" className="text-[10px] font-bold">New</Badge>
+                  <h3 className="text-sm font-medium text-emerald-500">API Key Generated Successfully</h3>
+                  <Badge variant="success" className="text-[10px] font-medium">New</Badge>
                 </div>
                 <p className="text-xs text-[var(--kyro-text-secondary)]">
                   Copy this key now. It will <strong className="text-emerald-500">never be displayed again</strong>.
                 </p>
-                <div className="p-3 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-xl font-mono text-xs break-all select-all font-semibold">
+                <div className="p-3 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md font-mono text-xs break-all select-all font-medium">
                   {newKey.key}
                 </div>
                 <button
                   type="button"
                   onClick={() => setNewKey(null)}
-                  className="text-xs font-bold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors"
+                  className="text-xs font-medium text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors"
                 >
                   Dismiss
                 </button>
@@ -208,11 +180,11 @@ export function ApiKeysManager() {
         )}
 
         {/* Active Keys Section */}
-        <div className="surface-tile p-6 rounded-2xl border border-[var(--kyro-border)] space-y-4">
+        <div className="surface-tile p-6 rounded-lg border border-[var(--kyro-border)] space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-[var(--kyro-text-primary)] tracking-wide">Active Credentials</h2>
-              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)]">
+              <h2 className="text-sm font-medium text-[var(--kyro-text-primary)]">Active Credentials</h2>
+              <span className="px-2 py-0.5 text-[10px] font-medium rounded-md bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)]">
                 {keys.length}
               </span>
             </div>
@@ -223,10 +195,10 @@ export function ApiKeysManager() {
               Loading API keys...
             </div>
           ) : keys.length === 0 ? (
-            <div className="p-10 text-center rounded-xl border border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/30 space-y-3">
+            <div className="p-10 text-center rounded-md border border-dashed border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)]/30 space-y-3">
               <Key className="w-8 h-8 text-[var(--kyro-text-secondary)] mx-auto opacity-50" />
               <div>
-                <h3 className="text-sm font-bold text-[var(--kyro-text-primary)]">No API Keys Generated</h3>
+                <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">No API Keys Generated</h3>
                 <p className="text-xs text-[var(--kyro-text-secondary)] mt-1 max-w-sm mx-auto">
                   Create an API key to allow external services to connect to your Kyro CMS instance safely.
                 </p>
@@ -234,7 +206,7 @@ export function ApiKeysManager() {
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] text-xs font-bold rounded-xl hover:opacity-95 transition-opacity"
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] text-xs font-medium rounded-md hover:opacity-95 transition-opacity"
               >
                 <Plus className="w-4 h-4" />
                 <span>Create API Key</span>
@@ -250,7 +222,7 @@ export function ApiKeysManager() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[var(--kyro-text-primary)] truncate">{key.name}</span>
+                        <span className="text-xs font-medium text-[var(--kyro-text-primary)] truncate">{key.name}</span>
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-[var(--kyro-text-secondary)] mt-0.5">
@@ -288,32 +260,32 @@ export function ApiKeysManager() {
         <ModalContent>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold mb-1 text-[var(--kyro-text-secondary)]">Key Name</label>
+              <label className="block text-xs font-medium mb-1 text-[var(--kyro-text-secondary)]">Key Name</label>
               <input
                 type="text"
                 value={newKeyName}
                 onChange={(e) => { setNewKeyName(e.target.value); setCreateError(""); }}
                 placeholder="e.g., Production Frontend, Mobile App, Webhook Client"
-                className="w-full px-3.5 py-2.5 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl text-xs font-medium text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-sidebar-active)]"
+                className="w-full px-3.5 py-2.5 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-md text-xs font-medium text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-sidebar-active)]"
                 onKeyDown={(e) => e.key === "Enter" && handleCreateKey()}
               />
               {createError && <p className="mt-1 text-xs text-red-500">{createError}</p>}
             </div>
 
             <div>
-              <label className="block text-xs font-bold mb-1 text-[var(--kyro-text-secondary)]">Expires (Optional)</label>
+              <label className="block text-xs font-medium mb-1 text-[var(--kyro-text-secondary)]">Expires (Optional)</label>
               <input
                 type="datetime-local"
                 value={newKeyExpires}
                 onChange={(e) => setNewKeyExpires(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl text-xs font-medium text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-sidebar-active)]"
+                className="w-full px-3.5 py-2.5 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-md text-xs font-medium text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-sidebar-active)]"
               />
               <p className="mt-1 text-[10px] text-[var(--kyro-text-secondary)]">
                 Leave blank for non-expiring credentials.
               </p>
             </div>
 
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-[11px] text-amber-600 font-medium">
                 The generated key string will only be displayed once upon creation.
@@ -325,14 +297,14 @@ export function ApiKeysManager() {
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(false)}
-            className="px-4 py-2 rounded-xl text-xs font-bold border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+            className="px-4 py-2 rounded-md text-xs font-medium border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleCreateKey}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] hover:opacity-90 transition-colors"
+            className="px-4 py-2 rounded-md text-xs font-medium bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] hover:opacity-90 transition-colors"
           >
             Generate Key
           </button>
@@ -344,16 +316,16 @@ export function ApiKeysManager() {
         <ModalContent>
           <div className="space-y-4">
             <div>
-              <h4 className="text-xs font-bold text-[var(--kyro-text-primary)] mb-1">Authorization Header Format</h4>
+              <h4 className="text-xs font-medium text-[var(--kyro-text-primary)] mb-1">Authorization Header Format</h4>
               <p className="text-xs text-[var(--kyro-text-secondary)] mb-2">
                 Pass your API key in the standard Authorization header with the <code className="font-mono bg-[var(--kyro-surface-accent)] px-1 py-0.5 rounded text-[11px]">ApiKey</code> prefix:
               </p>
-              <div className="bg-[var(--kyro-bg)] rounded-xl p-3 border border-[var(--kyro-border)] font-mono text-xs text-[var(--kyro-text-primary)]">
+              <div className="bg-[var(--kyro-bg)] rounded-md p-3 border border-[var(--kyro-border)] font-mono text-xs text-[var(--kyro-text-primary)]">
                 Authorization: ApiKey kyro_xxxxxxxxxxxxxxxx
               </div>
             </div>
             <div>
-              <h4 className="text-xs font-bold text-[var(--kyro-text-primary)] mb-1">Key Security Principles</h4>
+              <h4 className="text-xs font-medium text-[var(--kyro-text-primary)] mb-1">Key Security Principles</h4>
               <ul className="text-xs text-[var(--kyro-text-secondary)] space-y-1.5 list-disc list-inside">
                 <li>Keep keys private and store them in server environment variables</li>
                 <li>Never expose keys in client-side front-end code bases</li>
@@ -366,7 +338,7 @@ export function ApiKeysManager() {
           <button
             type="button"
             onClick={() => setShowHelpModal(false)}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] hover:opacity-90 transition-colors"
+            className="px-4 py-2 rounded-md text-xs font-medium bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] hover:opacity-90 transition-colors"
           >
             Got It
           </button>

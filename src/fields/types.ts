@@ -201,6 +201,8 @@ export interface CodeField extends BaseField {
 
 export interface UploadField extends BaseField {
   type: "upload";
+  /** MIME types accepted by the admin upload and library picker, including image/* and video/*. */
+  allowedTypes?: string[];
   relationTo: string;
   hasMany?: boolean;
   maxDepth?: number;

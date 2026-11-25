@@ -176,7 +176,7 @@ export function PluginsManager() {
 
           <div className="flex items-center gap-2 px-1">
             <div className="w-0.5 h-3 bg-[var(--kyro-primary)] rounded-full" />
-            <h2 className="text-[10px] font-bold tracking-[0.2em] opacity-40 uppercase">Installed Extensions</h2>
+            <h2 className="text-xs font-semibold text-[var(--kyro-text-muted)] uppercase tracking-normal">Installed Extensions</h2>
           </div>
         </div>
 
@@ -191,7 +191,7 @@ export function PluginsManager() {
                 <div className="flex flex-col gap-4 relative z-10">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 bg-[var(--kyro-surface)] rounded-xl group-hover:bg-[var(--kyro-primary)]/10 transition-colors shadow-sm">
+                      <div className="p-2 bg-[var(--kyro-surface)] rounded-xl group-hover:bg-[var(--kyro-primary)]/10 transition-colors ">
                         <Blocks className="w-5 h-5 text-[var(--kyro-text-secondary)] group-hover:text-[var(--kyro-primary)] transition-colors" />
                       </div>
                       <div>
@@ -226,7 +226,7 @@ export function PluginsManager() {
                         <button
                           type="button"
                           onClick={() => setShowConfigModal(plugin.id)}
-                          className="p-2 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg hover:border-[var(--kyro-primary)] transition-all disabled:opacity-30 shadow-sm"
+                          className="p-2 bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg hover:border-[var(--kyro-primary)] transition-all disabled:opacity-30 "
                           disabled={!plugin.enabled}
                         >
                           <Settings className="w-3.5 h-3.5" />
@@ -266,12 +266,12 @@ export function PluginsManager() {
             </Suspense>
           ) : (
             <div className="p-12 text-center space-y-4">
-              <div className="w-20 h-20 mx-auto bg-[var(--kyro-surface-accent)] rounded-3xl flex items-center justify-center border border-[var(--kyro-border)] shadow-xl">
+              <div className="w-20 h-20 mx-auto bg-[var(--kyro-surface-accent)] rounded-3xl flex items-center justify-center border border-[var(--kyro-border)] ">
                 <Settings className="w-10 h-10 text-[var(--kyro-primary)] opacity-40 animate-spin-slow" />
               </div>
               <div>
-                <h4 className="text-xl font-bold mb-1">Custom Configuration</h4>
-                <p className="text-sm text-[var(--kyro-text-secondary)] opacity-50 italic">Settings for this plugin are managed by its own custom views and components.</p>
+                <h4 className="text-base font-semibold text-[var(--kyro-text-primary)] mb-1">Custom Configuration</h4>
+                <p className="text-xs text-[var(--kyro-text-secondary)] opacity-70">Settings for this plugin are managed by its own custom views and components.</p>
               </div>
             </div>
           )}
@@ -280,7 +280,7 @@ export function PluginsManager() {
           <button
             type="button"
             onClick={() => setShowConfigModal(null)}
-            className="kyro-btn kyro-btn-primary w-full py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[var(--kyro-primary)]/20"
+            className="kyro-btn kyro-btn-primary w-full py-2 rounded-md font-medium text-sm hover:opacity-90 transition-all  /20"
           >
             Close
           </button>

@@ -1,5 +1,10 @@
 ---
 import "../styles/main.css";
+import logoAccent from "../assets/logo-accent.svg";
+import "../styles/workspace.css";
+import "../styles/compact.css";
+import "../styles/studio.css";
+import "../styles/sidebar.css";
 import { collections, globals } from "../lib/config";
 import { CommandPaletteWrapper } from "../components/ui/CommandPaletteWrapper";
 import Sidebar from "../components/Sidebar.astro";
@@ -13,9 +18,10 @@ import LoadingIndicator from "astro-loading-indicator/component";
 
 interface Props {
   title: string;
+  studioCanvas?: boolean;
 }
 
-const { title } = Astro.props;
+const { title, studioCanvas = false } = Astro.props;
 const siteSettings = await getSiteSettings({ request: Astro.request });
 const seoSettings = await getGlobal("seo-settings", { request: Astro.request });
 
@@ -53,11 +59,11 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     {defaultDescription && <meta name="description" content={defaultDescription} />}
     {robots && <meta name="robots" content={robots} />}
     {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
-    <link rel="icon" type={siteFavicon?.mimeType || "image/svg+xml"} href={siteFavicon?.url || "/favicon.svg"} />
+    <link rel="icon" type={siteFavicon?.mimeType || "image/svg+xml"} href={siteFavicon?.url || logoAccent.src} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <script is:inline define:vars={{ adminPath, apiPath }}>
@@ -137,6 +143,9 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
               if (!isAdmin && permissions.collections?.media?.read !== true) hasAccess = false;
             } else if (relativePath.startsWith("/settings")) {
               if (!isAdmin) hasAccess = false;
+            } else if (relativePath === "/studio" || relativePath.startsWith("/studio/")) {
+              const studioCollection = relativePath.split("/")[2];
+              if (!isAdmin && studioCollection && permissions.collections?.[studioCollection]?.read !== true) hasAccess = false;
             } else if (
               relativePath.includes("/") &&
               !relativePath.startsWith("/login") &&
@@ -167,26 +176,17 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
         if (initialAuthDone) runAuthCheck();
       });
 
-      // Theme init (only theme persisted)
-      const initTheme = () => {
-        const getTheme = () => {
-          const stored = localStorage.getItem("theme");
-          if (stored) return stored;
-          return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        };
-        const theme = getTheme();
-        if (theme === "dark") {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
+      const applyInitialTheme = () => {
+        const mode = localStorage.getItem("theme") || "system";
+        document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches));
+        document.documentElement.dataset.themeMode = mode;
       };
-
-      initTheme();
-      document.addEventListener("astro:page-load", initTheme);
+      applyInitialTheme();
+      document.addEventListener("astro:page-load", applyInitialTheme);
     </script>
   </head>
-  <body class="bg-[var(--kyro-bg)] antialiased text-[var(--kyro-text-primary)] overflow-x-hidden overflow-y-auto">
+  <body class:list={[studioCanvas && "kyro-visual-studio", "kyro-workspace bg-[var(--kyro-bg)] antialiased text-[var(--kyro-text-primary)] overflow-x-hidden overflow-y-auto"]}>
+    <a class="admin-skip-link" href="#admin-content">Skip to content</a>
     <div id="kyro-user-data" data-user=""></div>
 
     <!-- Mobile Sidebar Backdrop -->
@@ -196,14 +196,14 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     >
     </div>
 
-    <div class="flex h-[100dvh] md:h-screen p-0 md:p-6 gap-0 md:gap-4 overflow-hidden w-full relative">
-      <Sidebar title={title} />
+    <div class="admin-shell flex h-[100dvh] md:h-screen overflow-hidden w-full relative">
+      {!studioCanvas && <Sidebar title={title} />}
 
       <!-- Main Content Column -->
-      <main class="flex-1 flex flex-col gap-0 md:gap-6 overflow-hidden relative w-full h-full max-w-full">
+      <main class="admin-main flex-1 min-w-0 flex flex-col overflow-hidden relative w-full h-full max-w-full">
         <!-- Mobile Header -->
         <header
-          class="md:hidden flex items-center justify-between p-4 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)] shrink-0 z-30 shadow-sm"
+          class="md:hidden flex items-center justify-between p-4 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)] shrink-0 z-30 "
         >
           <div class="flex items-center gap-3">
             <button
@@ -232,7 +232,8 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
           </div>
         </header>
 
-        <div class="flex-1 flex flex-col min-h-0 overflow-y-auto p-4 md:p-0">
+        <div id="admin-content" tabindex="-1" class="admin-content flex-1 flex flex-col min-h-0 overflow-y-auto p-4 md:p-8">
+          <p id="project-context-note" class="project-context-note hidden" role="status"></p>
           <slot />
         </div>
       </main>
@@ -277,7 +278,7 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     <div id="logout-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
       <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="logout-modal-backdrop"></div>
       <div
-        class="relative w-full max-w-sm mx-4 bg-[var(--kyro-surface)] rounded-lg shadow-2xl border border-[var(--kyro-border)]"
+        class="relative w-full max-w-sm mx-4 bg-[var(--kyro-surface)] rounded-lg  border border-[var(--kyro-border)]"
       >
         <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--kyro-border)]">
           <h2 class="text-lg font-semibold text-[var(--kyro-text-primary)]">Sign Out</h2>
@@ -319,7 +320,7 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
       id="kyro-fab"
       type="button"
       onclick="window.openCommandPalette?.()"
-      class="fixed bottom-6 right-6 z-50 w-12 h-12 flex md:hidden items-center justify-center rounded-2xl bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] shadow-lg shadow-[var(--kyro-primary)]/30 hover:shadow-xl hover:shadow-[var(--kyro-primary)]/40 hover:scale-110 active:scale-95 transition-all duration-200"
+      class="fixed bottom-6 right-6 z-50 w-12 h-12 flex md:hidden items-center justify-center rounded-2xl bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]  /30  /40 hover:scale-110 active:scale-95 transition-all duration-200"
       title="Open command palette (Cmd+K)"
     >
       <svg
@@ -337,78 +338,9 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
       </svg>
     </button>
 
-    <!-- Theme UI Logic -->
+    <!-- Account menu actions -->
     <script is:inline define:vars={{ adminPath, apiPath }}>
-      // Run immediately to prevent FOUC
-      const currentTheme =
-        localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-      if (currentTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-
-      const initThemeUI = () => {
-        const lightBtn = document.getElementById("theme-light-btn");
-        const darkBtn = document.getElementById("theme-dark-btn");
-
-        const updateUI = (theme) => {
-          const isDark = theme === "dark";
-
-          // Update Buttons
-          if (isDark) {
-            darkBtn?.classList.add(
-              "bg-[var(--kyro-sidebar-active)]",
-              "text-[var(--kyro-sidebar-text-active)]",
-              "shadow-lg",
-            );
-            darkBtn?.classList.remove("text-[var(--kyro-text-secondary)]");
-            lightBtn?.classList.remove(
-              "bg-[var(--kyro-sidebar-active)]",
-              "text-[var(--kyro-sidebar-text-active)]",
-              "shadow-lg",
-            );
-            lightBtn?.classList.add("text-[var(--kyro-text-secondary)]");
-          } else {
-            lightBtn?.classList.add(
-              "bg-[var(--kyro-sidebar-active)]",
-              "text-[var(--kyro-sidebar-text-active)]",
-              "shadow-lg",
-            );
-            lightBtn?.classList.remove("text-[var(--kyro-text-secondary)]");
-            darkBtn?.classList.remove(
-              "bg-[var(--kyro-sidebar-active)]",
-              "text-[var(--kyro-sidebar-text-active)]",
-              "shadow-lg",
-            );
-            darkBtn?.classList.add("text-[var(--kyro-text-secondary)]");
-          }
-
-          // Update Document
-          if (isDark) {
-            document.documentElement.classList.add("dark");
-          } else {
-            document.documentElement.classList.remove("dark");
-          }
-        };
-
-        // Sync buttons on page load
-        updateUI(
-          localStorage.getItem("theme") ||
-            (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
-        );
-
-        // Listeners
-        lightBtn?.addEventListener("click", () => {
-          localStorage.setItem("theme", "light");
-          updateUI("light");
-        });
-
-        darkBtn?.addEventListener("click", () => {
-          localStorage.setItem("theme", "dark");
-          updateUI("dark");
-        });
-
+      const initLayoutUI = () => {
         // Logout Modal
         const logoutModal = document.getElementById("logout-modal");
         const logoutBackdrop = document.getElementById("logout-modal-backdrop");
@@ -437,25 +369,14 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
         });
       };
 
-      document.addEventListener("astro:page-load", initThemeUI);
+      document.addEventListener("astro:page-load", initLayoutUI);
+      initLayoutUI();
 
-      // System Preference Listener (attached once globally)
-      if (!window.__kyroThemeListenerAttached) {
-        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-          if (!localStorage.getItem("theme")) {
-            const isDark = e.matches;
-            if (isDark) {
-              document.documentElement.classList.add("dark");
-            } else {
-              document.documentElement.classList.remove("dark");
-            }
-          }
-        });
-        window.__kyroThemeListenerAttached = true;
-      }
     </script>
     <script>
       import { navigate } from "../lib/navigate";
+      import { setupAppearance } from "../lib/theme-client";
+      setupAppearance();
 
       window.addEventListener("kyro:soft-reload", () => {
         const url = new URL(window.location.href);

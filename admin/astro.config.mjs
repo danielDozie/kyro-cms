@@ -171,6 +171,7 @@ export default defineConfig({
         "@tiptap/extension-task-list", "@tiptap/extension-task-item",
         "@tiptap/extension-text-style", "@tiptap/extension-color",
         "recharts",
+        "react-image-crop",
         "lucide-react",
       ],
       needsInterop: [

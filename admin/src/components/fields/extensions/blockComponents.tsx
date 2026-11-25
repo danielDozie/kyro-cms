@@ -1,3 +1,5 @@
+import { RectangleGroupIcon, Bars2Icon, ViewColumnsIcon, Squares2X2Icon, ArrowsUpDownIcon, MinusIcon } from "@heroicons/react/24/outline";
+import { getStudioInsertIcon } from "../../studio/insert-icons";
 import React from "react";
 import { HeadingBlock } from "../../blocks/HeadingBlock";
 import { ParagraphBlock } from "../../blocks/ParagraphBlock";
@@ -78,6 +80,13 @@ export const blockTheme: Record<string, { text: string; border: string; borderLe
 
 // Icon mapping for drawer (actual Lucide components)
 export const blockIcons: Record<string, React.ReactNode> = {
+  section: <RectangleGroupIcon className="w-5 h-5" />,
+  container: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 8h10v8H7z" strokeDasharray="2 2" /></svg>,
+  row: <Bars2Icon className="w-5 h-5" />,
+  column: <ViewColumnsIcon className="w-5 h-5" />,
+  grid: <Squares2X2Icon className="w-5 h-5" />,
+  spacer: <ArrowsUpDownIcon className="w-5 h-5" />,
+  divider: <MinusIcon className="w-5 h-5" />,
   heading: <Heading1 className={`w-4 h-4 ${blockTheme.default.text}`} />,
   paragraph: <AlignLeft className={`w-4 h-4 ${blockTheme.default.text}`} />,
   image: <Image className={`w-4 h-4 ${blockTheme.default.text}`} />,
@@ -109,6 +118,12 @@ export const blockIcons: Record<string, React.ReactNode> = {
   videoShowcase: <Video className={`w-4 h-4 ${blockTheme.videoShowcase.text}`} />,
 };
 
+// Keep compositional icons consistent with the Studio insertion library.
+for (const slug of ["hero", "card", "featureSplit", "featureGrid", "ctaBanner", "testimonials", "faq", "stats", "logoCloud", "pricing", "team", "recentFeed", "processSteps", "formEmbed", "videoShowcase", "headingElement", "textElement", "imageElement", "richtextElement", "buttonElement", "videoElement", "listElement", "iconElement", "gallery", "tabs", "quote", "badge", "notice"]) {
+  const Icon = getStudioInsertIcon(slug);
+  blockIcons[slug] = <Icon size={22} strokeWidth={1.5} />;
+}
+
 // Internal utility to check if block has a specific custom react component
 export function getBlockComponent(type: string) {
   return BLOCK_COMPONENTS[type] || null;
@@ -126,10 +141,23 @@ export function isGenericSemanticBlock(type: string) {
 // Get human-readable label for block type
 export function getBlockLabel(type: string): string {
   const labelMap: Record<string, string> = {
+    section: "Section",
+    container: "Container",
+    row: "Row",
+    column: "Column",
+    grid: "Grid",
+    spacer: "Spacer",
+    divider: "Divider",
+    iconElement: "Icon",
+    gallery: "Image gallery",
+    tabs: "Content tabs",
+    quote: "Quote",
+    badge: "Badge",
+    notice: "Notice",
     // Primitives
     paragraph: "Paragraph",
     heading: "Heading",
-    image: "Image",
+    image: "Image Caption",
     video: "Video",
     list: "List",
     code: "Code",
@@ -161,13 +189,16 @@ export function getBlockLabel(type: string): string {
     // Inline Content Elements
     headingElement: "Heading",
     textElement: "Text",
-    imageElement: "Image",
+    imageElement: "Single Image",
     richtextElement: "Rich Text",
     buttonElement: "Button",
     videoElement: "Video",
     listElement: "List",
   };
-  return labelMap[type] || type;
+  const label = labelMap[type] || (type || "Block").replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ");
+  if (type === "image" || type === "imageElement") return label;
+  const sentence = label.replace(/\b[A-Z][a-z]+\b/g, (word, offset) => offset === 0 ? word : word.toLowerCase());
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
 
 export function getBlockDisplayLabel(block: Record<string, unknown>): string {

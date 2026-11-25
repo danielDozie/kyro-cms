@@ -1,0 +1,31 @@
+.focal-editor {
+  display: flex;
+  flex-direction: column;
+  width: min(1120px, 100%);
+  height: min(780px, 90dvh);
+  min-height: 0;
+  margin: auto;
+  overflow: hidden;
+  border: 1px solid var(--kyro-border);
+  border-radius: 10px;
+  background: var(--kyro-bg);
+  color: var(--kyro-text-primary);
+  font-size: 12px;
+  font-weight: 400;
+}
+.focal-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 12px; background: var(--kyro-surface); border-bottom: 1px solid var(--kyro-border); }
+.focal-toolbar button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; min-width: 0; padding: 5px 9px; border-radius: 5px; font-size: 12px; font-weight: 400; box-shadow: none; transform: none; }
+.focal-toolbar button[aria-pressed="true"], .focal-toolbar button[data-save] { background: var(--kyro-accent-soft); color: var(--kyro-accent-text); }
+.focal-toolbar button:disabled { opacity: .5; cursor: wait; }
+.focal-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 220px; flex: 1; min-height: 0; }
+.focal-canvas { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 0; padding: 20px; overflow: auto; }
+.focal-canvas .ReactCrop { max-width: 100%; }
+.focal-previews { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; border-left: 1px solid var(--kyro-border); background: var(--kyro-surface); }
+.focal-preview-hint { margin: 0; padding: 10px 12px; color: var(--kyro-text-secondary); line-height: 1.5; }
+.focal-help { padding: 9px 12px; border-top: 1px solid var(--kyro-border); color: var(--kyro-text-secondary); font-size: 12px; line-height: 1.5; }
+.focal-editor button:focus-visible { outline: 2px solid var(--kyro-primary); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .focal-workspace { display: flex; flex-direction: column; overflow-y: auto; }
+  .focal-canvas { flex: 1 0 240px; padding: 12px; }
+  .focal-previews { flex-shrink: 0; max-height: 260px; border-left: 0; border-top: 1px solid var(--kyro-border); }
+}

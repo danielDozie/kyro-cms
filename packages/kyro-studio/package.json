@@ -1,0 +1,35 @@
+{
+  "name": "@kyro-cms/studio",
+  "version": "0.2.0",
+  "description": "Shared visual page components for Kyro Studio and React frontends",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/KyroStudioPage.astro": "./components/KyroStudioPage.astro"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "components"
+  ],
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@kyro-cms/rich-text-react": "workspace:*",
+    "lucide-react": "^0.475.0",
+    "@heroicons/react": "^2.2.0"
+  },
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.3"
+  }
+}

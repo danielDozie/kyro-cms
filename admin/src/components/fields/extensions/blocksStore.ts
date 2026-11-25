@@ -1,3 +1,6 @@
+import { isStudioEnabled } from "../../../lib/config";
+import { layoutBlockTypes, layoutSignature } from "@kyro-cms/core/client";
+import { toast } from "../../../lib/stores";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { createContext, useContext } from "react";
@@ -32,6 +35,7 @@ export function createBlocksStore(allowedBlocks: any[] = [], dynamicCategories: 
     onBlocksChange: null,
     setOnBlocksChange: (cb) => set({ onBlocksChange: cb }),
     addBlock: (type, index) => {
+      if (!isStudioEnabled && layoutBlockTypes.has(type)) { toast.error("Enable Studio to add layouts."); return; }
       const newBlock = createNewBlock(type);
       const { blocks } = get();
       const newBlocks = [...blocks];
@@ -57,6 +61,7 @@ export function createBlocksStore(allowedBlocks: any[] = [], dynamicCategories: 
         return { newList: blocksList, found: false };
       });
 
+      if (!isStudioEnabled && layoutSignature(newBlocks) !== layoutSignature(blocks)) { toast.error("Saved layouts are read-only while Studio is disabled."); return; }
       if (newBlocks !== blocks) {
         set({ blocks: newBlocks });
         const { onBlocksChange } = get();
@@ -75,6 +80,7 @@ export function createBlocksStore(allowedBlocks: any[] = [], dynamicCategories: 
         return { newList: blocksList, found: false };
       });
 
+      if (!isStudioEnabled && layoutSignature(newBlocks) !== layoutSignature(blocks)) { toast.error("Saved layouts are read-only while Studio is disabled."); return; }
       if (newBlocks !== blocks) {
         set({ blocks: newBlocks });
         const { onBlocksChange } = get();
@@ -100,6 +106,7 @@ export function createBlocksStore(allowedBlocks: any[] = [], dynamicCategories: 
         return { newList: blocksList, found: false };
       });
 
+      if (!isStudioEnabled && layoutSignature(newBlocks) !== layoutSignature(blocks)) { toast.error("Saved layouts are read-only while Studio is disabled."); return; }
       if (newBlocks !== blocks) {
         set({ blocks: newBlocks });
         const { onBlocksChange } = get();

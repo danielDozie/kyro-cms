@@ -145,7 +145,7 @@ export default function SeoSettings() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-2 mt-2 bg-[var(--kyro-primary)] text-white font-bold rounded-lg shadow-md shadow-[var(--kyro-primary)]/20 hover:opacity-90 transition-opacity disabled:opacity-50 text-sm"
+          className="w-full py-2 mt-2 bg-[var(--kyro-primary)] text-white font-medium rounded-lg  /20 hover:opacity-90 transition-opacity disabled:opacity-50 text-sm"
         >
           {saving ? 'Saving...' : 'Save Settings'}
         </button>

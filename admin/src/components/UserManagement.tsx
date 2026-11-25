@@ -1,3 +1,4 @@
+import { CustomSelect } from "./ui/CustomSelect";
 import "../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/api";
@@ -35,6 +36,7 @@ export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userFilter, setUserFilter] = useState<"all" | "admins" | "locked">("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({ name: "", email: "", password: "", role: "customer" });
   const [createError, setCreateError] = useState("");
@@ -149,11 +151,11 @@ export function UserManagement() {
 
   const roleOptions = ["super_admin", "admin", "editor", "author", "customer", "guest"];
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.name?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchQuery.toLowerCase()) || !!user.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = userFilter === "all" || (userFilter === "admins" ? ["admin", "super_admin"].includes(user.role) : !!user.locked);
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 px-4 md:px-8 pb-12">
@@ -177,6 +179,7 @@ export function UserManagement() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--kyro-text-secondary)] opacity-40 group-focus-within:opacity-100 transition-opacity" />
           <input
             type="text"
+            aria-label="Search people"
             placeholder={t("fields.searchByIdentityOr", { defaultValue: "Search by identity or email..." })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -184,9 +187,7 @@ export function UserManagement() {
           />
         </div>
         <div className="flex items-center gap-1 bg-[var(--kyro-surface-accent)] p-1 rounded-xl border border-[var(--kyro-border)]">
-          <button className="px-4 py-1.5 text-[10px] font-bold tracking-widest bg-[var(--kyro-surface)] shadow-sm rounded-lg border border-[var(--kyro-border)]">ALL</button>
-          <button className="px-4 py-1.5 text-[10px] font-bold tracking-widest opacity-40 hover:opacity-100 transition-all">ADMINS</button>
-          <button className="px-4 py-1.5 text-[10px] font-bold tracking-widest opacity-40 hover:opacity-100 transition-all">LOCKED</button>
+          {(["all", "admins", "locked"] as const).map(value => <button key={value} type="button" aria-pressed={userFilter === value} onClick={() => setUserFilter(value)} className={`workspace-filter-tab ${userFilter === value ? "is-active" : ""}`}>{value === "all" ? "All users" : value === "admins" ? "Admins" : "Locked"}</button>)}
         </div>
       </div>
 
@@ -324,7 +325,7 @@ export function UserManagement() {
                 const isSuperAdmin = currentUserRole === "super_admin";
                 return (
                   <div>
-                    <select
+                    <CustomSelect
                       value={createForm.role}
                       disabled={!isSuperAdmin}
                       onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
@@ -333,7 +334,7 @@ export function UserManagement() {
                       {roleOptions.map((r) => (
                         <option key={r} value={r}>{r}</option>
                       ))}
-                    </select>
+                    </CustomSelect>
                     {!isSuperAdmin && (
                       <p className="text-[11px] text-[var(--kyro-text-secondary)] mt-1 font-medium">
                         Only Super Admin can assign administrative roles.
@@ -355,7 +356,7 @@ export function UserManagement() {
           <button
             type="button"
             onClick={() => setShowCreateModal(false)}
-            className="px-6 py-2.5 rounded-xl font-bold text-sm border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+            className="px-3 py-2 rounded-md font-medium text-sm border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
           >
             Cancel
           </button>
@@ -363,7 +364,7 @@ export function UserManagement() {
             type="button"
             onClick={handleCreateUser}
             disabled={creating}
-            className="kyro-btn kyro-btn-primary px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[var(--kyro-primary)]/10 disabled:opacity-50"
+            className="kyro-btn kyro-btn-primary px-3 py-2 rounded-md font-medium text-sm hover:opacity-90 transition-all  /10 disabled:opacity-50"
           >
             {creating ? "Creating..." : "Create User"}
           </button>

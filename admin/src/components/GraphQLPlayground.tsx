@@ -1,3 +1,4 @@
+import "../styles/playground-workspace.css";
 import "../lib/i18n";
 import React, {
   useState,
@@ -295,9 +296,9 @@ import { ClientOnly } from "./ui/ClientOnly";
 
 function GraphQLPlaygroundSkeleton() {
   return (
-    <div className="surface-tile p-8 space-y-6 rounded-lg animate-pulse h-[calc(100vh-120px)]">
-      <div className="h-10 bg-[var(--kyro-border)] rounded-xl w-1/3 opacity-50" />
-      <div className="h-full bg-[var(--kyro-surface-accent)] rounded-lg opacity-50" />
+    <div className="surface-tile p-8 space-y-6 rounded-md animate-pulse h-[calc(100vh-120px)]">
+      <div className="h-10 bg-[var(--kyro-border)] rounded-md w-1/3 opacity-50" />
+      <div className="h-full bg-[var(--kyro-surface-accent)] rounded-md opacity-50" />
     </div>
   );
 }
@@ -689,14 +690,14 @@ function GraphQLPlaygroundInner({
         : tab.headers;
 
   return (
-    <div ref={containerRef} className="h-full flex flex-col bg-[var(--kyro-bg)] overflow-hidden rounded-lg border border-[var(--kyro-border)]">
+    <div ref={containerRef} className="playground-workspace h-full flex flex-col bg-[var(--kyro-bg)] overflow-hidden rounded-md border border-[var(--kyro-border)]">
       {/* Compact top bar */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)] shrink-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-[var(--kyro-primary)]/10 flex items-center justify-center text-[var(--kyro-primary)] shrink-0">
+          <div className="w-7 h-7 rounded-md bg-[var(--kyro-primary)]/10 flex items-center justify-center text-[var(--kyro-primary)] shrink-0">
             <Zap className="w-3.5 h-3.5" />
           </div>
-          <span className="text-xs font-semibold hidden sm:inline">GraphQL</span>
+          <span className="text-xs font-medium hidden sm:inline">GraphQL</span>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-[var(--kyro-text-muted)]">
           <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-[var(--kyro-success)]" : "bg-[var(--kyro-danger)]"}`} />
@@ -726,29 +727,29 @@ function GraphQLPlaygroundInner({
           </div>
         )}
         <div className="ml-auto flex items-center gap-1 flex-wrap justify-end">
-          <button onClick={() => { setShowDocs(!showDocs); setRightTab("docs"); }} className={`p-1.5 rounded-lg transition-all ${rightTab === "docs" && showDocs ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`} title={t("tooltips.schemaDocs", { defaultValue: "Schema docs" })}>
+          <button onClick={() => { setShowDocs(!showDocs); setRightTab("docs"); }} className={`p-1.5 rounded-md transition-all ${rightTab === "docs" && showDocs ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`} title={t("tooltips.schemaDocs", { defaultValue: "Schema docs" })}>
             <Book className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => setRightTab("history")} className={`p-1.5 rounded-lg transition-all ${rightTab === "history" ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`} title={t("tooltips.history", { defaultValue: "History" })}>
+          <button onClick={() => setRightTab("history")} className={`p-1.5 rounded-md transition-all ${rightTab === "history" ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`} title={t("tooltips.history", { defaultValue: "History" })}>
             <Clock className="w-3.5 h-3.5" />
           </button>
-          <button onClick={handlePrettify} className="p-1.5 rounded-lg text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]" title={t("tooltips.prettifyCmdshiftp", { defaultValue: "Prettify (Cmd+Shift+P)" })}>
+          <button onClick={handlePrettify} className="p-1.5 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]" title={t("tooltips.prettifyCmdshiftp", { defaultValue: "Prettify (Cmd+Shift+P)" })}>
             <Code2 className="w-3.5 h-3.5" />
           </button>
-          <button onClick={handleCopyResponse} className="p-1.5 rounded-lg text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]" title={t("tooltips.copyResponse", { defaultValue: "Copy response" })}>
+          <button onClick={handleCopyResponse} className="p-1.5 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]" title={t("tooltips.copyResponse", { defaultValue: "Copy response" })}>
             {copied ? <Check className="w-3.5 h-3.5 text-[var(--kyro-success)]" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
-          <button onClick={handleDownloadResponse} className="p-1.5 rounded-lg text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]" title={t("tooltips.downloadResponse", { defaultValue: "Download response" })}>
+          <button onClick={handleDownloadResponse} className="p-1.5 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]" title={t("tooltips.downloadResponse", { defaultValue: "Download response" })}>
             <Download className="w-3.5 h-3.5" />
           </button>
-          <button onClick={handleClearEditor} className="p-1.5 rounded-lg text-[var(--kyro-text-muted)] hover:text-[var(--kyro-danger)] hover:bg-[var(--kyro-danger-bg)]" title={t("tooltips.clearEditor", { defaultValue: "Clear editor" })}>
+          <button onClick={handleClearEditor} className="p-1.5 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-danger)] hover:bg-[var(--kyro-danger-bg)]" title={t("tooltips.clearEditor", { defaultValue: "Clear editor" })}>
             <Trash2 className="w-3.5 h-3.5" />
           </button>
           <div className="h-4 w-px bg-[var(--kyro-border)] mx-1" />
           <button
             onClick={handleRun}
             disabled={isLoading}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] text-xs font-semibold hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] text-xs font-medium hover:opacity-90 disabled:opacity-50 transition-all "
           >
             <Play className="w-3 h-3" />
             {isLoading ? "..." : "Run"}
@@ -762,13 +763,13 @@ function GraphQLPlaygroundInner({
         <div className="flex md:hidden gap-1 px-3 py-1.5 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)] shrink-0">
           <button
             onClick={() => setMobilePanel("editor")}
-            className={`flex-1 px-3 py-1.5 text-[10px] font-semibold rounded-md transition-all ${mobilePanel === "editor" ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`}
+            className={`flex-1 px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${mobilePanel === "editor" ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`}
           >
             Editor
           </button>
           <button
             onClick={() => setMobilePanel("response")}
-            className={`flex-1 px-3 py-1.5 text-[10px] font-semibold rounded-md transition-all ${mobilePanel === "response" ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`}
+            className={`flex-1 px-3 py-1.5 text-[10px] font-medium rounded-md transition-all ${mobilePanel === "response" ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]" : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"}`}
           >
             Output
           </button>
@@ -782,7 +783,7 @@ function GraphQLPlaygroundInner({
               <button
                 key={p.key}
                 onClick={() => setActiveEditorTab(p.key)}
-                className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${activeEditorTab === p.key
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${activeEditorTab === p.key
                   ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
                   : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
                   }`}
@@ -835,7 +836,7 @@ function GraphQLPlaygroundInner({
               <button
                 key={p.key}
                 onClick={() => { setRightTab(p.key); if (p.key === "docs") setShowDocs(true); }}
-                className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${rightTab === p.key
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${rightTab === p.key
                   ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
                   : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
                   }`}
@@ -886,13 +887,13 @@ function GraphQLPlaygroundInner({
                                 <button
                                   key={r.fieldPath + i}
                                   onClick={() => handleSearchSelect(r)}
-                                  className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-all text-left group"
+                                  className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-md transition-all text-left group"
                                 >
                                   <span className="text-[10px] font-mono text-[var(--kyro-text-muted)]">
                                     {r.fieldPath.split(" > ").map((part, j) => (
                                       <span key={j}>
                                         {j > 0 && <span className="mx-1 opacity-40">›</span>}
-                                        <span className={j === r.fieldPath.split(" > ").length - 1 ? "text-[var(--kyro-text-primary)] font-semibold" : "text-[var(--kyro-text-muted)]"}>
+                                        <span className={j === r.fieldPath.split(" > ").length - 1 ? "text-[var(--kyro-text-primary)] font-medium" : "text-[var(--kyro-text-muted)]"}>
                                           {highlightMatch(part, searchQuery)}
                                         </span>
                                       </span>
@@ -911,12 +912,12 @@ function GraphQLPlaygroundInner({
                         <div className="space-y-3">
                           <button
                             onClick={() => setSelectedType(null)}
-                            className="flex items-center gap-1 text-[10px] text-[var(--kyro-primary)] font-semibold hover:underline"
+                            className="flex items-center gap-1 text-[10px] text-[var(--kyro-primary)] font-medium hover:underline"
                           >
                             ← Back to types
                           </button>
                           <div>
-                            <h3 className="text-sm font-bold text-[var(--kyro-text-primary)]">{selectedType.name}</h3>
+                            <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">{selectedType.name}</h3>
                             <p className="text-[10px] text-[var(--kyro-text-muted)] italic">{selectedType.kind}</p>
                             {selectedType.description && (
                               <p className="mt-1.5 text-[11px] text-[var(--kyro-text-secondary)] leading-relaxed">{selectedType.description}</p>
@@ -924,7 +925,7 @@ function GraphQLPlaygroundInner({
                           </div>
                           {selectedType.kind === "UNION" && selectedType.possibleTypes && (
                             <div className="space-y-2">
-                              <h4 className="text-[10px] font-semibold tracking-wider text-[var(--kyro-text-muted)] pt-3">Possible Types <span className="text-[8px] font-mono text-[var(--kyro-primary)] bg-[var(--kyro-primary)]/10 px-1 py-0.5 rounded ml-1">⧉ fragment</span></h4>
+                              <h4 className="text-[10px] font-medium tracking-wider text-[var(--kyro-text-muted)] pt-3">Possible Types <span className="text-[8px] font-mono text-[var(--kyro-primary)] bg-[var(--kyro-primary)]/10 px-1 py-0.5 rounded ml-1">⧉ fragment</span></h4>
                               <div className="space-y-1">
                                 {selectedType.possibleTypes.map(pt => (
                                   <button
@@ -933,7 +934,7 @@ function GraphQLPlaygroundInner({
                                       const t = typeMap.get(pt.name);
                                       if (t) setSelectedType(t);
                                     }}
-                                    className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-all text-left group"
+                                    className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-md transition-all text-left group"
                                   >
                                     <span className="text-[11px] font-medium text-[var(--kyro-text-primary)]">{pt.name}</span>
                                     <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-60" />
@@ -944,7 +945,7 @@ function GraphQLPlaygroundInner({
                           )}
                           {selectedType.kind === "INTERFACE" && selectedType.possibleTypes && (
                             <div className="space-y-2">
-                              <h4 className="text-[10px] font-semibold tracking-wider text-[var(--kyro-text-muted)] pt-3">Implementing Types <span className="text-[8px] font-mono text-[var(--kyro-text-muted)] bg-[var(--kyro-surface)] px-1 py-0.5 rounded border border-[var(--kyro-border)] ml-1">interface</span></h4>
+                              <h4 className="text-[10px] font-medium tracking-wider text-[var(--kyro-text-muted)] pt-3">Implementing Types <span className="text-[8px] font-mono text-[var(--kyro-text-muted)] bg-[var(--kyro-surface)] px-1 py-0.5 rounded border border-[var(--kyro-border)] ml-1">interface</span></h4>
                               <div className="space-y-1">
                                 {selectedType.possibleTypes.map(pt => (
                                   <button
@@ -953,7 +954,7 @@ function GraphQLPlaygroundInner({
                                       const t = typeMap.get(pt.name);
                                       if (t) setSelectedType(t);
                                     }}
-                                    className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-all text-left group"
+                                    className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-md transition-all text-left group"
                                   >
                                     <span className="text-[11px] font-medium text-[var(--kyro-text-primary)]">{pt.name}</span>
                                     <ChevronRight className="w-3 h-3 opacity-30 group-hover:opacity-60" />
@@ -964,7 +965,7 @@ function GraphQLPlaygroundInner({
                           )}
                           {selectedType.fields && (
                             <div className="space-y-2">
-                              <h4 className="text-[10px] font-semibold tracking-wider text-[var(--kyro-text-muted)] pt-3">Fields</h4>
+                              <h4 className="text-[10px] font-medium tracking-wider text-[var(--kyro-text-muted)] pt-3">Fields</h4>
                               {selectedType.fields.map(f => {
                                 const isRootOp = (selectedType.name === "Query" || selectedType.name === "Mutation") && !!schema;
                                 return (
@@ -972,10 +973,10 @@ function GraphQLPlaygroundInner({
                                     key={f.name}
                                     type="button"
                                     onClick={isRootOp ? () => handleInsertQuery(f) : undefined}
-                                    className={`w-full text-left p-2.5 bg-[var(--kyro-surface-accent)] rounded-lg border border-[var(--kyro-border)] transition-all ${isRootOp ? "hover:border-[var(--kyro-primary)] hover:shadow-sm cursor-pointer" : ""}`}
+                                    className={`w-full text-left p-2.5 bg-[var(--kyro-surface-accent)] rounded-md border border-[var(--kyro-border)] transition-all ${isRootOp ? "hover:border-[var(--kyro-primary)]  cursor-pointer" : ""}`}
                                   >
                                     <div className="flex items-center justify-between gap-2">
-                                      <span className="font-semibold text-[11px] text-[var(--kyro-text-primary)]">{f.name}</span>
+                                      <span className="font-medium text-[11px] text-[var(--kyro-text-primary)]">{f.name}</span>
                                       <span className="flex items-center gap-1">
                                         {(() => {
                                           const rtName = resolveTypeName(f.type);
@@ -998,7 +999,7 @@ function GraphQLPlaygroundInner({
                                       if (rt && (rt.kind === "UNION" || rt.kind === "INTERFACE") && rt.possibleTypes?.length) {
                                         return (
                                           <div className="mt-1.5 pl-3 border-l-2 border-[var(--kyro-primary)]/30 space-y-0.5">
-                                            <span className="text-[8px] font-semibold text-[var(--kyro-text-muted)] uppercase tracking-wider">Possible Types</span>
+                                            <span className="text-[8px] font-medium text-[var(--kyro-text-muted)] uppercase tracking-wider">Possible Types</span>
                                             <div className="flex flex-wrap gap-1 mt-0.5">
                                               {rt.possibleTypes.map(pt => {
                                                 const ptInfo = typeMap.get(pt.name);
@@ -1045,8 +1046,8 @@ function GraphQLPlaygroundInner({
                                   className="flex items-center justify-between p-3 bg-[var(--kyro-surface-accent)] rounded-md border border-[var(--kyro-border)] hover:border-[var(--kyro-primary)] transition-all text-left group"
                                 >
                                   <div>
-                                    <span className="text-[10px] font-semibold text-[var(--kyro-text-muted)] block">{t}</span>
-                                    <span className="text-[11px] font-bold text-[var(--kyro-text-primary)]">Root Operations</span>
+                                    <span className="text-[10px] font-medium text-[var(--kyro-text-muted)] block">{t}</span>
+                                    <span className="text-[11px] font-medium text-[var(--kyro-text-primary)]">Root Operations</span>
                                   </div>
                                   <ChevronRight className="w-3.5 h-3.5 text-[var(--kyro-primary)] group-hover:translate-x-1 transition-transform" />
                                 </button>
@@ -1054,12 +1055,12 @@ function GraphQLPlaygroundInner({
                             })}
                           </div>
                           <div className="space-y-1.5">
-                            <h4 className="text-[10px] font-semibold tracking-wider text-[var(--kyro-text-muted)] pt-3">All Types</h4>
+                            <h4 className="text-[10px] font-medium tracking-wider text-[var(--kyro-text-muted)] pt-3">All Types</h4>
                             {schema.types.filter(t => !t.name.startsWith("__") && (t.kind === "OBJECT" || t.kind === "UNION" || t.kind === "INTERFACE")).map(t => (
                               <button
                                 key={t.name}
                                 onClick={() => setSelectedType(t)}
-                                className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-all text-left group"
+                                className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-md transition-all text-left group"
                               >
                                 <div className="flex items-center gap-2">
                                   <span className="text-[11px] font-medium text-[var(--kyro-text-primary)]">{t.name}</span>
@@ -1081,7 +1082,7 @@ function GraphQLPlaygroundInner({
             ) : rightTab === "history" ? (
               <div className="h-full flex flex-col overflow-hidden bg-[var(--kyro-surface)]">
                 <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--kyro-border)]">
-                  <span className="text-[10px] font-semibold text-[var(--kyro-text-secondary)]">Query History</span>
+                  <span className="text-[10px] font-medium text-[var(--kyro-text-secondary)]">Query History</span>
                   {history.length > 0 && (
                     <button onClick={() => setHistory([])} className="text-[9px] text-[var(--kyro-text-muted)] hover:text-[var(--kyro-danger)]">Clear</button>
                   )}
@@ -1101,7 +1102,7 @@ function GraphQLPlaygroundInner({
                             setTab((prev) => ({ ...prev, query: entry.query, variables: entry.variables }));
                             setResponse(entry.response);
                           }}
-                          className="w-full text-left p-2 rounded-lg hover:bg-[var(--kyro-surface-accent)] border border-transparent hover:border-[var(--kyro-border)] transition-all"
+                          className="w-full text-left p-2 rounded-md hover:bg-[var(--kyro-surface-accent)] border border-transparent hover:border-[var(--kyro-border)] transition-all"
                         >
                           <div className="text-[10px] font-mono text-[var(--kyro-text-primary)] truncate leading-relaxed">
                             {entry.query.split("\n").slice(0, 3).join(" ").substring(0, 80)}
@@ -1122,14 +1123,14 @@ function GraphQLPlaygroundInner({
             ) : (
               <div className="h-full flex flex-col overflow-hidden">
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)]">
-                  <span className="text-[10px] font-semibold text-[var(--kyro-text-secondary)]">Response</span>
+                  <span className="text-[10px] font-medium text-[var(--kyro-text-secondary)]">Response</span>
                   {lastDuration > 0 && (
                     <span className="text-[9px] font-mono text-[var(--kyro-text-muted)]">
                       {lastDuration}ms
                     </span>
                   )}
                   {lastStatus > 0 && (
-                    <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${lastStatus < 400 ? "bg-[var(--kyro-success-bg)] text-[var(--kyro-success)]" : "bg-[var(--kyro-danger-bg)] text-[var(--kyro-danger)]"
+                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${lastStatus < 400 ? "bg-[var(--kyro-success-bg)] text-[var(--kyro-success)]" : "bg-[var(--kyro-danger-bg)] text-[var(--kyro-danger)]"
                       }`}>
                       {lastStatus}
                     </span>
@@ -1139,7 +1140,7 @@ function GraphQLPlaygroundInner({
                   {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-3">
                       <RefreshCw className="w-6 h-6 animate-spin text-[var(--kyro-primary)]" />
-                      <span className="text-[10px] font-semibold text-[var(--kyro-text-muted)]">Running Query...</span>
+                      <span className="text-[10px] font-medium text-[var(--kyro-text-muted)]">Running Query...</span>
                     </div>
                   ) : response ? (
                     <div className="h-full overflow-auto p-3">
@@ -1153,7 +1154,7 @@ function GraphQLPlaygroundInner({
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full opacity-30">
                       <Activity className="w-12 h-12 mb-3" />
-                      <p className="text-[11px] font-bold">Press Run to execute</p>
+                      <p className="text-[11px] font-medium">Press Run to execute</p>
                     </div>
                   )}
                 </div>

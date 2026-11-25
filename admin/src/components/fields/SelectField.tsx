@@ -1,3 +1,5 @@
+import { Dropdown, DropdownItem } from "../ui/Dropdown";
+import { ChevronDown, Check } from "../ui/icons";
 import React, { useState, useEffect } from "react";
 import type { SelectField as SelectFieldType } from "@kyro-cms/core/client";
 import FieldLayout from "./FieldLayout";
@@ -102,40 +104,25 @@ export default function SelectField({
       field={field}
       error={error}
     >
-      <select
-        id={field.name}
-        value={
-          field.hasMany
-            ? (Array.isArray(value) ? value : [])
-            : value || ""
-        }
-        onChange={(e) => {
-          if (field.hasMany) {
-            const selected = Array.from(e.target.selectedOptions, (opt) => opt.value);
-            onChange?.(selected);
-          } else {
-            onChange?.(e.target.value || undefined);
-          }
-        }}
-        multiple={field.hasMany}
-        disabled={disabled || isReadOnly}
-        required={field.required}
-        style={{
-          color: field.hasMany 
-            ? undefined 
-            : (options as any[]).find(opt => opt.value === value)?.color || undefined,
-        }}
-        className={`kyro-form-input ${
-          disabled || isReadOnly ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-      >
-        {!field.required && !field.hasMany && <option value="">Select...</option>}
-        {options.map((option: any) => (
-          <option key={option.value} value={option.value} style={{ color: option.color || undefined, fontWeight: option.color ? "bold" : "normal" }}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="field-select-control"><Dropdown matchTriggerWidth align="left" direction="down" menuClassName="max-h-72 overflow-y-auto"
+        trigger={<button type="button" id={field.name} disabled={disabled || isReadOnly}
+          className="kyro-form-input flex items-center justify-between gap-2 text-left"
+          aria-label={field.label || field.name}>
+          <span>{options.filter(option => Array.isArray(value) ? value.includes(option.value) : option.value === value).map(option => option.label).join(", ") || "Select…"}</span>
+          <ChevronDown size={13} aria-hidden="true" />
+        </button>}>
+        {!field.required && !field.hasMany && <DropdownItem onClick={() => onChange?.(undefined)}>Clear selection</DropdownItem>}
+        {options.map(option => {
+          const selected = Array.isArray(value) ? value.includes(option.value) : value === option.value;
+          return <DropdownItem key={option.value} disabled={disabled || isReadOnly} onClick={() => {
+            if (field.hasMany) {
+              const current = Array.isArray(value) ? value : [];
+              onChange?.(selected ? current.filter(item => item !== option.value) : [...current, option.value]);
+            } else onChange?.(option.value);
+          }} icon={selected ? <Check size={13} /> : undefined}>{option.label}</DropdownItem>;
+        })}
+        {options.length === 0 && <p className="p-3 text-xs text-[var(--kyro-text-secondary)]">No options available</p>}
+      </Dropdown></div>
     </FieldLayout>
   );
 }

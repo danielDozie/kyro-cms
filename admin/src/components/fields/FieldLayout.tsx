@@ -15,10 +15,10 @@ export default function FieldLayout({
   hideLabel = false,
 }: FieldLayoutProps) {
   return (
-    <div className="space-y-2.5 w-full group">
+    <div className="workspace-field w-full group">
       {field.label && !hideLabel && (
-        <div className="flex justify-between items-end mb-1">
-          <label className="block text-xs font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-50 group-focus-within:opacity-100 group-focus-within:text-[var(--kyro-primary)] transition-all duration-300">
+        <div className="flex justify-between items-end mb-1.5">
+          <label htmlFor={field.name} className="block text-sm font-medium text-[var(--kyro-text-primary)]">
             {field.label}
             {field.required && (
               <span className="text-[var(--kyro-error)] ml-1">*</span>
@@ -27,26 +27,25 @@ export default function FieldLayout({
         </div>
       )}
 
-      <div className="relative transform transition-transform duration-200 focus-within:scale-[1.002]">
+      <div className="relative">
         {children}
       </div>
 
       {((field.admin?.description as string | undefined) || error) && (
-        <div className="flex flex-col gap-1.5 px-1">
+        <div className="flex flex-col gap-1 mt-1 px-0.5">
           {((field.admin?.description as string | undefined) && !error) && (
-            <p className="text-[11px] leading-relaxed text-[var(--kyro-text-muted)] font-medium opacity-60 italic">
+            <p className="text-xs leading-normal text-[var(--kyro-text-muted)]">
               {field.admin?.description as string}
             </p>
           )}
           {error && (
-            <p className="text-[11px] leading-relaxed text-[var(--kyro-error)] font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--kyro-error)] shadow-[0_0_8px_var(--kyro-error)]" />
+            <p className="text-xs leading-normal text-[var(--kyro-error)] flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--kyro-error)]" />
               {error}
             </p>
           )}
         </div>
       )}
     </div>
-
   );
 }

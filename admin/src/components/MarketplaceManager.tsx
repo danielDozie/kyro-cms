@@ -164,15 +164,15 @@ export function MarketplaceManager() {
       {/* Header Panel */}
       <div className="surface-tile p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-           <div className="flex items-center gap-2 mb-1">
-             <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-             <h1 className="text-lg font-bold tracking-tight text-[var(--kyro-text-primary)]">
-               Extension Marketplace
-             </h1>
-           </div>
-           <p className="text-[10px] font-bold text-[var(--kyro-text-secondary)] opacity-50 tracking-widest uppercase">
-             Expand your ecosystem with community extensions
-           </p>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full bg-amber-500 " />
+            <h1 className="text-2xl font-medium tracking-tight text-[var(--kyro-text-primary)]">
+              Extension Marketplace
+            </h1>
+          </div>
+          <p className="text-xs text-[var(--kyro-text-secondary)] mt-0.5">
+            Expand your ecosystem with community extensions
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -195,8 +195,8 @@ export function MarketplaceManager() {
           <button
             key={category}
             onClick={() => setActiveCategory(category)}
-            className={`px-4 py-1.5 rounded-xl text-[10px] font-bold tracking-widest uppercase transition-all border ${activeCategory === category
-              ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-sidebar-active)] shadow-lg"
+            className={`px-4 py-1.5 rounded-md text-[10px] font-medium tracking-widest uppercase transition-all border ${activeCategory === category
+              ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] border-[var(--kyro-sidebar-active)] "
               : "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] border-[var(--kyro-border)] hover:bg-[var(--kyro-surface)]"
               }`}
           >
@@ -211,7 +211,7 @@ export function MarketplaceManager() {
           filteredExtensions.map((ext) => (
             <div
               key={ext.id}
-              className="surface-tile p-5 group hover:shadow-xl transition-all duration-300 relative flex flex-col"
+              className="surface-tile p-5 group  transition-all duration-300 relative flex flex-col"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="w-10 h-10 rounded-xl bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] flex items-center justify-center text-[var(--kyro-text-primary)] group-hover:scale-105 transition-transform">
@@ -260,7 +260,7 @@ export function MarketplaceManager() {
                   <button
                     type="button"
                     onClick={() => handleInstallRequest(ext)}
-                    className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--kyro-primary)] hover:translate-x-1 transition-transform"
+                    className="flex items-center gap-1.5 text-[10px] font-medium text-[var(--kyro-primary)] hover:translate-x-1 transition-transform"
                   >
                     Install <ChevronRight className="w-3 h-3" />
                   </button>

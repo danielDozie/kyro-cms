@@ -37,7 +37,8 @@ export function SearchInput({
       )}
       <input
         ref={inputRef}
-        type="text"
+        type="search"
+        aria-label={placeholder}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -45,7 +46,7 @@ export function SearchInput({
         onFocus={onFocus}
         onBlur={onBlur}
         disabled={disabled}
-        className="w-full pl-10 pr-4 py-2.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] focus:border-transparent disabled:opacity-50"
+        className="w-full pl-10 pr-4 py-2.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md text-sm font-normal focus:outline-none focus:ring-2 focus:ring-[var(--kyro-accent-text)] focus:border-transparent disabled:opacity-50"
       />
       {rightElement && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">

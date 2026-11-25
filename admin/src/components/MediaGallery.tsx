@@ -1,4 +1,5 @@
 import "../lib/i18n";
+import { Maximize, LayoutGrid, List } from "lucide-react";
 import { Search, Check, Server, Filter } from "./ui/icons";
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -13,11 +14,11 @@ import {
   Trash2,
   Download,
   Maximize2,
+  Eye,
   X,
   FileIcon,
   FolderInput,
   FolderPlus,
-  Grid,
   Image,
   Link,
   Crop as CropIcon,
@@ -25,10 +26,9 @@ import {
   Music,
   FileText,
   Archive,
-  Sparkles,
 } from "./ui/icons";
 import { PromptModal } from "./ui/PromptModal";
-import { ImageFocalEditor } from "./ui/ImageFocalEditor";
+import { MediaLoadBoundary } from "./ui/MediaLoadBoundary";
 import {
   apiGet,
   apiPost,
@@ -51,6 +51,10 @@ import {
   getFileType,
 } from "../types/media";
 
+const ImageFocalEditor = React.lazy(() =>
+  import("./ui/ImageFocalEditor").then((module) => ({ default: module.ImageFocalEditor })),
+);
+
 export function MediaGallery({
   onSelect,
   multiple = true,
@@ -71,9 +75,12 @@ export function MediaGallery({
   const [loadingMore, setLoadingMore] = useState(false);
   const [folders, setFolders] = useState<string[]>([]);
   const [currentFolder, setCurrentFolder] = useState<string>("");
+  const [folderSearch, setFolderSearch] = useState("");
+  const visibleFolders = folders.filter(folder => folder.toLowerCase().includes(folderSearch.toLowerCase()));
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [view, setView] = useState<"grid" | "list">("grid");
+  const mediaContainerRef = useRef<HTMLDivElement>(null);
   const [panelItem, setPanelItem] = useState<MediaItem | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showCrop, setShowCrop] = useState(false);
@@ -300,10 +307,9 @@ export function MediaGallery({
   const updateMetadata = async (id: string, data: Partial<MediaItem>) => {
     try {
       const result = await apiPatch(`/api/media/${id}`, data);
-      setItems((prev) => prev.map((item) => (item.id === id ? result.doc : item)));
-      if (panelItem?.id === id) {
-        setPanelItem(result.doc);
-      }
+      const updated = { ...result.doc, type: getFileType(result.doc.mimeType) };
+      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      setPanelItem(current => current?.id === id ? updated : current);
       toast.success("Metadata updated");
     } catch (error) {
       console.error("Failed to update metadata:", error);
@@ -317,13 +323,14 @@ export function MediaGallery({
       setUploading(true);
       const metadata = {
         ...panelItem.metadata,
-        crop: cropData,
-        hotspot: hotspotData
+        crop: cropData || null,
+        hotspot: hotspotData || null
       };
 
       const result = await apiPatch(`/api/media/${panelItem.id}`, { metadata });
-      setItems(prev => prev.map(item => item.id === panelItem.id ? result.doc : item));
-      setPanelItem(result.doc);
+      const updated = { ...result.doc, type: getFileType(result.doc.mimeType) };
+      setItems(prev => prev.map(item => item.id === panelItem.id ? updated : item));
+      setPanelItem(current => current?.id === panelItem.id ? updated : current);
       setShowCrop(false);
       toast.success("Crop & hotspot saved");
     } catch (err) {
@@ -346,7 +353,8 @@ export function MediaGallery({
 
   return (
     <div
-      className={`flex flex-col h-full bg-[var(--kyro-bg)] transition-all duration-300 ${isDragging ? "ring-4 ring-[var(--kyro-sidebar-active)] ring-inset" : ""}`}
+      style={{ position: "relative", isolation: "isolate" }}
+      className={`${pickerMode ? "" : "media-workspace"} flex flex-col h-full bg-[var(--kyro-bg)] ${isDragging ? "ring-4 ring-[var(--kyro-sidebar-active)] ring-inset" : ""}`}
       {...(pickerMode ? {} : {
         onDragOver: (e) => { e.preventDefault(); setIsDragging(true); },
         onDragLeave: () => setIsDragging(false),
@@ -354,47 +362,53 @@ export function MediaGallery({
       })}
     >
       {/* Top Bar */}
-      <div className={`flex flex-col ${pickerMode ? "gap-2 p-2" : "gap-4 md:gap-6 p-4 md:p-6 rounded-lg md:rounded-t-lg surface-tile"} border-b border-[var(--kyro-border)] backdrop-blur-md sticky top-0 z-10`}>
+      <div className={`flex flex-col ${pickerMode ? "gap-2 p-2" : "gap-4 md:gap-6 p-4 md:p-6 rounded-lg md:rounded-t-lg"} border-b border-[var(--kyro-border)] backdrop-blur-md sticky top-0 z-10`}>
         {!pickerMode && (
           <div className="flex items-center justify-between w-full">
             <div>
-              <h2 className="text-lg md:text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
+              <h2 className="text-lg md:text-xl font-medium tracking-tight text-[var(--kyro-text-primary)]">
                 Media Library
               </h2>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[10px] font-bold tracking-widest text-[var(--kyro-text-secondary)] opacity-50">
-                  {total} Items <span className="hidden sm:inline">· {formatFileSize(stats.totalSize)}</span>
+                <span className="text-xs font-normal text-[var(--kyro-text-secondary)]">
+                  {total} items <span className="hidden sm:inline">· {formatFileSize(stats.totalSize)}</span>
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex bg-[var(--kyro-surface-accent)] p-1 rounded-xl border border-[var(--kyro-border)] hidden sm:flex">
+              <div className="media-view-switch" role="group" aria-label="Media view">
                 <button
+                  aria-label="Grid view"
+                  aria-pressed={view === "grid"}
                   onClick={() => setView("grid")}
-                  className={`p-1.5 md:p-2 rounded-lg transition-all ${view === "grid" ? "bg-[var(--kyro-surface)] shadow-sm text-[var(--kyro-text-primary)]" : "text-[var(--kyro-text-secondary)] opacity-50 hover:opacity-100"}`}
+                  className="media-view-option"
                 >
-                  <Grid className="w-4 h-4" />
+                  <LayoutGrid size={15} strokeWidth={1.75} aria-hidden="true" />
                 </button>
                 <button
+                  aria-label="List view"
+                  aria-pressed={view === "list"}
                   onClick={() => setView("list")}
-                  className={`p-1.5 md:p-2 rounded-lg transition-all ${view === "list" ? "bg-[var(--kyro-surface)] shadow-sm text-[var(--kyro-text-primary)]" : "text-[var(--kyro-text-secondary)] opacity-50 hover:opacity-100"}`}
+                  className="media-view-option"
                 >
-                  <FileIcon className="w-4 h-4" />
+                  <List size={15} strokeWidth={1.75} aria-hidden="true" />
                 </button>
               </div>
 
               <button
+                aria-label="Filter media"
                 onClick={() => setShowMobileFilters(true)}
-                className="md:hidden p-2 rounded-xl bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors"
+                className="md:hidden p-2 rounded-md bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors"
               >
                 <Filter className="w-4 h-4" />
               </button>
 
               {canUpload && (
                 <button
+                  aria-label="Upload media"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center gap-2 px-3 md:px-6 py-2 md:py-2.5 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-xs shadow-lg active:scale-95 transition-all"
+                  className="media-upload flex items-center justify-center gap-2 px-3 md:px-3 py-2 md:py-2 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-md font-medium text-xs  active:scale-95 transition-all"
                 >
                   <span className="md:hidden text-lg leading-none">+</span>
                   <Maximize2 className="w-4 h-4 hidden md:block" />
@@ -410,10 +424,11 @@ export function MediaGallery({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--kyro-text-muted)]" />
             <input
               type="text"
+              aria-label="Search media"
               placeholder={t("fields.searchAssets", { defaultValue: "Search assets..." })}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] transition-all text-xs font-bold"
+              className="w-full pl-10 pr-4 py-2.5 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] transition-all text-xs font-normal"
             />
           </div>
         </div>
@@ -422,10 +437,10 @@ export function MediaGallery({
       <div className="flex flex-1 min-h-0 overflow-hidden gap-4 mt-4">
         {/* Folders Sidebar */}
         {!pickerMode && (
-          <div className="w-64 border-r border-[var(--kyro-border)] surface-tile rounded-lg overflow-y-auto hidden md:block">
+          <div className="w-64 border-r border-[var(--kyro-border)] rounded-lg overflow-y-auto hidden md:block">
             <div className="p-6 space-y-6">
               <div>
-                <span className="text-[10px] font-bold  tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40 block mb-4">
+                <span className="text-[10px] font-normal  tracking-normal text-[var(--kyro-text-secondary)] opacity-40 block mb-4">
                   Quick Filters
                 </span>
                 <div className="space-y-1">
@@ -441,8 +456,9 @@ export function MediaGallery({
                   ).map((t) => (
                     <button
                       key={t}
+                      aria-pressed={filter === t}
                       onClick={() => setFilter(t)}
-                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-xl text-[11px] font-bold capitalize transition-all ${filter === t ? "text-[var(--kyro-text-primary)] bg-[var(--kyro-surface-accent)]" : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]/50"}`}
+                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-[11px] font-medium capitalize transition-all ${filter === t ? "text-[var(--kyro-text-primary)] bg-[var(--kyro-surface-accent)]" : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]/50"}`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${filter === t ? "bg-[var(--kyro-primary)]" : "bg-transparent border border-current opacity-30"}`}
@@ -453,49 +469,15 @@ export function MediaGallery({
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-[var(--kyro-border)]">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-bold  tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40">
-                    Folders
-                  </span>
-                  <button
-                    onClick={() => setShowNewFolderModal(true)}
-                    className="p-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-colors text-[var(--kyro-text-primary)]"
-                  >
-                    <FolderPlus className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <nav className="space-y-1">
-                  <button
-                    onClick={() => setCurrentFolder("")}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${currentFolder === "" ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"}`}
-                  >
-                    <FolderInput className="w-4 h-4 opacity-70" />
-                    All Assets
-                  </button>
-                  {folders.map((folder) => (
-                    <div key={folder} className="group relative">
-                      <button
-                        onClick={() => setCurrentFolder(folder)}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${currentFolder === folder ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"}`}
-                      >
-                        <div className="w-4 h-4 flex items-center justify-center opacity-70">
-                          <Folder fill={currentFolder === folder ? "currentColor" : "none"} />
-                        </div>
-                        {folder}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFolder(folder);
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
+              <div className="media-folder-section">
+                <div className="media-folder-heading"><h3>Media folders <span>{folders.length}</span></h3>{canUpload && <button type="button" className="kyro-btn kyro-btn-sm kyro-btn-ghost kyro-btn-icon" onClick={() => setShowNewFolderModal(true)} aria-label="Create media folder"><FolderPlus className="w-4 h-4" /></button>}</div>
+                <p className="media-folder-help">Group related files. Folders do not affect publishing.</p>
+                {folders.length > 5 && <input type="search" value={folderSearch} onChange={event => setFolderSearch(event.target.value)} placeholder="Find a folder…" aria-label="Find a media folder" className="media-folder-search" />}
+                <nav className="media-folder-nav" aria-label="Media folders">
+                  <button type="button" aria-pressed={currentFolder === ""} onClick={() => setCurrentFolder("")}><FolderInput className="w-4 h-4" aria-hidden="true" /><span>All assets</span></button>
+                  {visibleFolders.map(folder => <div className="media-folder-row" key={folder}><button type="button" title={folder} aria-pressed={currentFolder === folder} onClick={() => setCurrentFolder(folder)}><Folder className="w-4 h-4" aria-hidden="true" /><span>{folder}</span></button>{canDelete && <button type="button" className="media-folder-delete" aria-label={`Delete folder ${folder}`} onClick={() => handleDeleteFolder(folder)}><Trash2 className="w-3.5 h-3.5" /></button>}</div>)}
+                  {folders.length === 0 && <p className="media-folder-help">No folders yet. Create one to organize your files.</p>}
+                  {folders.length > 0 && visibleFolders.length === 0 && <p className="media-folder-help">No matching folders.</p>}
                 </nav>
               </div>
             </div>
@@ -503,7 +485,9 @@ export function MediaGallery({
         )}
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-[var(--kyro-bg)]">
+        <div ref={mediaContainerRef} style={{ position: "relative", overflow: "hidden" }} className="flex-1 flex flex-col min-h-0 min-w-0 bg-[var(--kyro-bg)]">
+          {!pickerMode && <div className="media-location"><div><button type="button" onClick={() => setCurrentFolder("")}>Media library</button><span aria-hidden="true">/</span><strong>{currentFolder || "All assets"}</strong><small>{total} {total === 1 ? "file" : "files"}</small></div>{currentFolder && <button type="button" className="kyro-btn kyro-btn-sm kyro-btn-ghost" onClick={() => setCurrentFolder("")}>Clear folder</button>}</div>}
+          {!pickerMode && <details className="media-folder-directory"><summary>Browse folders <span>{folders.length}</span></summary><div>{folders.length ? folders.map(folder => <button type="button" key={folder} onClick={event => { setCurrentFolder(folder); event.currentTarget.closest("details")?.removeAttribute("open"); }}><Folder className="w-5 h-5" aria-hidden="true" /><span>{folder}</span><span aria-hidden="true">↗</span></button>) : <p className="media-folder-help">Folders keep related assets together. {canUpload && <button type="button" onClick={() => setShowNewFolderModal(true)}>Create your first folder</button>}</p>}</div></details>}
           <div className={`flex-1 overflow-y-auto custom-scrollbar ${pickerMode ? "" : ""}`}>
             {loading ? (
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -514,7 +498,7 @@ export function MediaGallery({
                 <div className="w-24 h-24 rounded-[2rem] bg-[var(--kyro-surface-accent)] flex items-center justify-center mb-8 rotate-12 group-hover:rotate-0 transition-transform duration-500">
                   <Image className="w-10 h-10 text-[var(--kyro-text-muted)] opacity-30" />
                 </div>
-                <h3 className="text-xl font-bold text-[var(--kyro-text-primary)] tracking-tight">
+                <h3 className="text-xl font-normal text-[var(--kyro-text-primary)] tracking-tight">
                   No assets found
                 </h3>
                 <p className="text-[var(--kyro-text-secondary)] mt-2 max-w-xs mx-auto text-sm font-medium leading-relaxed">
@@ -523,82 +507,31 @@ export function MediaGallery({
                 </p>
                 {!pickerMode && canUpload && (
                   <button
+                    aria-label="Upload media"
                     onClick={() => fileInputRef.current?.click()}
-                    className="mt-8 px-8 py-3 bg-[var(--kyro-text-primary)] text-[var(--kyro-bg)] rounded-2xl font-bold text-xs hover:scale-105 transition-all shadow-xl"
+                    className="mt-8 px-3 py-2 bg-[var(--kyro-text-primary)] text-[var(--kyro-bg)] rounded-md font-medium text-xs hover:scale-105 transition-all "
                   >
                     Start Uploading
                   </button>
                 )}
               </div>
             ) : view === "grid" ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-1">
-                {items.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className={`group relative aspect-square rounded-lg overflow-hidden bg-[var(--kyro-surface-accent)] border-2 transition-all duration-300 cursor-pointer ${selectedIds.has(item.id) ? "border-[var(--kyro-primary)]" : "border-transparent hover:border-[var(--kyro-border-strong)] hover:shadow-2xl hover:-translate-y-1"}`}
-                    onClick={() => setPanelItem(item)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      handleSelectOne(item.id, e);
-                    }}
-                  >
-                    {item.type === "image" ? (
-                      <img
-                        src={getCroppedUrl(item, 400) || item.url}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-6 gap-4">
-                        <div className="p-4 rounded-2xl bg-[var(--kyro-surface)] shadow-inner text-[var(--kyro-text-secondary)]">
-                          {item.type === "video" ? (
-                            <Film className="w-8 h-8" />
-                          ) : item.type === "audio" ? (
-                            <Music className="w-8 h-8" />
-                          ) : item.type === "document" ? (
-                            <FileText className="w-8 h-8" />
-                          ) : item.type === "archive" ? (
-                            <Archive className="w-8 h-8" />
-                          ) : (
-                            <FileIcon className="w-8 h-8" />
-                          )}
-                        </div>
-                        <span className="text-[10px] font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-50 text-center px-4 line-clamp-2">
-                          {item.title}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-bold text-[10px] truncate max-w-[120px]">
-                          {item.filename}
-                        </span>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={(e) => handleSelectOne(item.id, e)}
-                            className={`kyro-btn-primary p-1.5 rounded-lg transition-all ${selectedIds.has(item.id) ? "" : "bg-white/10 text-white hover:bg-white/20"}`}
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedIds.has(item.id) && (
-                      <div className="absolute top-3 left-3 w-6 h-6 rounded-lg bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] flex items-center justify-center shadow-lg border-2 border-white/20 animate-in zoom-in duration-300">
-                        <Check className="w-4 h-4" />
-                      </div>
-                    )}
+              <div className="media-asset-grid">
+                {items.map(item => <div key={item.id} className={`media-asset-card ${selectedIds.has(item.id) ? "is-selected" : ""}`}>
+                  <button type="button" className="media-asset-preview" aria-label={`Open ${item.title || item.filename}`} onClick={() => setPanelItem(item)}>
+                    {item.type === "image" ? <img src={getCroppedUrl(item, 400) || item.url} alt="" loading="lazy" /> : <span className="media-file-placeholder"><FileIcon className="w-8 h-8" /><span>{item.type}</span></span>}
+                  </button>
+                  <div className="media-asset-caption">
+                    <button type="button" className="media-asset-name" title={item.filename} onClick={() => setPanelItem(item)}>{item.filename}</button>
+                    <button type="button" className="media-asset-select" aria-label={`Select ${item.filename}`} aria-pressed={selectedIds.has(item.id)} onClick={e => handleSelectOne(item.id, e)}><Check className="w-4 h-4" aria-hidden="true" /></button>
                   </div>
-                ))}
+                </div>)}
               </div>
             ) : (
               <div className="surface-tile overflow-hidden rounded-lg animate-in fade-in duration-500">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-[10px] font-bold  tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40 border-b border-[var(--kyro-border)]">
+                    <tr className="text-[10px] font-normal  tracking-normal text-[var(--kyro-text-secondary)] opacity-40 border-b border-[var(--kyro-border)]">
                       <th className="px-6 py-4 w-12">
                         <input
                           type="checkbox"
@@ -650,7 +583,7 @@ export function MediaGallery({
                               )}
                             </div>
                             <div className="flex flex-col min-w-0">
-                              <span className="font-bold text-xs text-[var(--kyro-text-primary)] truncate max-w-[200px]">
+                              <span className="font-normal text-xs text-[var(--kyro-text-primary)] truncate max-w-[200px]">
                                 {item.title || item.filename}
                               </span>
                               <span className="text-[10px] text-[var(--kyro-text-secondary)] opacity-50 truncate">
@@ -664,22 +597,34 @@ export function MediaGallery({
                             {item.mimeType}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4 text-[11px] font-bold text-[var(--kyro-text-secondary)]">
+                        <td className="px-6 py-4 text-[11px] font-normal text-[var(--kyro-text-secondary)]">
                           {formatFileSize(item.fileSize)}
                         </td>
-                        <td className="px-6 py-4 text-[11px] font-bold text-[var(--kyro-text-secondary)]">
+                        <td className="px-6 py-4 text-[11px] font-normal text-[var(--kyro-text-secondary)]">
                           {formatDate(item.createdAt)}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectOne(item.id, e);
-                            }}
-                            className={`kyro-btn-primary p-2 rounded-lg transition-all ${selectedIds.has(item.id) ? "" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] opacity-0 group-hover:opacity-100"}`}
-                          >
-                            <Grid className="w-4 h-4" />
-                          </button>
+                          <div className="media-row-actions">
+                            <button
+                              type="button"
+                              className="media-row-action"
+                              aria-label={`View details for ${item.filename}`}
+                              title="View details"
+                              onClick={event => { event.stopPropagation(); setPanelItem(item); }}
+                            >
+                              <Eye size={15} strokeWidth={1.75} aria-hidden="true" />
+                            </button>
+                            <a
+                              className="media-row-action"
+                              href={getAbsoluteUrl(item.url)}
+                              download={item.filename}
+                              aria-label={`Download ${item.filename}`}
+                              title="Download"
+                              onClick={event => event.stopPropagation()}
+                            >
+                              <Download size={15} strokeWidth={1.75} aria-hidden="true" />
+                            </a>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -694,7 +639,7 @@ export function MediaGallery({
                 <button
                   onClick={handleLoadMore}
                   disabled={loadingMore}
-                  className="px-8 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-50 flex items-center gap-2"
+                  className="px-3 py-2 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-md font-medium text-xs hover:scale-105 active:scale-95 transition-all  disabled:opacity-50 flex items-center gap-2"
                 >
                   {loadingMore ? (
                     <>
@@ -710,66 +655,14 @@ export function MediaGallery({
         </div>
       </div>
 
-      {/* Upload Banner */}
-      {!pickerMode && uploading && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[60] w-full max-w-lg">
-          <div className="bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-[2rem] shadow-2xl p-6 ring-1 ring-white/10 animate-in slide-in-from-bottom-12 duration-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] flex items-center justify-center animate-pulse">
-                  <Spinner />
-                </div>
-                <span className="text-sm font-bold tracking-tight text-[var(--kyro-text-primary)]">
-                  Uploading Files
-                </span>
-              </div>
-              <span className="text-[10px] font-bold  tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-50">
-                {Object.keys(uploadProgress).length} Total
-              </span>
-            </div>
-            <div className="space-y-4 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-              {Object.entries(uploadProgress).map(([name, progress]) => (
-                <div key={name} className="space-y-2">
-                  <div className="flex justify-between text-[10px] font-bold">
-                    <span className="text-[var(--kyro-text-primary)] truncate max-w-[200px]">
-                      {name}
-                    </span>
-                    <span className="text-[var(--kyro-primary)]">
-                      {progress}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full bg-[var(--kyro-surface-accent)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[var(--kyro-primary)] transition-all duration-300 rounded-full"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Selection Footer */}
+      {!pickerMode && uploading && <p role="status">Uploading media…</p>}
+      {/* Selection actions */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[60] bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-full shadow-2xl px-2 py-2 flex items-center gap-12 animate-in slide-in-from-bottom-12 duration-700 ring-1 ring-white/10 backdrop-blur-xl">
-          <div className="flex items-center gap-5 border-r border-[var(--kyro-border)] ">
-            <div className="w-12 h-12 rounded-full bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] flex items-center justify-center text-lg font-bold shadow-inner">
-              {selectedIds.size}
-            </div>
-            <div>
-              <p className="text-[11px] font-bold  tracking-[0.2em] text-[var(--kyro-text-primary)]">
-                Selected
-              </p>
-              <button
-                onClick={() => setSelectedIds(new Set())}
-                className="text-[10px] font-bold text-[var(--kyro-primary)] hover:underline opacity-80"
-              >
-                Clear all
-              </button>
-            </div>
-          </div>
+        <div className="media-selection-toolbar" role="toolbar" aria-label="Selected media actions">
+          <span className="media-selection-count" role="status">{selectedIds.size} selected</span>
+          <button type="button" onClick={() => setSelectedIds(new Set())} className="media-selection-clear">
+            Clear
+          </button>
           <div className="flex items-center gap-4">
             {onSelect && (
               <button
@@ -777,17 +670,19 @@ export function MediaGallery({
                   const selectedItems = items.filter((i) => selectedIds.has(i.id));
                   onSelect(selectedItems);
                 }}
-                className="px-8 py-3 bg-[var(--kyro-text-primary)] text-[var(--kyro-bg)] rounded-full font-bold text-xs hover:scale-105 transition-all shadow-xl"
+                className="media-selection-confirm"
               >
-                Confirm Selection
+                Use selected
               </button>
             )}
             {!pickerMode && canDelete && (
               <button
                 onClick={handleBulkDelete}
-                className="p-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-full transition-all active:scale-90"
+                aria-label={`Delete ${selectedIds.size} selected assets`}
+                title="Delete selected"
+                className="media-selection-delete"
               >
-                <Trash2 className="w-5 h-5" />
+                <Trash2 className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -801,14 +696,15 @@ export function MediaGallery({
             className="fixed inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowMobileFilters(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 bg-[var(--kyro-surface)] rounded-t-3xl shadow-2xl max-h-[70vh] overflow-y-auto animate-in slide-in-from-bottom-12 duration-300">
+          <div className="fixed bottom-0 left-0 right-0 bg-[var(--kyro-surface)] rounded-t-3xl  max-h-[70vh] overflow-y-auto animate-in slide-in-from-bottom-12 duration-300">
             <div className="sticky top-0 bg-[var(--kyro-surface)] z-10 flex items-center justify-between p-6 pb-4 border-b border-[var(--kyro-border)]">
-              <h3 className="text-sm font-bold tracking-tight text-[var(--kyro-text-primary)]">
+              <h3 className="text-sm font-normal tracking-tight text-[var(--kyro-text-primary)]">
                 Filters
               </h3>
               <button
+                aria-label="Close media filters"
                 onClick={() => setShowMobileFilters(false)}
-                className="p-2 rounded-xl hover:bg-[var(--kyro-surface-accent)] transition-colors text-[var(--kyro-text-muted)]"
+                className="p-2 rounded-md hover:bg-[var(--kyro-surface-accent)] transition-colors text-[var(--kyro-text-muted)]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -817,15 +713,16 @@ export function MediaGallery({
             <div className="p-6 space-y-8">
               {/* Quick Filters */}
               <div>
-                <span className="text-[10px] font-bold tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40 block mb-4">
+                <span className="text-[10px] font-normal tracking-normal text-[var(--kyro-text-secondary)] opacity-40 block mb-4">
                   Quick Filters
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {(["all", "image", "video", "audio", "document", "archive"] as const).map((t) => (
                     <button
                       key={t}
+                      aria-pressed={filter === t}
                       onClick={() => { setFilter(t); setShowMobileFilters(false); }}
-                      className={`px-4 py-2 rounded-xl text-[11px] font-bold capitalize transition-all border ${filter === t ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] border-transparent" : "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] border-[var(--kyro-border)] hover:border-[var(--kyro-text-muted)]"}`}
+                      className={`px-4 py-2 rounded-md text-[11px] font-medium capitalize transition-all border ${filter === t ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] border-transparent" : "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] border-[var(--kyro-border)] hover:border-[var(--kyro-text-muted)]"}`}
                     >
                       {t}
                     </button>
@@ -836,10 +733,11 @@ export function MediaGallery({
               {/* Folders */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-bold tracking-[0.2em] text-[var(--kyro-text-secondary)] opacity-40">
+                  <span className="text-[10px] font-normal tracking-normal text-[var(--kyro-text-secondary)] opacity-40">
                     Folders
                   </span>
                   <button
+                    aria-label="Create media folder"
                     onClick={() => { setShowNewFolderModal(true); setShowMobileFilters(false); }}
                     className="p-1.5 hover:bg-[var(--kyro-surface-accent)] rounded-lg transition-colors text-[var(--kyro-text-primary)]"
                   >
@@ -849,7 +747,7 @@ export function MediaGallery({
                 <nav className="space-y-1">
                   <button
                     onClick={() => { setCurrentFolder(""); setShowMobileFilters(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${currentFolder === "" ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"}`}
+                    className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-xs font-medium transition-all ${currentFolder === "" ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] " : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"}`}
                   >
                     <FolderInput className="w-4 h-4 opacity-70" />
                     All Assets
@@ -858,7 +756,7 @@ export function MediaGallery({
                     <div key={folder} className="group relative">
                       <button
                         onClick={() => { setCurrentFolder(folder); setShowMobileFilters(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${currentFolder === folder ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-md" : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"}`}
+                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-xs font-medium transition-all ${currentFolder === folder ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] " : "text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] hover:text-[var(--kyro-text-primary)]"}`}
                       >
                         <div className="w-4 h-4 flex items-center justify-center opacity-70">
                           <Folder fill={currentFolder === folder ? "currentColor" : "none"} />
@@ -886,167 +784,60 @@ export function MediaGallery({
 
       {/* Asset Panel */}
       <SlidePanel
+        contained
+        containerRef={mediaContainerRef}
         open={!!panelItem}
-        onClose={() => setPanelItem(null)}
-        title={t("tooltips.assetDetails", { defaultValue: "Asset Details" })}
-        subtitle={panelItem?.filename}
+        onClose={() => { if (!showPreview && !showCrop) setPanelItem(null); }}
+        title={panelItem?.filename || "Asset details"}
       >
         {panelItem && (
-          <div className="flex flex-col h-full">
-            <div className="aspect-video w-full rounded-2xl bg-[var(--kyro-bg)] border border-[var(--kyro-border)] overflow-hidden relative group">
+          <div className="asset-inspector" key={panelItem.id}>
+            <div className="asset-inspector-preview">
               {panelItem.type === "image" ? (
-                <img
-                  src={getCroppedUrl(panelItem) || getAbsoluteUrl(panelItem.url)}
-                  alt=""
-                  className="w-full h-full object-contain p-4"
-                />
+                <img src={getCroppedUrl(panelItem) || getAbsoluteUrl(panelItem.url)} alt={panelItem.alt || ""} />
               ) : panelItem.type === "video" ? (
-                <video
-                  src={getAbsoluteUrl(panelItem.url)}
-                  controls
-                  className="w-full h-full"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-12 gap-6">
-                  <div className="w-20 h-20 rounded-[2rem] bg-[var(--kyro-surface-accent)] flex items-center justify-center">
-                    <FileIcon className="w-10 h-10 text-[var(--kyro-text-secondary)]" />
-                  </div>
-                  <Badge variant="outline" className="text-xs font-bold">
-                    {panelItem.mimeType}
-                  </Badge>
-                </div>
+                <video src={getAbsoluteUrl(panelItem.url)} controls />
+              ) : panelItem.type === "audio" ? (
+                <audio src={getAbsoluteUrl(panelItem.url)} controls />
+              ) : <FileIcon aria-hidden="true" />}
+              {["image", "video"].includes(panelItem.type) && (
+                <button className="asset-expand" aria-label="Expand preview" title="Expand preview" onClick={() => setShowPreview(true)}>
+                  <Maximize size={13} strokeWidth={1.75} aria-hidden="true" />
+                </button>
               )}
-
-              <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => setShowPreview(true)}
-                  className="p-2.5 bg-black/50 backdrop-blur-md text-white rounded-xl hover:bg-black/70 transition-all"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                </button>
-              </div>
             </div>
-
-            <div className="mt-8 space-y-8 flex-1">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-[var(--kyro-surface-accent)]/50 border border-[var(--kyro-border)]">
-                  <span className="text-[9px] font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-50 block mb-1">
-                    Dimensions
-                  </span>
-                  <span className="text-xs font-bold text-[var(--kyro-text-primary)]">
-                    {panelItem.type === "image" ? "Original Resolution" : "N/A"}
-                  </span>
-                </div>
-                <div className="p-4 rounded-2xl bg-[var(--kyro-surface-accent)]/50 border border-[var(--kyro-border)]">
-                  <span className="text-[9px] font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-50 block mb-1">
-                    File Size
-                  </span>
-                  <span className="text-xs font-bold text-[var(--kyro-text-primary)]">
-                    {formatFileSize(panelItem.fileSize)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-50 block mb-2 px-1">
-                    Public Link
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={getAbsoluteUrl(panelItem.url)}
-                      className="flex-1 px-4 py-3 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-xl text-[10px] font-bold font-mono focus:outline-none"
-                    />
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(
-                          getAbsoluteUrl(panelItem.url),
-                        );
-                        toast.success("URL copied to clipboard");
-                      }}
-                      className="p-3 bg-[var(--kyro-surface-accent)] hover:bg-[var(--kyro-border)] border border-[var(--kyro-border)] rounded-xl transition-all"
-                    >
-                      <Link className="w-4 h-4 text-[var(--kyro-text-primary)]" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2 px-1">
-                      <label className="text-[10px] font-bold tracking-widest text-[var(--kyro-text-secondary)] opacity-50 block">
-                        Alt Text
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const filename = panelItem.filename?.replace(/[-_]/g, " ")?.replace(/\.[^/.]+$/, "") || "asset";
-                          const generated = filename.charAt(0).toUpperCase() + filename.slice(1);
-                          updateMetadata(panelItem.id, {
-                            alt: generated,
-                            caption: `Photograph of ${filename.toLowerCase()}`,
-                          });
-                          toast.success("AI Alt-Text generated");
-                        }}
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--kyro-sidebar-active)] hover:underline cursor-pointer"
-                        title="Auto-generate Alt Text and Caption"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        <span>Generate with AI</span>
-                      </button>
-                    </div>
-                    <textarea
-                      value={panelItem.alt || ""}
-                      onChange={(e) =>
-                        updateMetadata(panelItem.id, { alt: e.target.value })
-                      }
-                      className="w-full px-4 py-3 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-lg text-xs font-bold transition-all resize-none min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] focus:border-transparent"
-                      placeholder={t("fields.describeThisAsset", { defaultValue: "Describe this asset..." })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold  tracking-widest text-[var(--kyro-text-secondary)] opacity-50 block mb-2 px-1">
-                      Caption
-                    </label>
-                    <textarea
-                      value={panelItem.caption || ""}
-                      onChange={(e) =>
-                        updateMetadata(panelItem.id, {
-                          caption: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-lg text-xs font-bold transition-all resize-none min-h-[80px] focus:outline-none focus:ring-2 focus:ring-[var(--kyro-sidebar-active)] focus:border-transparent"
-                      placeholder={t("fields.addACaption", { defaultValue: "Add a caption..." })}
-                    />
-                  </div>
-                </div>
-              </div>
+            <p className="asset-inspector-facts">{panelItem.mimeType} · {formatFileSize(panelItem.fileSize)}</p>
+            <div className="asset-inspector-tools">
+              {panelItem.type === "image" && canUpdate && !pickerMode && (
+                <button onClick={() => setShowCrop(true)}><CropIcon size={15} /> Crop & focus</button>
+              )}
+              <a href={getAbsoluteUrl(panelItem.url)} target="_blank" rel="noopener noreferrer">Open original ↗</a>
+              {!pickerMode && <a href={getAbsoluteUrl(panelItem.url)} download={panelItem.filename}><Download size={15} /> Download</a>}
             </div>
-
+            {panelItem.type === "image" && (
+              <details className="asset-inspector-details">
+                <summary>Original image{panelItem.metadata?.crop || panelItem.metadata?.hotspot ? " · Edits applied" : ""}</summary>
+                <img src={getAbsoluteUrl(panelItem.url)} alt={panelItem.alt || panelItem.filename}
+                  style={{ width: "100%", maxHeight: 200, objectFit: "contain", marginTop: 8 }} />
+                <p>The original is preserved. Use Crop & focus, then Reset and Save edits to restore the full image.</p>
+              </details>
+            )}
+            <AssetDescription item={panelItem} editable={canUpdate} onSave={updateMetadata} />
+            <details className="asset-inspector-details">
+              <summary>File details</summary>
+              <p>Uploaded {formatDate(panelItem.createdAt)}</p>
+              <label>Public link<input readOnly value={getAbsoluteUrl(panelItem.url)} onFocus={event => event.currentTarget.select()} /></label>
+              <button onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(getAbsoluteUrl(panelItem.url));
+                  toast.success("Public link copied");
+                } catch {
+                  toast.error("Select the public link and copy it manually.");
+                }
+              }}><Link size={14} /> Copy link</button>
+            </details>
             {!pickerMode && (
-              <div className="pt-8 border-t border-[var(--kyro-border)] mt-8 flex gap-3 pb-8">
-                <button
-                  onClick={() => {
-                    const link = document.createElement("a");
-                    link.href = getAbsoluteUrl(panelItem.url);
-                    link.download = panelItem.filename;
-                    link.click();
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-xs shadow-lg hover:opacity-90 transition-all"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-                {panelItem.type === "image" && canUpdate && (
-                  <button
-                    onClick={() => setShowCrop(true)}
-                    className="p-3 border border-[var(--kyro-border)] rounded-xl text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-all"
-                  >
-                    <CropIcon className="w-4 h-4" />
-                  </button>
-                )}
+              <div className="asset-inspector-footer">
                 {canDelete && (
                   <button
                     onClick={() => {
@@ -1066,9 +857,9 @@ export function MediaGallery({
                         }
                       });
                     }}
-                    className="p-3 border border-red-100 text-red-500 rounded-xl hover:bg-red-50 transition-all"
+                    className="asset-delete"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 size={14} /> Delete asset
                   </button>
                 )}
               </div>
@@ -1088,16 +879,16 @@ export function MediaGallery({
         >
           <div className="flex items-center justify-between p-6">
             <div className="flex flex-col">
-              <span className="text-white font-bold text-lg tracking-tight">
+              <span className="text-white font-normal text-lg tracking-tight">
                 {panelItem.filename}
               </span>
-              <span className="text-white/40 text-[10px] font-bold  tracking-widest mt-1">
+              <span className="text-white/40 text-[10px] font-normal  tracking-normal mt-1">
                 {formatFileSize(panelItem.fileSize)} · {panelItem.mimeType}
               </span>
             </div>
             <button
               onClick={() => setShowPreview(false)}
-              className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all active:scale-90"
+              className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-md transition-all active:scale-90"
             >
               <X className="w-6 h-6" />
             </button>
@@ -1107,19 +898,19 @@ export function MediaGallery({
               <img
                 src={getCroppedUrl(panelItem) || getAbsoluteUrl(panelItem.url)}
                 alt=""
-                className="max-h-full max-w-full object-contain shadow-2xl rounded-lg animate-in zoom-in-95 duration-500"
+                className="max-h-full max-w-full object-contain  rounded-lg animate-in zoom-in-95 duration-500"
               />
             ) : panelItem.type === "video" ? (
               <video
                 src={getAbsoluteUrl(panelItem.url)}
                 controls
                 autoPlay
-                className="max-h-full max-w-full rounded-lg shadow-2xl"
+                className="max-h-full max-w-full rounded-lg "
               />
             ) : (
               <div className="text-white text-center">
                 <FileIcon className="w-24 h-24 mx-auto mb-6 opacity-20" />
-                <p className="text-xl font-bold opacity-50">
+                <p className="text-xl font-normal opacity-50">
                   Preview not available for this file type
                 </p>
               </div>
@@ -1132,19 +923,26 @@ export function MediaGallery({
       {!pickerMode && showCrop && panelItem && (
         <Modal
           open={showCrop}
-          onClose={() => setShowCrop(false)}
+          onClose={() => { if (!uploading) setShowCrop(false); }}
           title=""
           size="full"
           variant="lightbox"
         >
-          <ImageFocalEditor
-            url={getAbsoluteUrl(panelItem.url)}
-            initialCrop={panelItem.metadata?.crop}
-            initialHotspot={panelItem.metadata?.hotspot}
-            onSave={handleSaveCropHotspot}
-            onCancel={() => setShowCrop(false)}
-            isSaving={uploading}
-          />
+          <MediaLoadBoundary
+            loading={t("media.loadingCropEditor", { defaultValue: "Loading crop editor…" })}
+            failed={t("media.cropEditorLoadFailed", { defaultValue: "The crop editor couldn’t load." })}
+            recoverLabel={t("common.close", { defaultValue: "Close" })}
+            onRecover={() => setShowCrop(false)}
+          >
+            <ImageFocalEditor
+              url={getAbsoluteUrl(panelItem.url)}
+              initialCrop={panelItem.metadata?.crop}
+              initialHotspot={panelItem.metadata?.hotspot}
+              onSave={handleSaveCropHotspot}
+              onCancel={() => { if (!uploading) setShowCrop(false); }}
+              isSaving={uploading}
+            />
+          </MediaLoadBoundary>
         </Modal>
       )}
       {!pickerMode && (
@@ -1175,7 +973,7 @@ export function MediaGallery({
             <div className="flex gap-3">
               <a
                 href={`${adminPath}/settings/storage-settings`}
-                className="flex-1 px-4 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-bold text-center hover:opacity-90 transition-colors"
+                className="flex-1 px-4 py-3 bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] rounded-xl font-normal text-center hover:opacity-90 transition-colors"
               >
                 Configure Storage
               </a>
@@ -1197,7 +995,7 @@ export function MediaGallery({
                     toast.error("Failed to configure storage");
                   });
                 }}
-                className="flex-1 px-4 py-3 border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] rounded-xl font-bold hover:bg-[var(--kyro-surface-accent)] transition-colors"
+                className="flex-1 px-4 py-2 border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] rounded-md font-medium hover:bg-[var(--kyro-surface-accent)] transition-colors"
               >
                 Use Defaults
               </button>
@@ -1218,5 +1016,32 @@ export function MediaGallery({
         />
       )}
     </div>
+  );
+}
+
+function AssetDescription({ item, editable, onSave }: {
+  item: MediaItem;
+  editable: boolean;
+  onSave: (id: string, fields: Partial<MediaItem>) => Promise<void>;
+}) {
+  const [alt, setAlt] = useState(item.alt || "");
+  const [caption, setCaption] = useState(item.caption || "");
+  const [saving, setSaving] = useState(false);
+  const changed = alt !== (item.alt || "") || caption !== (item.caption || "");
+  return (
+    <form onSubmit={async event => {
+      event.preventDefault();
+      if (!editable || saving || !changed) return;
+      setSaving(true);
+      try { await onSave(item.id, { alt, caption }); }
+      finally { setSaving(false); }
+    }}>
+      <label htmlFor="asset-alt">Alt text</label>
+      {editable && <button className="asset-use-name" type="button" disabled={saving} onClick={() => setAlt(item.filename.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "))}>Use filename</button>}
+      <textarea id="asset-alt" rows={2} readOnly={!editable || saving} value={alt} onChange={event => setAlt(event.target.value)} />
+      <label htmlFor="asset-caption">Caption</label>
+      <textarea id="asset-caption" rows={2} readOnly={!editable || saving} value={caption} onChange={event => setCaption(event.target.value)} />
+      {editable && changed && <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>}
+    </form>
   );
 }

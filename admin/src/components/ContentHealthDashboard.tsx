@@ -1,21 +1,11 @@
+import { CustomSelect } from "./ui/CustomSelect";
+import "../styles/health-workspace.css";
 import "../lib/i18n";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Activity,
-  CheckCircle2,
-  AlertTriangle,
   RefreshCcw,
-  Shield,
-  Zap,
-  Globe,
-  Sparkles,
   ExternalLink,
-  FileText,
   Image,
-  FolderTree,
-  Box,
-  Layers,
-  Link as LinkIcon,
 } from "./ui/icons";
 import { PageHeader } from "./ui/PageHeader";
 import { Badge } from "./ui/Badge";
@@ -59,20 +49,15 @@ interface ContentHealthReport {
 }
 
 interface StatCardProps {
-  icon: React.ReactNode;
   label: string;
   value: string | number;
   sub?: string;
-  color: string;
   loading?: boolean;
 }
 
-function StatCard({ icon, label, value, sub, color, loading }: StatCardProps) {
+function StatCard({ label, value, sub, loading }: StatCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-5 flex flex-col gap-3 hover:border-[var(--kyro-border-hover,var(--kyro-border))] transition-colors">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${color}`}>
-        {icon}
-      </div>
+    <div className="health-stat relative overflow-hidden rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] p-3 flex flex-col gap-3 hover:border-[var(--kyro-border-hover,var(--kyro-border))] transition-colors">
       {loading ? (
         <div className="space-y-1.5">
           <Shimmer variant="text" className="w-16" />
@@ -81,12 +66,12 @@ function StatCard({ icon, label, value, sub, color, loading }: StatCardProps) {
       ) : (
         <>
           <div>
-            <p className="text-2xl font-bold text-[var(--kyro-text-primary)] leading-none tracking-tight">
+            <p className="text-2xl font-medium text-[var(--kyro-text-primary)] leading-none tracking-tight">
               {value}
             </p>
             {sub && <p className="text-[11px] text-[var(--kyro-text-muted)] mt-1">{sub}</p>}
           </div>
-          <p className="text-xs font-medium text-[var(--kyro-text-secondary)] uppercase tracking-wider">
+          <p className="text-xs font-medium text-[var(--kyro-text-secondary)] tracking-normal">
             {label}
           </p>
         </>
@@ -97,28 +82,22 @@ function StatCard({ icon, label, value, sub, color, loading }: StatCardProps) {
 
 interface CategoryHealthRowProps {
   name: string;
-  description: string;
   score: number;
   issueCount: number;
-  icon: React.ReactNode;
   loading?: boolean;
 }
 
-function CategoryHealthRow({ name, description, score, issueCount, icon, loading }: CategoryHealthRowProps) {
+function CategoryHealthRow({ name, score, issueCount, loading }: CategoryHealthRowProps) {
   const isHealthy = issueCount === 0;
   return (
     <div className="flex items-center gap-4 py-3 px-4 rounded-xl hover:bg-[var(--kyro-surface-accent)] transition-colors group">
-      <div className="w-9 h-9 rounded-lg bg-[var(--kyro-surface-accent)] group-hover:bg-[var(--kyro-surface)] flex items-center justify-center text-[var(--kyro-text-secondary)] transition-colors flex-shrink-0">
-        {icon}
-      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-[var(--kyro-text-primary)]">{name}</p>
-          <span className="text-[10px] font-bold text-[var(--kyro-text-muted)] font-mono">
+          <p className="text-sm font-medium text-[var(--kyro-text-primary)]">{name}</p>
+          <span className="text-[10px] font-medium text-[var(--kyro-text-muted)] font-mono">
             {score}%
           </span>
         </div>
-        <p className="text-xs text-[var(--kyro-text-muted)] truncate">{description}</p>
       </div>
       {loading ? (
         <Shimmer variant="text" className="w-16" />
@@ -191,15 +170,14 @@ export function ContentHealthDashboard() {
   const collectionList = Object.values(collectionScores);
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="health-workspace">
       <PageHeader
         title={t("tooltips.contentHealth", { defaultValue: "Content Health" })}
-        description="Real-time SEO, accessibility, links, and schema quality diagnostics across all collections"
         actions={
           <button
             onClick={runAudit}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--kyro-surface-accent)] hover:bg-[var(--kyro-border)] border border-[var(--kyro-border)] text-sm font-medium text-[var(--kyro-text-primary)] transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--kyro-surface-accent)] hover:bg-[var(--kyro-border)] border border-[var(--kyro-border)] text-sm font-medium text-[var(--kyro-text-primary)] transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
           >
             <RefreshCcw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
@@ -207,10 +185,10 @@ export function ContentHealthDashboard() {
         }
       />
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Overall Status Banner */}
         <div
-          className={`relative overflow-hidden rounded-2xl border p-6 flex items-center gap-5 ${loading
+          className={`relative overflow-hidden rounded-lg border p-4 flex items-center gap-3 ${loading
             ? "border-[var(--kyro-border)] bg-[var(--kyro-surface)]"
             : totalDocs === 0
               ? "border-blue-500/20 bg-[var(--kyro-surface)]"
@@ -219,27 +197,6 @@ export function ContentHealthDashboard() {
                 : "border-amber-500/20 bg-[var(--kyro-surface)]"
             }`}
         >
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${loading
-              ? "bg-[var(--kyro-surface-accent)]"
-              : totalDocs === 0
-                ? "bg-blue-500/10 text-blue-500"
-                : isOptimal
-                  ? "bg-emerald-500/10 text-emerald-500"
-                  : "bg-amber-500/10 text-amber-500"
-              }`}
-          >
-            {loading ? (
-              <Activity className="w-6 h-6 text-[var(--kyro-text-muted)]" />
-            ) : totalDocs === 0 ? (
-              <Layers className="w-6 h-6" />
-            ) : isOptimal ? (
-              <CheckCircle2 className="w-6 h-6" />
-            ) : (
-              <AlertTriangle className="w-6 h-6" />
-            )}
-          </div>
-
           <div className="flex-1 min-w-0">
             {loading ? (
               <div className="space-y-2">
@@ -249,12 +206,12 @@ export function ContentHealthDashboard() {
             ) : (
               <>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h2 className="text-lg font-bold text-[var(--kyro-text-primary)] tracking-tight">
+                  <h2 className="text-lg font-medium text-[var(--kyro-text-primary)] tracking-tight">
                     {totalDocs === 0
-                      ? "Empty Content Repository"
+                      ? "No content yet"
                       : isOptimal
-                        ? "Content Quality is High"
-                        : "Actionable Gaps Detected"}
+                        ? "Content checks passed"
+                        : "Content needs attention"}
                   </h2>
                   <Badge
                     variant={totalDocs === 0 ? "default" : isOptimal ? "success" : "warning"}
@@ -267,13 +224,6 @@ export function ContentHealthDashboard() {
                         : "Needs Review"}
                   </Badge>
                 </div>
-                <p className="text-sm text-[var(--kyro-text-secondary)] mt-1">
-                  {totalDocs === 0
-                    ? "Add documents to your collections to start automated real-time quality audits."
-                    : isOptimal
-                      ? `Overall repository quality score is ${score}%. ${totalDocs - issues.length} of ${totalDocs} documents comply with SEO, accessibility, and link standards.`
-                      : `${issues.length} actionable issue${issues.length === 1 ? "" : "s"} detected across published or draft documents (missing SEO tags, image alt texts, or malformed URLs).`}
-                </p>
                 <p className="text-[11px] text-[var(--kyro-text-muted)] mt-2">
                   Last audited: {lastRefreshed.toLocaleTimeString()}
                 </p>
@@ -285,32 +235,32 @@ export function ContentHealthDashboard() {
         {/* 4-Stat Cards Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            icon={<Zap className="w-5 h-5" />}
-            color="bg-emerald-500/10 text-emerald-500"
+
+
             label="Quality Score"
             value={loading ? "—" : totalDocs === 0 ? "N/A" : `${score}%`}
             sub={totalDocs === 0 ? "no documents yet" : "aggregate compliance"}
             loading={loading}
           />
           <StatCard
-            icon={<Box className="w-5 h-5" />}
-            color="bg-blue-500/10 text-blue-500"
+
+
             label="Scanned Docs"
             value={loading ? "—" : totalDocs}
             sub={`across ${collectionList.length || 0} collections`}
             loading={loading}
           />
           <StatCard
-            icon={<AlertTriangle className="w-5 h-5" />}
-            color="bg-amber-500/10 text-amber-500"
+
+
             label="Active Issues"
             value={loading ? "—" : issues.length}
             sub="actionable improvements"
             loading={loading}
           />
           <StatCard
-            icon={<Shield className="w-5 h-5" />}
-            color="bg-violet-500/10 text-violet-500"
+
+
             label="Perfect Docs"
             value={loading ? "—" : Math.max(0, totalDocs - issues.length)}
             sub="100% compliant"
@@ -319,22 +269,22 @@ export function ContentHealthDashboard() {
         </div>
 
         {/* Two-Column Diagnostics & Issues Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Left Card: Category & Collection Diagnostics */}
-          <div className="rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden flex flex-col">
-            <div className="px-5 py-4 border-b border-[var(--kyro-border)] flex items-center justify-between gap-2">
+          <div className="rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-[var(--kyro-border)] flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
-                <h3 className="text-sm font-semibold text-[var(--kyro-text-primary)]">
-                  Diagnostics Overview
+
+                <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">
+                  Diagnostics
                 </h3>
               </div>
               <div className="flex items-center gap-1 bg-[var(--kyro-surface-accent)]/50 p-0.5 rounded-lg border border-[var(--kyro-border)]/50">
                 <button
                   type="button"
                   onClick={() => setDiagnosticsView("categories")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${diagnosticsView === "categories"
-                    ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm"
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${diagnosticsView === "categories"
+                    ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] "
                     : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
                     }`}
                 >
@@ -343,8 +293,8 @@ export function ContentHealthDashboard() {
                 <button
                   type="button"
                   onClick={() => setDiagnosticsView("collections")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${diagnosticsView === "collections"
-                    ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] shadow-sm"
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${diagnosticsView === "collections"
+                    ? "bg-[var(--kyro-surface)] text-[var(--kyro-text-primary)] "
                     : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
                     }`}
                 >
@@ -358,34 +308,34 @@ export function ContentHealthDashboard() {
                 <>
                   <CategoryHealthRow
                     name="SEO & Metadata"
-                    description="Meta titles, descriptions, and OpenGraph social preview tags"
+
                     score={seoScore}
                     issueCount={seoIssues}
-                    icon={<Globe className="w-4 h-4" />}
+
                     loading={loading}
                   />
                   <CategoryHealthRow
                     name="Image Accessibility"
-                    description="Descriptive alt-texts and accessibility labels on media assets"
+
                     score={a11yScore}
                     issueCount={a11yIssues}
-                    icon={<Image className="w-4 h-4" />}
+
                     loading={loading}
                   />
                   <CategoryHealthRow
                     name="Schema Validation"
-                    description="Required fields, data type constraints, and relationships"
+
                     score={valScore}
                     issueCount={valIssues}
-                    icon={<FolderTree className="w-4 h-4" />}
+
                     loading={loading}
                   />
                   <CategoryHealthRow
                     name="Link & URL Integrity"
-                    description="Hyperlink protocols, URL formatting, and rich text links"
+
                     score={linkScore}
                     issueCount={linkIssues}
-                    icon={<LinkIcon className="w-4 h-4" />}
+
                     loading={loading}
                   />
                 </>
@@ -401,15 +351,12 @@ export function ContentHealthDashboard() {
                       className="flex items-center justify-between py-3 px-3.5 rounded-lg hover:bg-[var(--kyro-surface-accent)] transition-colors group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-[var(--kyro-surface-accent)] group-hover:bg-[var(--kyro-surface)] flex items-center justify-center text-[var(--kyro-text-secondary)] transition-colors flex-shrink-0">
-                          <Box className="w-4 h-4" />
-                        </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-[var(--kyro-text-primary)] truncate">
+                            <p className="text-sm font-medium text-[var(--kyro-text-primary)] truncate">
                               {col.label}
                             </p>
-                            <span className="text-[10px] font-bold text-[var(--kyro-text-muted)] font-mono">
+                            <span className="text-[10px] font-medium text-[var(--kyro-text-muted)] font-mono">
                               {col.hasDocs ? `${col.score}%` : "0 docs"}
                             </span>
                           </div>
@@ -442,13 +389,13 @@ export function ContentHealthDashboard() {
           </div>
 
           {/* Right Card: Issue Feed & Actionable Fixes */}
-          <div className="rounded-2xl border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden flex flex-col max-h-[600px]">
-            <div className="px-5 py-4 border-b border-[var(--kyro-border)] flex flex-col gap-3">
+          <div className="rounded-lg border border-[var(--kyro-border)] bg-[var(--kyro-surface)] overflow-hidden flex flex-col max-h-[600px]">
+            <div className="px-4 py-3 border-b border-[var(--kyro-border)] flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-[var(--kyro-text-secondary)]" />
-                  <h3 className="text-sm font-semibold text-[var(--kyro-text-primary)]">
-                    Actionable Issues Feed ({filteredIssues.length})
+
+                  <h3 className="text-sm font-medium text-[var(--kyro-text-primary)]">
+                    Issues ({filteredIssues.length})
                   </h3>
                 </div>
               </div>
@@ -460,7 +407,7 @@ export function ContentHealthDashboard() {
                     key={type}
                     type="button"
                     onClick={() => setFilterType(type)}
-                    className={`px-2 py-0.5 rounded-md text-[10.5px] font-semibold transition-all cursor-pointer ${filterType === type
+                    className={`px-2 py-0.5 rounded-md text-[10.5px] font-medium transition-all cursor-pointer ${filterType === type
                       ? "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] border border-[var(--kyro-border)]"
                       : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
                       }`}
@@ -470,7 +417,7 @@ export function ContentHealthDashboard() {
                 ))}
 
                 {collectionList.length > 0 && (
-                  <select
+                  <CustomSelect
                     value={filterCollection}
                     onChange={(e) => setFilterCollection(e.target.value)}
                     className="ml-auto text-[10.5px] font-medium bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-primary)] border border-[var(--kyro-border)] rounded-md px-2 py-0.5 outline-none cursor-pointer"
@@ -481,7 +428,7 @@ export function ContentHealthDashboard() {
                         {col.label}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                 )}
               </div>
             </div>
@@ -494,14 +441,14 @@ export function ContentHealthDashboard() {
                 </div>
               ) : filteredIssues.length === 0 ? (
                 <div className="py-16 text-center space-y-2">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
-                  <p className="text-sm font-semibold text-[var(--kyro-text-primary)]">
+
+                  <p className="text-sm font-medium text-[var(--kyro-text-primary)]">
                     No issues found
                   </p>
                   <p className="text-xs text-[var(--kyro-text-muted)] max-w-xs mx-auto">
                     {totalDocs === 0
                       ? "Create documents in your collections to run automated audits."
-                      : "All scanned documents pass quality, SEO, and link standards."}
+                      : "No issues match the selected category."}
                   </p>
                 </div>
               ) : (
@@ -513,7 +460,7 @@ export function ContentHealthDashboard() {
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`text-[8.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${issue.severity === "critical"
+                          className={`text-[11px] font-medium tracking-normal px-1.5 py-0.5 rounded ${issue.severity === "critical"
                             ? "bg-rose-500/10 text-rose-500"
                             : issue.severity === "warning"
                               ? "bg-amber-500/10 text-amber-500"
@@ -522,7 +469,7 @@ export function ContentHealthDashboard() {
                         >
                           {issue.type}
                         </span>
-                        <p className="text-xs font-semibold text-[var(--kyro-text-primary)] truncate">
+                        <p className="text-xs font-medium text-[var(--kyro-text-primary)] truncate">
                           {issue.message}
                         </p>
                       </div>
@@ -533,16 +480,16 @@ export function ContentHealthDashboard() {
                         </span>
                       </p>
                       {issue.recommendation && (
-                        <div className="flex items-center gap-1 text-[10.5px] text-emerald-600 dark:text-emerald-400 mt-1">
-                          <Sparkles className="w-3 h-3 shrink-0" />
-                          <span>{issue.recommendation}</span>
-                        </div>
+                        <details className="health-issue-advice">
+                          <summary>Suggested fix</summary>
+                          <p>{issue.recommendation}</p>
+                        </details>
                       )}
                     </div>
 
                     <a
                       href={`${adminPath}/${issue.collection}/${issue.documentId}`}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--kyro-border)] text-xs font-semibold text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] transition-all shrink-0 cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--kyro-border)] text-xs font-medium text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface)] transition-all shrink-0 cursor-pointer"
                     >
                       <span>Fix</span>
                       <ExternalLink className="w-3 h-3 text-[var(--kyro-text-muted)]" />

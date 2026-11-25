@@ -215,3 +215,5 @@ export function createTemplateConfig(
     globals: globals.length > 0 ? globals : undefined,
   };
 }
+
+export { studioPageBlocks, studioContentBlocks, studioSectionBlock, studioContainerBlock, studioRowBlock, studioColumnBlock, studioGridBlock } from "./blocks.js";

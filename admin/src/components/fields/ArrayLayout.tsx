@@ -121,7 +121,7 @@ function SortableArrayItem({
       <div
         ref={setNodeRef}
         style={style}
-        className="flex items-start gap-3 p-3.5 mb-2 border border-[var(--kyro-border)] rounded-[var(--kyro-radius-md)] bg-[var(--kyro-surface-accent)]/15 hover:border-[var(--kyro-border-accent)] transition-all group/item shadow-xs"
+        className="flex items-start gap-3 p-3.5 mb-2 border border-[var(--kyro-border)] rounded-[var(--kyro-radius-md)] bg-[var(--kyro-surface-accent)]/15 hover:border-[var(--kyro-border-accent)] transition-all group/item "
       >
         <div
           {...attributes}
@@ -161,7 +161,7 @@ function SortableArrayItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`border border-[var(--kyro-border)] rounded-lg bg-[var(--kyro-surface)] overflow-hidden shadow-xs transition-all ${isOpen ? " " : "hover:border-[var(--kyro-border-accent)]"
+      className={`border border-[var(--kyro-border)] rounded-lg bg-[var(--kyro-surface)] overflow-hidden  transition-all ${isOpen ? " " : "hover:border-[var(--kyro-border-accent)]"
         }`}
     >
       <div
@@ -233,7 +233,7 @@ function SortableArrayItem({
         </div>
       </div>
       {isOpen && (
-        <div className="p-4 bg-[var(--kyro-surface)] space-y-4">
+        <div className="field-stack p-4 bg-[var(--kyro-surface)]">
           {fields.map((f: Field) =>
             renderField(f, item, onChangeItem),
           )}
@@ -532,7 +532,7 @@ export function ArrayLayout({
             return (
               <div
                 key={idx}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--kyro-surface)] border border-[var(--kyro-border)] shadow-xs hover:border-[var(--kyro-border-accent)] transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--kyro-surface)] border border-[var(--kyro-border)]  hover:border-[var(--kyro-border-accent)] transition-colors"
               >
                 <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] text-xs font-bold text-[var(--kyro-text-primary)]">
                   {itemQty}×
@@ -590,7 +590,7 @@ export function ArrayLayout({
               </SortableContext>
               <button
                 type="button"
-                className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
+                className="w-full py-2 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
                 disabled={disabled}
                 onClick={() => onChange([...items, { id: Math.random().toString(36).substr(2, 9) }])}
               >
@@ -627,7 +627,7 @@ export function ArrayLayout({
               </SortableContext>
               <button
                 type="button"
-                className="w-full py-2.5 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
+                className="w-full py-2 border border-dashed border-[var(--kyro-border)] rounded-lg text-xs font-semibold text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-primary)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-surface)]/50 transition-all disabled:opacity-50 mt-1"
                 disabled={disabled}
                 onClick={() => onChange([...items, { id: Math.random().toString(36).substr(2, 9) }])}
               >

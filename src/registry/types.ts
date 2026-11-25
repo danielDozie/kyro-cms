@@ -9,6 +9,8 @@ import type { StorageProvider } from "../storage/index.js";
 // ============================================================================
 
 export interface AdminConfig {
+  /** Opt in to visual page composition using an existing blocks field. Otherwise defaults to structural. */
+  studio?: boolean | { enabled?: boolean; field?: string };
   /** Field to display as the title/name of the document in list and relation dropdowns (e.g. "title", "name", "orderNumber") */
   useAsTitle?: string;
   /** Array of field names to display as default table columns in the collection list view */
@@ -103,6 +105,8 @@ export interface CollectionOverrideConfig extends Partial<AdminConfig> {
     drafts?: boolean;
     maxPerDoc?: number;
     autosave?: boolean;
+  /** Protected conversion recovery snapshot; excluded from draft selection and retention pruning. */
+  recovery?: boolean;
   };
   seo?: boolean | Record<string, any>;
   access?: CollectionAccess;
@@ -347,6 +351,8 @@ export interface VersionRecord<T = Record<string, any>> {
   publishedAt?: string | null;
   changeDescription?: string;
   autosave?: boolean;
+  /** Protected conversion recovery snapshot; excluded from draft selection and retention pruning. */
+  recovery?: boolean;
 }
 
 export interface CreateVersionArgs<T = Record<string, any>> {
@@ -359,9 +365,12 @@ export interface CreateVersionArgs<T = Record<string, any>> {
   tenantId?: string;
   /** When true, reuses a single version slot (find existing + update) */
   autosave?: boolean;
+  /** Protected conversion recovery snapshot; excluded from draft selection and retention pruning. */
+  recovery?: boolean;
 }
 
 export interface FindVersionsArgs {
+  recoveryOnly?: boolean;
   collection: string;
   documentId: string;
   tenantId?: string;
@@ -382,6 +391,8 @@ export interface PruneVersionsArgs {
 // ============================================================================
 
 export interface BaseAdapter {
+  /** Supports durable, retention-protected recovery snapshots. */
+  readonly supportsProtectedRecovery?: boolean;
   init(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;
 
   find<T = Record<string, any>>(args: FindArgs): Promise<FindResult<T>>;
@@ -497,10 +508,52 @@ export interface KyroConfig {
   };
   debug?: boolean;
   /**
+   * Visual Studio composer suite configuration.
+   * When omitted or disabled, all collections strictly default to standard structural editing and validation.
+   */
+  studio?: StudioConfig;
+  /**
    * Experimental features configuration.
    * Opt-in to features undergoing active development.
    */
   experimental?: ExperimentalConfig;
+}
+
+/**
+ * Visual Studio suite configuration.
+ */
+export interface StudioConfig {
+  /**
+   * Globally enable or toggle the visual Studio suite.
+   * Defaults to false or opt-in.
+   */
+  enabled?: boolean;
+
+  /**
+   * Default composition field across Studio collections (defaults to "content").
+   */
+  defaultField?: string;
+
+  /**
+   * Connected preview site origin (e.g. "http://localhost:4321").
+   */
+  previewOrigin?: string;
+
+  /**
+   * Renderer revision or bundle version.
+   */
+  rendererRevision?: string;
+
+  /**
+   * Publishing delivery and cache invalidation settings.
+   */
+  deployment?: {
+    mode?: "ssr" | "ssg";
+    webhookUrl?: string;
+    webhookSecret?: string;
+    cachePurgeUrl?: string;
+    cachePurgeTags?: string[];
+  };
 }
 
 /**

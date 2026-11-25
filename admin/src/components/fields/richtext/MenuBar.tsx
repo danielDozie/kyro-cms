@@ -34,8 +34,7 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "../../ui/Toast";
 import { PromptModal } from "../../ui/PromptModal";
 import { buildAiPrompt } from "../../../prompts";
-const logoWhite = "/logo-white.svg";
-const logoDark = "/logo.svg";
+import logoAccentUrl from "../../../assets/logo-accent.svg?url";
 
 const PRESET_COLORS = [
   { name: "Default", value: "inherit" },
@@ -239,7 +238,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       disabled={disabled}
       title={title}
       className={`p-1 rounded flex items-center justify-center transition-all duration-150 relative
-        ${isActive ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] shadow-xs scale-95" : "text-[var(--kyro-text)] hover:bg-[var(--kyro-bg-hover)]"}
+        ${isActive ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]  scale-95" : "text-[var(--kyro-text)] hover:bg-[var(--kyro-bg-hover)]"}
         ${disabled ? "opacity-35 cursor-not-allowed" : "cursor-pointer active:scale-90"}`}
     >
       {children}
@@ -265,7 +264,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       className="flex flex-wrap items-center gap-1.5 p-1.5 border-b border-[var(--kyro-border)] bg-[var(--kyro-bg-secondary)] rounded-t-lg select-none"
     >
       {/* Group 1: History Actions */}
-      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs">
+      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md ">
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().chain().focus().undo().run()}
@@ -283,7 +282,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Group 2: Inline Styles */}
-      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs">
+      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md ">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           disabled={!editor.can().chain().focus().toggleBold().run()}
@@ -342,14 +341,14 @@ export const MenuBar: React.FC<MenuBarProps> = ({
             <Palette size={12} />
           </ToolbarButton>
           {activeDropdown === "color" && (
-            <div className="absolute top-full left-0 mt-1.5 p-2 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 flex flex-wrap gap-1 w-44 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="absolute top-full left-0 mt-1.5 p-2 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg  z-50 flex flex-wrap gap-1 w-44 animate-in fade-in slide-in-from-top-1 duration-150">
               {PRESET_COLORS.map((col) => (
                 <button
                   key={col.name}
                   type="button"
                   onClick={() => selectColor(col.value)}
                   title={col.name}
-                  className="w-6 h-6 rounded-full border border-[var(--kyro-border)] transition-transform hover:scale-115 active:scale-95 cursor-pointer relative"
+                  className="w-6 h-6 rounded-md border border-[var(--kyro-border)] transition-transform hover:scale-115 active:scale-95 cursor-pointer relative"
                   style={{
                     backgroundColor: col.value === "inherit" ? "transparent" : col.value,
                   }}
@@ -367,7 +366,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Group 3: Headings hierarchy Dropdown */}
-      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs">
+      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md ">
         <DropdownTrigger
           onClick={() => toggleDropdown("heading")}
           isActive={activeDropdown === "heading"}
@@ -378,7 +377,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           </span>
         </DropdownTrigger>
         {activeDropdown === "heading" && (
-          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 min-w-36 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg  z-50 min-w-36 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => {
@@ -409,7 +408,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Group 4: List Types Dropdown */}
-      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs">
+      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md ">
         <DropdownTrigger
           onClick={() => toggleDropdown("lists")}
           isActive={activeDropdown === "lists"}
@@ -418,7 +417,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           {getListIcon()}
         </DropdownTrigger>
         {activeDropdown === "lists" && (
-          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 min-w-36 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg  z-50 min-w-36 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => {
@@ -460,7 +459,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Group 5: Blocks Dropdown */}
-      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs">
+      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md ">
         <DropdownTrigger
           onClick={() => toggleDropdown("blocks")}
           isActive={activeDropdown === "blocks"}
@@ -469,7 +468,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           {getBlockIcon()}
         </DropdownTrigger>
         {activeDropdown === "blocks" && (
-          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 min-w-36 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg  z-50 min-w-36 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => {
@@ -510,7 +509,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Group 6: Text Alignments Dropdown */}
-      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs">
+      <div className="relative flex items-center p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md ">
         <DropdownTrigger
           onClick={() => toggleDropdown("align")}
           isActive={activeDropdown === "align"}
@@ -519,7 +518,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
           {getAlignIcon()}
         </DropdownTrigger>
         {activeDropdown === "align" && (
-          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 min-w-32 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="absolute top-full left-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg  z-50 min-w-32 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
             <button
               type="button"
               onClick={() => {
@@ -561,7 +560,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Group 7: Rich Media Embeds */}
-      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs">
+      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md ">
         <ToolbarButton
           onClick={setLink}
           isActive={editor.isActive("link")}
@@ -575,7 +574,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({
       </div>
 
       {/* Group 8: Workspace Controls */}
-      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md shadow-xs ml-auto">
+      <div className="flex items-center gap-0.5 p-0.5 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-md  ml-auto">
         {isAiAssistantEnabled && (
           <div className="relative flex items-center justify-center">
             <ToolbarButton
@@ -590,13 +589,12 @@ export const MenuBar: React.FC<MenuBarProps> = ({
               <Sparkles size={14} className="text-[var(--kyro-primary)]" />
             ) : (
               <>
-                <img src={logoDark} alt="Kyro AI" className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100 block dark:hidden" />
-                <img src={logoWhite} alt="Kyro AI" className="w-3.5 h-3.5 object-contain opacity-80 group-hover:opacity-100 hidden dark:block" />
+                <img src={logoAccentUrl} alt="Kyro AI" className="w-3.5 h-3.5 object-contain" />
               </>
             )}
           </ToolbarButton>
           {activeDropdown === "ai" && (
-            <div className="absolute top-full right-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 min-w-32 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="absolute top-full right-0 mt-1.5 p-1 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-lg  z-50 min-w-32 flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
               <button
                 type="button"
                 onClick={() => handleAiAction("Generate")}

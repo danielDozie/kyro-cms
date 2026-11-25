@@ -1,12 +1,12 @@
 ---
 import "../styles/main.css";
+import "../styles/workspace.css";
+import "../styles/compact.css";
 import { adminPath, apiPath } from "../lib/paths";
 import { getSiteSettings, getGlobal, getBrandSettings } from "../lib/globals";
 import { ClientRouter } from 'astro:transitions';
 import LoadingIndicator from 'astro-loading-indicator/component';
-import logoWhite from "../assets/logo-white.svg";
-import logoDark from "../assets/logo.svg";
-import faviconSvg from "../assets/favicon.svg";
+import logoAccent from "../assets/logo-accent.svg";
 
 interface Props {
   title: string;
@@ -60,9 +60,12 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
     <link
       rel="icon"
       type={siteFavicon?.mimeType || "image/svg+xml"}
-      href={siteFavicon?.url || faviconSvg.src}
+      href={siteFavicon?.url || logoAccent.src}
     />
     <script is:inline define:vars={{ adminPath, apiPath }}>
+      const initialAppearance = localStorage.getItem("theme") || "system";
+      document.documentElement.classList.toggle("dark", initialAppearance === "dark" || (initialAppearance === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches));
+      document.documentElement.dataset.themeMode = initialAppearance;
       (async () => {
         const pathname = window.location.pathname;
         const isAuthActionPage =
@@ -83,23 +86,13 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
             }
           } catch {}
         }
-        const getTheme = () => {
-          const stored = localStorage.getItem("theme");
-          if (stored) return stored;
-          return window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light";
-        };
-        const theme = getTheme();
-        if (theme === "dark") {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
+        const mode = localStorage.getItem("theme") || "system";
+        document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches));
+        document.documentElement.dataset.themeMode = mode;
       })();
     </script>
   </head>
-  <body class="bg-[var(--kyro-bg)] antialiased text-[var(--kyro-text-primary)]">
+  <body class="kyro-workspace bg-[var(--kyro-bg)] antialiased text-[var(--kyro-text-primary)]">
     <div class="min-h-screen flex flex-col items-center justify-center p-6">
       <div class="w-full max-w-md flex flex-col items-center">
         <!-- Logo -->
@@ -142,8 +135,7 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
                 </div>
               ) : (
                 <>
-                  <img src={logoWhite.src} alt="Kyro CMS" class="w-7 h-7 hidden dark:block" />
-                  <img src={logoDark.src} alt="Kyro CMS" class="w-7 h-7 block dark:hidden" />
+                  <img src={logoAccent.src} alt="Kyro CMS" width="28" height="24" class="w-7 h-7 object-contain" />
                   {showSiteName && (
                     <span class="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
                       {siteName}
@@ -160,5 +152,9 @@ const defaultLang = siteSettings?.defaultLanguage || "en";
         </div>
       </div>
     </div>
+    <script>
+      import { setupAppearance } from "../lib/theme-client";
+      setupAppearance();
+    </script>
   </body>
 </html>

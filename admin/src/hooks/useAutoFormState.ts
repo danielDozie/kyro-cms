@@ -53,6 +53,7 @@ export function useAutoFormState({
   } = store;
 
   const versionsEnabled = !!config?.versions;
+  const draftsEnabled = (config?.versions as { drafts?: boolean } | undefined)?.drafts === true;
 
   // Guard: clear stale formData from a previous page context.
   // For collections, if the loaded document's id doesn't match the expected
@@ -127,9 +128,9 @@ const persistBrowserDraft = useCallback(
     if (!url) return;
     setLoadingVersions(true);
     try {
-      const resp = await fetchWithAuth(url);
+      const resp = await fetchWithAuth(`${url}?limit=15`);
       const data = await resp.json();
-      setVersions(data.docs || []);
+      setVersions((data.docs || []).slice(0, 15));
     } catch (e) {
       console.error("Failed to fetch versions:", e);
     } finally {
@@ -199,13 +200,26 @@ const persistBrowserDraft = useCallback(
         state.setLastSavedAt(Date.now());
         if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
 
-        if (documentKey) {
-          setDraftCache(documentKey, {
-            data: latestFormData,
-            baseUpdatedAt: (currentLastSaved.updatedAt as string) ?? null,
-            draftUpdatedAt: new Date().toISOString(),
-            lastSyncedAt: (await response.clone().json()).data?.updatedAt || new Date().toISOString(),
+        const savedResponse = await response.json();
+        const savedDoc = savedResponse.data || latestFormData;
+        const current = useAutoFormStore.getState();
+        // A response acknowledges only the submitted snapshot. Keep edits made during the request dirty.
+        const dirtyFields = new Set([...new Set([...Object.keys(current.formData), ...Object.keys(latestFormData)])].filter(field =>
+          JSON.stringify(normalizeUploadFields(current.formData[field])) !==
+          JSON.stringify(normalizeUploadFields(latestFormData[field]))
+        ));
+        const savedMetadata = {
+          updatedAt: savedDoc.updatedAt ?? latestFormData.updatedAt,
+          _hasUnpublishedChanges: savedDoc._hasUnpublishedChanges ?? (draftsEnabled || latestFormData._hasUnpublishedChanges),
+        };
+        if (current.formData.id === latestFormData.id) {
+          useAutoFormStore.setState({
+            lastSavedData: { ...latestFormData, ...savedMetadata },
+            formData: { ...current.formData, ...savedMetadata },
+            dirtyFields,
+            hasUnsavedChanges: dirtyFields.size > 0,
           });
+          if (documentKey && dirtyFields.size === 0) current.clearDraftCache(documentKey);
         }
         setAutoSaveStatus("success");
         setTimeout(() => {
@@ -247,6 +261,7 @@ const persistBrowserDraft = useCallback(
     setDraftCache,
     setIsAutoSaving,
     versionsEnabled,
+    draftsEnabled,
   ]);
 
   const performAutosave = useCallback((options?: { keepalive?: boolean }) => {
@@ -509,23 +524,19 @@ const persistBrowserDraft = useCallback(
     const state = useAutoFormStore.getState();
     if (!state.hasDirtyFields()) return;
 
-    // Only schedule/reschedule on keystroke-originated changes
-    if (getLastChangeSource() !== "keystroke") return;
-    setChangeSource("other");
-
     // Compare serialized form data to avoid scheduling for unchanged metadata
     const serialized = JSON.stringify(formData);
     if (serialized === previousFormDataRef.current) return;
 
     if (localSaveTimerRef.current) clearTimeout(localSaveTimerRef.current);
-    localSaveTimerRef.current = setTimeout(performLocalAutoSave, 1500);
+    localSaveTimerRef.current = setTimeout(performLocalAutoSave, 1000);
 
-    // Queue autosave via the queue (debounced at 8s)
+    // Queue autosave via the queue (debounced at 3s)
     if (serverSaveTimerRef.current) clearTimeout(serverSaveTimerRef.current);
     serverSaveTimerRef.current = setTimeout(() => {
       previousFormDataRef.current = serialized;
       performAutosave();
-    }, 8000);
+    }, 3000);
   }, [formData, sidebarCollapsed, collectionSlug, globalSlug, performLocalAutoSave, performAutosave]);
 
   useEffect(() => {

@@ -121,7 +121,8 @@ export function mountMediaRoutes(
   });
 
   app.get("/api/media/resize", async (c) => {
-    const url = c.req.query("url");
+    let url = c.req.query("url");
+    if (url?.startsWith(new URL(c.req.url).origin + "/")) url = new URL(url).pathname;
     const w = parseInt(c.req.query("w") || "0");
     const h = parseInt(c.req.query("h") || "0");
     const fit = (c.req.query("fit") || "cover") as ImageFitMode;
@@ -131,42 +132,81 @@ export function mountMediaRoutes(
     const cy = parseFloat(c.req.query("cy") || "0");
     const cw = parseFloat(c.req.query("cw") || "0");
     const ch = parseFloat(c.req.query("ch") || "0");
+    const hx = parseFloat(c.req.query("hx") || "");
+    const hy = parseFloat(c.req.query("hy") || "");
+    const hw = parseFloat(c.req.query("hw") || "");
+    const hh = parseFloat(c.req.query("hh") || "");
     if (!url) throw new ApiError(400, "URL is required");
+
     const service = await getMedia();
     const storage: any = (service as any).storage;
-    if (!storage || storage.name !== "local") {
-      return c.redirect(url);
-    }
-    const uploadDir = storage.config?.uploadDir || DEFAULT_UPLOAD_DIR;
-    const baseUrl = storage.config?.baseUrl || DEFAULT_MEDIA_BASE_URL;
-    if (!url.startsWith(baseUrl)) {
-      return c.redirect(url);
-    }
-    const relativePath = url.replace(baseUrl, "");
-    const physicalPath = join(uploadDir, relativePath);
-    if (!existsSync(physicalPath)) {
-      throw new ApiError(404, "File not found");
-    }
-    const imageBuffer = readFileSync(physicalPath);
-    const { default: sharp } = await import("sharp");
-    let transform = sharp(imageBuffer);
-    if (cw > 0 && ch > 0) {
-      const imgMeta = await sharp(imageBuffer).metadata();
-      const imgW = imgMeta.width || 0;
-      const imgH = imgMeta.height || 0;
-      if (imgW > 0 && imgH > 0) {
-        const left = Math.max(0, Math.min(Math.round((cx / 100) * imgW), imgW - 1));
-        const top = Math.max(0, Math.min(Math.round((cy / 100) * imgH), imgH - 1));
-        const width = Math.max(1, Math.min(Math.round((cw / 100) * imgW), imgW - left));
-        const height = Math.max(1, Math.min(Math.round((ch / 100) * imgH), imgH - top));
-        transform = transform.extract({ left, top, width, height });
+    let imageBuffer: Buffer | null = null;
+
+    if (storage && storage.name === "local") {
+      const uploadDir = storage.config?.uploadDir || DEFAULT_UPLOAD_DIR;
+      const baseUrl = storage.config?.baseUrl || DEFAULT_MEDIA_BASE_URL;
+      if (url.startsWith(baseUrl)) {
+        const relativePath = url.replace(baseUrl, "");
+        const physicalPath = join(uploadDir, relativePath);
+        if (existsSync(physicalPath)) {
+          imageBuffer = readFileSync(physicalPath);
+        }
       }
     }
+
+    // Remote storage or external URL: fetch buffer to enable remote storage transformations
+    if (!imageBuffer) {
+      try {
+        const targetUrl = url.startsWith("http://") || url.startsWith("https://")
+          ? url
+          : new URL(url, c.req.url).href;
+        const response = await fetch(targetUrl, { signal: AbortSignal.timeout(8000) });
+        if (response.ok) {
+          imageBuffer = Buffer.from(await response.arrayBuffer());
+        }
+      } catch {
+        return c.redirect(url);
+      }
+    }
+
+    if (!imageBuffer) {
+      return c.redirect(url);
+    }
+    const { default: sharp } = await import("sharp");
+    const { imageFrame } = await import("../../../storage/image-framing.js");
+
+    // 1. Apply EXIF orientation first so intrinsic width & height match visual coordinates
+    const orientedPipeline = sharp(imageBuffer).rotate();
+    const orientedBuffer = await orientedPipeline.toBuffer();
+    const imgMeta = await sharp(orientedBuffer).metadata();
+    const imgW = imgMeta.width || 0;
+    const imgH = imgMeta.height || 0;
+
+    let transform = sharp(orientedBuffer);
+
+    // 2. Compute crop region using imageFrame if crop params are given
+    if (cw > 0 && ch > 0 && imgW > 0 && imgH > 0) {
+      const hotspot = !isNaN(hx) && !isNaN(hy)
+        ? { x: hx, y: hy, width: isNaN(hw) || hw <= 0 ? 10 : hw, height: isNaN(hh) || hh <= 0 ? 10 : hh }
+        : null;
+      const targetAspect = w > 0 && h > 0 ? w / h : cw / ch;
+
+      const frame = imageFrame(imgW, imgH, { x: cx, y: cy, width: cw, height: ch }, hotspot, targetAspect);
+
+      const left = Math.max(0, Math.min(Math.round((frame.x / 100) * imgW), imgW - 1));
+      const top = Math.max(0, Math.min(Math.round((frame.y / 100) * imgH), imgH - 1));
+      const width = Math.max(1, Math.min(Math.round((frame.width / 100) * imgW), imgW - left));
+      const height = Math.max(1, Math.min(Math.round((frame.height / 100) * imgH), imgH - top));
+
+      transform = transform.extract({ left, top, width, height });
+    }
+
+    // 3. Resize to requested dimensions
     if (w > 0 || h > 0) {
       transform = transform.resize({
         width: w > 0 ? w : undefined,
         height: h > 0 ? h : undefined,
-        fit: fit
+        fit: fit,
       });
     }
 

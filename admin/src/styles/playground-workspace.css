@@ -1,0 +1,15 @@
+.playground-workspace { min-height: 420px; color: var(--kyro-text-primary); font-size: 12px; font-weight: 400; box-shadow: none; }
+.playground-workspace button { font-weight: 400; box-shadow: none; min-height: 28px; }
+.playground-workspace > div:first-child { padding: 8px 10px; gap: 6px; }
+.playground-workspace input, .playground-workspace select { min-height: 30px; font-size: 12px; border-radius: 5px; }
+.playground-workspace textarea { font-size: 12px; line-height: 1.7; tab-size: 2; }
+.playground-workspace h3 { font-weight: 500; font-size: 12px; }
+.playground-workspace .cm-editor { font-size: 12px; }
+.playground-workspace .cm-line { line-height: 1.7; }
+.playground-workspace .cm-gutters { background: transparent; border-color: var(--kyro-border); color: var(--kyro-text-muted); }
+.playground-workspace button:focus-visible, .playground-workspace select:focus-visible { outline: 2px solid var(--kyro-primary); outline-offset: 2px; }
+.playground-workspace pre { line-height: 1.7; font-size: 12px; }
+@media (max-width: 600px) {
+ .playground-workspace > div:first-child { flex-wrap: wrap; }
+ .playground-workspace { min-height: 520px; }
+}

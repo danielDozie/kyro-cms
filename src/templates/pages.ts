@@ -1,5 +1,5 @@
 import type { CollectionConfig } from "../registry/types.js";
-import { coreSemanticBlocks } from "./blocks.js";
+import { studioPageBlocks } from "./blocks.js";
 
 
 export const pageCollection: CollectionConfig = {
@@ -9,6 +9,7 @@ export const pageCollection: CollectionConfig = {
   singularLabel: "Page",
   admin: {
     useAsTitle: "title",
+    studio: { field: "content" },
     defaultColumns: ["title", "slug", "status", "updatedAt"],
     description: "Standard web pages",
     icon: "FileText",
@@ -42,7 +43,7 @@ export const pageCollection: CollectionConfig = {
               name: "content",
               type: "blocks",
               label: "Content",
-              blocks: coreSemanticBlocks,
+              blocks: studioPageBlocks,
             },
           ],
         },

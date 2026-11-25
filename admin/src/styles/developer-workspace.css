@@ -1,0 +1,13 @@
+.developer-workspace { font-size: 13px; font-weight: 400; padding-bottom: 24px; }
+.developer-workspace h1 { font-size: 24px; font-weight: 500; }
+.developer-workspace h2, .developer-workspace h3, .developer-workspace h4 { font-weight: 500; }
+.developer-workspace button { font-weight: 400; box-shadow: none; }
+.developer-workspace .surface-tile { box-shadow: none; }
+.developer-reference { border: 1px solid var(--kyro-border); border-radius: 7px; padding: 12px; }
+.developer-reference summary { cursor: pointer; color: var(--kyro-text-secondary); font-size: 12px; }
+.developer-reference[open] > div { margin-top: 12px; }
+.audit-inline-detail { padding: 16px !important; background: var(--kyro-surface-accent); white-space: normal; }
+.audit-inline-detail > div { max-width: 860px; }
+.audit-inline-detail .font-bold { font-weight: 500; }
+.audit-inline-detail pre { overflow-x: auto; }
+.developer-workspace button:focus-visible, .developer-reference summary:focus-visible { outline: 2px solid var(--kyro-primary); outline-offset: 2px; }

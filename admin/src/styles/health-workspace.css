@@ -1,0 +1,51 @@
+.health-workspace { display: grid; gap: 20px; width: 100%; min-width: 0; padding-bottom: 24px; color: var(--kyro-text-primary); font-size: 13px; font-weight: 400; }
+.health-workspace h1 { font-weight: 500; font-size: 24px; }
+.health-workspace h2, .health-workspace h3 { font-weight: 500; }
+.health-workspace button { font-weight: 400; box-shadow: none; }
+.health-workspace [class*="surface-tile"] { box-shadow: none; }
+.health-workspace > .space-y-4 > .grid:first-of-type { gap: 0; border-block: 1px solid var(--kyro-border); }
+.health-workspace > .space-y-4 > .grid:first-of-type > div { border: 0; border-radius: 0; background: transparent; padding: 14px; }
+.health-workspace > .space-y-4 > .grid:first-of-type > div + div { border-inline-start: 1px solid var(--kyro-border); }
+.health-workspace .text-2xl { font-size: 23px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.health-workspace .text-sm { font-size: 13px; }
+.health-workspace .text-lg { font-size: 16px; }
+.health-workspace .text-xs { font-size: 12px; }
+.health-metric-strip { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); padding-block: 14px; border-block: 1px solid var(--kyro-border); }
+.health-metric-strip > div { display: grid; gap: 4px; padding-inline: 16px; }
+.health-metric-strip > div + div { border-inline-start: 1px solid var(--kyro-border); }
+.health-metric-strip span { color: var(--kyro-text-secondary); font-size: 12px; }
+.health-metric-strip strong { font-size: 20px; font-weight: 400; overflow-wrap: anywhere; }
+.session-list { display: grid; }
+.session-row { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding-block: 14px; }
+.session-row + .session-row { border-top: 1px solid var(--kyro-border); }
+.session-row > div { min-width: 0; }
+.session-identity { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.session-row h3 { margin: 0; font-size: 13px; }
+.session-row p { margin: 4px 0 8px; color: var(--kyro-text-secondary); font-size: 12px; }
+.session-row summary, .health-endpoint-details summary { cursor: pointer; color: var(--kyro-text-secondary); font-size: 12px; }
+.session-row dl { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 6px 16px; margin-top: 10px; font-size: 12px; }
+.session-row dt { color: var(--kyro-text-secondary); }
+.session-row dd { margin: 0; overflow-wrap: anywhere; }
+.health-danger-action { white-space: nowrap; padding: 5px 9px; border: 1px solid var(--kyro-border); border-radius: 5px; color: var(--kyro-danger-text); font-size: 12px; }
+.health-workspace button:focus-visible, .health-workspace summary:focus-visible { outline: 2px solid var(--kyro-primary); outline-offset: 2px; }
+.health-endpoint-details { display: block; }
+.health-endpoint-details > div { margin-top: 10px; }
+@media (max-width: 560px) {
+ .health-metric-strip { grid-template-columns: 1fr; gap: 12px; }
+ .health-metric-strip > div + div { border-inline-start: 0; }
+ .session-row { flex-wrap: wrap; }
+ .health-workspace > .space-y-4 > .grid:first-of-type > div + div { border-inline-start: 0; }
+}
+.health-issue-advice { margin-top: 8px; font-size: 12px; color: var(--kyro-text-secondary); }
+.health-issue-advice summary { cursor: pointer; }
+.health-issue-advice p { margin-top: 6px; line-height: 1.5; }
+.health-workspace .health-stat { display: grid; grid-template-columns: 28px minmax(0,1fr); align-items: center; gap: 6px 10px; }
+.health-workspace .health-stat > div:first-child { grid-row: 1 / 3; width: 28px; height: 28px; border-radius: 6px; }
+.health-workspace .health-stat > p { grid-column: 2; font-weight: 400; }
+.health-workspace .health-status-banner { padding: 14px 16px; border-radius: 7px; }
+.health-workspace .health-status-banner > div:first-child { width: 32px; height: 32px; border-radius: 6px; }
+.health-workspace .health-status-banner svg { max-width: 18px; max-height: 18px; }
+.health-workspace .health-status-banner h2 { font-size: 15px; }
+.health-workspace .health-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.health-workspace .health-stat > div:first-child { width: auto; height: auto; }
+.health-workspace .health-stat > p { order: -1; }

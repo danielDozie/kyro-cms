@@ -1,0 +1,21 @@
+# Changelog
+
+## v0.15.0 (2026-11-25)
+
+- Core and Admin move to 0.15.0, Studio to 0.2.0, and Create to 0.12.76. Packages retain independent versions.
+- Admin navigation adds compact organization controls, folder hierarchy, collapsed-rail flyouts, account menus, and system/light/dark appearance. Search and dialogs share a neutral dark backdrop, with compact search rows and keyboard-aware scrolling.
+- Structured fields use consistent spacing across groups, tabs, and array items. Select controls use custom trigger-width menus with borders, and relationship selections use semantic accent colors.
+- Studio offers explicit editor choice, switch warnings, independently resizable panels, adaptive insertion grids, selectable viewport sizes, theme-aware canvas, and simpler settings.
+- Media library adds compact grid/list actions and selection feedback, an in-container details panel, preserved-original access, metadata saving, crop/hotspot tools, and selectable wide/square/portrait framing previews.
+- Developer pages use compact diagnostics and device rows. Audit-event details expand inline. API-key examples, connection details, and suggested fixes use disclosure. REST and GraphQL playground controls and pane sizing are refined.
+- Draft-enabled editors retain Publish changes after saving a draft. Save feedback distinguishes drafts from immediate saves. Newly generated posts and pages default to drafts while respecting explicit configuration.
+- The health endpoint reports the core package version instead of a hard-coded legacy value. The publishing script includes the Studio package.
+- Guides cover draft isolation, original media access, placement transforms, Studio workflows, and developer tools. Content-health documentation now describes the implemented checks and function signature.
+- **Breaking mode contract:** Studio is explicitly enabled globally. Headless mode hides layout authoring, freezes saved layouts, and delivers content-only REST/GraphQL/tRPC responses; Studio mode delivers the full tree. Content-only output can be requested explicitly, while full output is unavailable in headless mode. Configuration switches preserve canonical data but intentionally change response shape.
+- **Conversion and recovery:** More actions → Convert / recover previews affected layouts and creates an unpublished converted draft. A single protected pre-conversion recovery slot is reused per document, excluded from draft selection/autosave/history retention, and restored only into a draft. Local, Drizzle and MongoDB adapters support the slot. Current revisions and field/document permissions are checked before conversion or recovery.
+- **Layout editing:** Compact Content / Design / Misc tabs separate content from structure, spacing, appearance, sizing, typography, positioning, responsive overrides, IDs/classes and declaration-only CSS. Contextual controls include colors, gradients, media backgrounds, overlays and visual option diagrams. Layouts show Read-only labels when Studio is disabled.
+- **Typography and icons:** A curated 14-family Google Fonts selector includes supported weights and previews. Editor and frontend load selected families with deduplicated CSS requests and swap rendering. Font inheritance and system fonts remain available. Icon fields use searchable Lucide/Heroicons choices; block insertion uses centered monochrome icons, layout-first grouping and distinct Image Caption / Single Image choices.
+- **Publishing and document tools:** Autosave feedback uses sync states, reload resumes saved drafts, and changed block borders persist until publishing. New drafts show neutral Draft status; only published documents with newer drafts show Published · Modified. History uses compact rows and the latest 15 snapshots. The API tab distinguishes authenticated published/draft responses from local editor data and supports refresh, copy, download and line wrapping.
+- **Build and scaffolding:** Fixed generated collection-map keys to use collection slugs, preserved explicit draft opt-outs, added a Studio source type-check build, and moved build cleanup before parallel entries so browser declarations survive.
+
+Earlier release history is maintained in the documentation site changelog.

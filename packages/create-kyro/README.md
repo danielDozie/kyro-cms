@@ -92,3 +92,9 @@ const cliConfig = parseCliArgs();
 ## 📄 License
 
 MIT © [Daniel Dozie](https://github.com/danielDozie)
+
+## Editorial defaults
+
+Generated posts and pages enable `versions.drafts` by default. Explicit version settings override this default. Operational collections and existing project configurations keep their own settings. Minimal projects contain only the collections provided by their chosen template.
+
+The 0.12.76 generator keys the collection map by each collection's slug. Editorial post/page draft defaults apply to template collection arrays, and explicit `versions.drafts: false` remains respected. Core/Admin 0.15.0 globally default to headless mode unless Studio is enabled in configuration.

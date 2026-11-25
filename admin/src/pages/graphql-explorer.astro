@@ -16,7 +16,7 @@ const graphqlEnabled = apiAccess.graphqlEnabled !== false;
       <GraphQLPlayground
         client:only="react"
         endpoint={`${apiPath}/graphql`}
-        initialShowDocs={true}
+        initialShowDocs={false}
       />
     ) : (
       <div class="flex items-center justify-center h-full">

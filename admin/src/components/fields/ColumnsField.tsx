@@ -42,7 +42,7 @@ export const ColumnsField: React.FC<ColumnsFieldProps> = ({
                 onClick={() => onColumnsChange(n)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   columns === n
-                    ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-sm"
+                    ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] "
                     : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
                 }`}
               >
@@ -93,7 +93,7 @@ export const ColumnsField: React.FC<ColumnsFieldProps> = ({
               onClick={() => onColumnsChange(n)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 columns === n
-                  ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] shadow-sm"
+                  ? "bg-[var(--kyro-sidebar-active)] text-[var(--kyro-sidebar-text-active)] "
                   : "text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)]"
               }`}
             >

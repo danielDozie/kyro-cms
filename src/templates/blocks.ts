@@ -1,3 +1,4 @@
+import { extendedLayoutFields } from "./layout-fields.js";
 import type { Field, Block } from "../fields/types.js";
 
 function withUtilityFields(block: Block) {
@@ -46,7 +47,7 @@ const textElement: Block = {
 
 const imageElement: Block = {
   slug: "imageElement",
-  label: "Image",
+  label: "Single Image",
   admin: { group: "Basic Content Elements", description: "Single image" },
   fields: [
     { name: "image", type: "upload", label: "Image", relationTo: "media" },
@@ -236,8 +237,8 @@ export const textBlock = withUtilityFields({
 
 export const imageBlock = withUtilityFields({
   slug: "image",
-  admin: { group: "Basic Content Elements", description: "Image upload container" },
-  label: "Image",
+  admin: { group: "Basic Content Elements", description: "Image with caption" },
+  label: "Image Caption",
   fields: [
     { name: "image", type: "upload", label: "Image", relationTo: "media" },
     { name: "caption", type: "text", label: "Caption" },
@@ -569,3 +570,45 @@ export const coreSemanticBlocks = [
   formEmbedBlock,
   videoShowcaseBlock,
 ];
+
+// Visual building primitives. The nesting graph is finite and serializable:
+// Section → Container/Row/Grid → Column → content blocks.
+const quoteBlock: Block = { slug: "quote", label: "Quote", admin: { group: "Basic Content Elements" }, fields: [{name:"quote",type:"textarea",label:"Quote"},{name:"author",type:"text",label:"Attribution"}] };
+const galleryBlock: Block = { slug:"gallery",label:"Image Gallery",admin:{group:"Media"},fields:[{name:"title",type:"text",label:"Heading"},{name:"images",type:"array",label:"Images",fields:[{name:"image",type:"upload",relationTo:"media",label:"Image"},{name:"caption",type:"text",label:"Caption"}]}] };
+const accordionBlock: Block = { slug:"accordion",label:"Accordion",admin:{group:"Interactive"},fields:[{name:"title",type:"text",label:"Heading"},{name:"items",type:"array",label:"Panels",fields:[{name:"question",type:"text",label:"Title"},{name:"answer",type:"textarea",label:"Content"}]}] };
+const tabsBlock: Block = { slug:"tabs",label:"Content Tabs",admin:{group:"Interactive"},fields:[{name:"title",type:"text",label:"Heading"},{name:"items",type:"array",label:"Tabs",fields:[{name:"title",type:"text",label:"Tab title"},{name:"content",type:"richtext",label:"Content"}]}] };
+const spacerBlock: Block = { slug:"spacer",label:"Spacer",admin:{group:"Layout"},fields:[{name:"size",type:"number",label:"Height (px)",defaultValue:32,min:0,max:240}] };
+const dividerBlock: Block = { slug:"divider",label:"Divider",admin:{group:"Layout"},fields:[{name:"style",type:"select",label:"Style",defaultValue:"solid",options:[{label:"Solid",value:"solid"},{label:"Dashed",value:"dashed"},{label:"Dotted",value:"dotted"}]}] };
+const iconElement:Block={slug:"iconElement",label:"Icon",admin:{group:"Basic Content Elements"},fields:[{name:"icon",type:"icon",label:"Icon",defaultValue:"check"},{name:"size",type:"number",label:"Size",defaultValue:32,min:16,max:96},{name:"label",type:"text",label:"Accessible label"}]};
+const badgeBlock:Block={slug:"badge",label:"Badge",admin:{group:"Basic Content Elements"},fields:[{name:"text",type:"text",label:"Text",defaultValue:"New"}]};
+const noticeBlock:Block={slug:"notice",label:"Notice",admin:{group:"Basic Content Elements"},fields:[{name:"title",type:"text",label:"Title"},{name:"content",type:"textarea",label:"Message"}]};
+headingElement.fields.push({name:"level",type:"select",label:"Heading level",defaultValue:"2",options:[1,2,3,4,5,6].map(level=>({label:`Heading ${level}`,value:String(level)}))});
+export const studioContentBlocks:Block[]=[...coreSemanticBlocks,textBlock,imageBlock,...elementBlocks,iconElement,badgeBlock,noticeBlock,quoteBlock,galleryBlock,accordionBlock,tabsBlock,spacerBlock,dividerBlock];
+const layoutFields:Field[]=[{name:"layout",type:"group",label:"Layout",fields:[
+ {name:"width",type:"select",label:"Content width",defaultValue:"full",options:[{label:"Narrow",value:"narrow"},{label:"Content",value:"content"},{label:"Wide",value:"wide"},{label:"Full width",value:"full"}]},
+ ...["padding","gap"].map(name=>({name,type:"select" as const,label:name==="gap"?"Gap":"Padding",defaultValue:"medium",options:[{label:"None",value:"none"},{label:"Small",value:"small"},{label:"Medium",value:"medium"},{label:"Large",value:"large"}]})),
+ {name:"background",type:"select",label:"Background",defaultValue:"white",options:[{label:"Surface",value:"white"},{label:"Muted",value:"muted"},{label:"Peach",value:"peach"},{label:"Contrast",value:"dark"}]},
+ {name:"align",type:"select",label:"Align items",defaultValue:"stretch",options:[{label:"Start",value:"start"},{label:"Center",value:"center"},{label:"End",value:"end"},{label:"Stretch",value:"stretch"}]},
+ {name:"justify",type:"select",label:"Distribute content",defaultValue:"start",options:[{label:"Start",value:"start"},{label:"Center",value:"center"},{label:"End",value:"end"},{label:"Space between",value:"between"}]},
+ {name:"columns",type:"number",label:"Grid columns",min:1,max:4,defaultValue:2},
+]}];
+const layoutBlock=(slug:string,label:string,children:Block[]):Block=>({slug,label,admin:{group:"Layout"},fields:[
+ { ...layoutFields[0], fields: [
+   ...((layoutFields[0] as any).fields || []).filter((field: Field) => field.name !== "columns" || slug === "grid"),
+   ...(slug !== "grid" ? [
+     {name:"direction",type:"select",label:"Direction",defaultValue:slug === "row" ? "row" : "column",options:[{label:"Horizontal",value:"row"},{label:"Vertical",value:"column"}]},
+     {name:"wrap",type:"select",label:"Wrapping",defaultValue:slug === "row" ? "wrap" : "nowrap",options:[{label:"Wrap",value:"wrap"},{label:"Single line",value:"nowrap"}]},
+   ] : []),
+   ...extendedLayoutFields,
+   {name:"minHeight",type:"number",label:"Minimum height (px)",min:0,max:2400},
+   {name:"radius",type:"number",label:"Corner radius (px)",min:0,max:200},
+   {name:"overflow",type:"select",label:"Overflow",defaultValue:"visible",options:[{label:"Visible",value:"visible"},{label:"Clip",value:"hidden"},{label:"Scroll when needed",value:"auto"}]},
+ ]} as Field,
+ {name:"children",type:"blocks",label:"Sections",blocks:children}
+]});
+export const studioColumnBlock=layoutBlock("column","Column",studioContentBlocks);
+export const studioRowBlock=layoutBlock("row","Row",[studioColumnBlock]);
+export const studioGridBlock=layoutBlock("grid","Grid",[studioColumnBlock,...studioContentBlocks]);
+export const studioContainerBlock=layoutBlock("container","Container",[studioRowBlock,studioGridBlock,...studioContentBlocks]);
+export const studioSectionBlock=layoutBlock("section","Section",[studioContainerBlock,studioRowBlock,studioGridBlock,...studioContentBlocks]);
+export const studioPageBlocks:Block[]=[...studioContentBlocks,studioSectionBlock,studioContainerBlock,studioRowBlock,studioColumnBlock,studioGridBlock];

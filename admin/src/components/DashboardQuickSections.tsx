@@ -189,84 +189,15 @@ export function DashboardQuickSections({
       };
     });
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-      {/* ── Quick Actions ── */}
-      <div className="surface-tile p-5 rounded-lg border border-[var(--kyro-border)] flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--kyro-text-primary)]">Quick Actions</h2>
-              <p className="text-[11px] text-[var(--kyro-text-secondary)] mt-0.5">Shortcuts available for your role</p>
-            </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)]">
-              {visibleQuickActions.length} Actions
-            </span>
-          </div>
-
-          <div className="space-y-1">
-            {visibleQuickActions.map((action) => (
-              <a
-                key={action.id}
-                href={action.href}
-                className="flex items-center justify-between p-2.5 rounded-lg hover:bg-[var(--kyro-surface-accent)] text-xs text-[var(--kyro-text-primary)] transition-colors group"
-              >
-                <div>
-                  <p className="font-medium text-[var(--kyro-text-primary)]">{action.label}</p>
-                </div>
-                <span className="text-[var(--kyro-text-muted)] group-hover:text-[var(--kyro-text-primary)] transition-colors">
-                  →
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Explore Content ── */}
-      <div className="surface-tile p-5 rounded-lg border border-[var(--kyro-border)] flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-sm font-semibold text-[var(--kyro-text-primary)]">Explore Content</h2>
-              <p className="text-[11px] text-[var(--kyro-text-secondary)] mt-0.5">Collections accessible to your account</p>
-            </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--kyro-border)] bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)]">
-              {exploreCollections.length} Collections
-            </span>
-          </div>
-
-          {exploreCollections.length === 0 ? (
-            <div className="py-8 text-center text-xs text-[var(--kyro-text-muted)]">No accessible collections</div>
-          ) : (
-            <div className="space-y-1">
-              {exploreCollections.map((col) => (
-                <div
-                  key={col.slug}
-                  className="flex items-center justify-between p-2.5 rounded-lg hover:bg-[var(--kyro-surface-accent)] text-xs transition-colors group"
-                >
-                  <a href={col.href} className="font-medium text-[var(--kyro-text-primary)] hover:underline flex-1">
-                    {col.label}
-                  </a>
-                  <div className="flex items-center gap-2">
-                    {col.canCreate && (
-                      <a
-                        href={col.newHref}
-                        className="text-[10px] font-medium px-2 py-0.5 rounded border border-[var(--kyro-border)] bg-[var(--kyro-surface)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors"
-                      >
-                        + New
-                      </a>
-                    )}
-                    <a href={col.href} className="text-[var(--kyro-text-muted)] group-hover:text-[var(--kyro-text-primary)] transition-colors">
-                      →
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+  const createActions = exploreCollections.filter(col => col.canCreate).slice(0, 3);
+  const dailyActions = visibleQuickActions.filter(action => ["media", "content-health", "orders"].includes(action.id)).slice(0, 3);
+  const otherActions = visibleQuickActions.filter(action => !dailyActions.includes(action));
+  return <section className="workspace-shortcuts" aria-labelledby="shortcut-heading">
+    <h2 className="workspace-section-title" id="shortcut-heading">Start something</h2>
+    <div className="workspace-shortcut-grid">
+      {createActions.map(col => <a key={col.slug} href={col.newHref}><span className="workspace-shortcut-mark" aria-hidden="true">+</span><span><strong>Create {col.label}</strong><span>Add a new document</span></span><span aria-hidden="true">→</span></a>)}
+      {dailyActions.map(action => <a key={action.id} href={action.href}><span className="workspace-shortcut-mark" aria-hidden="true">↗</span><span><strong>{action.label}</strong><span>{action.description}</span></span><span aria-hidden="true">→</span></a>)}
     </div>
-  );
+    {otherActions.length > 0 && <details className="workspace-more-tools"><summary>More workspace tools <span>{otherActions.length}</span></summary><div>{otherActions.map(action => <a key={action.id} href={action.href}>{action.label}<span aria-hidden="true">↗</span></a>)}</div></details>}
+  </section>;
 }

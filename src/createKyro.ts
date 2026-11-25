@@ -291,7 +291,8 @@ export class Kyro {
       ...options,
       cors: this.config.cors,
       webhookService: this.webhookService,
-      settings: this.settings,
+      settings: { ...this.settings, studio: this.config.studio },
+      studio: this.config.studio,
     });
   }
 
@@ -299,7 +300,7 @@ export class Kyro {
     const schema = buildGraphQLSchema({
       registry: this.registry,
       db: this.db,
-      settings: this.settings,
+      settings: { ...this.settings, studio: this.config.studio },
     });
 
     // Store schema for direct access
@@ -368,7 +369,7 @@ export class Kyro {
           req: request,
           user: options?.user,
           tenantId: options?.tenantId,
-          settings: this.settings,
+          settings: { ...this.settings, studio: this.config.studio },
         });
 
         const kyroRouter = createKyroServer(ctx);

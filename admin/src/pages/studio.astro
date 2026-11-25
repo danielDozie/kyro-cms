@@ -1,0 +1,54 @@
+---
+import { CustomSelect } from "../components/ui/CustomSelect";
+import AdminLayout from "../layouts/AdminLayout.astro";
+import { collections, isStudioEnabled } from "../lib/config";
+import { adminPath, apiPath } from "../lib/paths";
+import { getAuthServer } from "../lib/auth-server";
+import { isStudioCollection, studioCollectionUrl, studioDocumentTitle } from "../lib/studio";
+const { user, permissions } = await getAuthServer(Astro.request);
+if (!user) return Astro.redirect(`${adminPath}/login`);
+if (!isStudioEnabled) return Astro.redirect(adminPath);
+const isAdmin = ["admin", "super_admin"].includes(user.role);
+const available = Object.values(collections).filter(c => isStudioCollection(c) && (isAdmin || permissions?.collections?.[c.slug]?.read === true));
+const requested = Astro.url.searchParams.get("collection");
+const config = available.find(c => c.slug === requested) || available[0];
+const search = Astro.url.searchParams.get("search")?.trim() || "";
+const status = ["draft", "published"].includes(Astro.url.searchParams.get("status") || "") ? Astro.url.searchParams.get("status")! : "";
+const page = Math.max(1, Math.floor(Number(Astro.url.searchParams.get("page")) || 1));
+let docs: Record<string, any>[] = [];
+let total = 0;
+let totalPages = 1;
+let error = "";
+const hasStatus = !!config?.versions || config?.fields?.some((f: any) => f.name === "status");
+const canCreate = !!config && (isAdmin || permissions?.collections?.[config.slug]?.create === true);
+if (config) {
+  const params = new URLSearchParams({ limit: "20", page: String(page), depth: "0" });
+  const where: Record<string, unknown> = {};
+  const titleField = typeof config.admin?.useAsTitle === "string" ? config.admin.useAsTitle : "title";
+  if (search) where[titleField] = { contains: search };
+  if (hasStatus && status) where.status = { equals: status };
+  if (Object.keys(where).length) params.set("where", JSON.stringify(where));
+  try {
+    const response = await fetch(`${Astro.url.origin}${apiPath}/${config.slug}?${params}`, { headers: { cookie: Astro.request.headers.get("cookie") || "" } });
+    if (!response.ok) throw new Error("Unable to load content. Try again.");
+    const data = await response.json(); docs = data.docs || []; total = data.totalDocs ?? docs.length; totalPages = data.totalPages || Math.max(1, Math.ceil(total / 20));
+  } catch { error = "Unable to load content. Try again."; }
+}
+const pageUrl = (n: number) => { const params = new URLSearchParams(Astro.url.searchParams); params.set("page", String(n)); return `${adminPath}/studio?${params}`; };
+---
+<AdminLayout title="Studio">
+  <div class="studio-workspace">
+    <header class="workspace-page-header studio-page-heading"><div><p class="workspace-eyebrow">Visual page builder</p><h1>Studio</h1><p class="workspace-description">Build pages with live components. Your content stays headless.</p></div>{canCreate && <a href={`${adminPath}/studio/${config.slug}/new`} class="kyro-btn kyro-btn-md kyro-btn-primary">+ Create {config.singularLabel || "content"}</a>}</header>
+    <div class="studio-library">
+      <nav class="studio-collections" aria-label="Studio collections"><p>Page collections</p>{available.map(c => <a href={studioCollectionUrl(adminPath, c.slug)} aria-current={c.slug === config?.slug ? "page" : undefined}><span>{c.label || c.slug}</span><span aria-hidden="true">›</span></a>)}<a href={`${adminPath}/media`} class="studio-media-link">Media library ↗</a></nav>
+      <section class="studio-content" aria-label={config?.label || "Content"}>
+        {config ? <>
+          <div class="studio-content-heading"><h2>{config.label || config.slug} <span>{total}</span></h2><a href={`${adminPath}/${config.slug}`}>Change editor</a></div>
+          <form class="studio-filters" method="get" action={`${adminPath}/studio`}><input type="hidden" name="collection" value={config.slug}/><label class="sr-only" for="studio-search">Search content titles</label><input id="studio-search" type="search" name="search" value={search} placeholder="Search titles…"/>{hasStatus && <><label class="sr-only" for="studio-status">Publishing status</label><CustomSelect client:only="react" id="studio-status" name="status" aria-label="Publishing status" defaultValue={status}><option value="">All statuses</option><option value="draft">Draft</option><option value="published">Published</option></CustomSelect></>}<button class="kyro-btn kyro-btn-sm kyro-btn-secondary" type="submit">Apply</button>{(search || status) && <a href={studioCollectionUrl(adminPath,config.slug)}>Clear</a>}</form>
+          {error ? <div class="dashboard-empty" role="alert"><p>{error}</p><a href={Astro.url.pathname + Astro.url.search}>Retry</a></div> : docs.length ? <div class="studio-table-scroll"><table class="studio-table"><thead><tr><th>Title</th><th>Status</th><th>Updated</th><th><span class="sr-only">Action</span></th></tr></thead><tbody>{docs.map(doc => <tr><td><a href={`${adminPath}/studio/${config.slug}/${encodeURIComponent(String(doc.id || doc._id))}`}><strong>{studioDocumentTitle(config, doc)}</strong>{typeof doc.slug === "string" && <small>/{doc.slug}</small>}</a></td><td><span class="studio-status" data-status={doc.status || (hasStatus ? "draft" : "published")}>{doc.status || (hasStatus ? "draft" : "published")}</span></td><td>{doc.updatedAt && Number.isFinite(Date.parse(doc.updatedAt)) ? new Date(doc.updatedAt).toLocaleDateString("en", { month: "short", day: "numeric" }) : "—"}</td><td><a href={`${adminPath}/studio/${config.slug}/${encodeURIComponent(String(doc.id || doc._id))}`} aria-label={`Edit ${studioDocumentTitle(config, doc)}`}>Edit ↗</a></td></tr>)}</tbody></table></div> : <div class="dashboard-empty"><p>{search || status ? "No content matches these filters." : "No content yet. Create your first document to start writing."}</p></div>}
+          {!error && totalPages > 1 && <nav class="studio-pagination" aria-label="Content pages">{page > 1 && <a href={pageUrl(page - 1)}>← Previous</a>}<span>Page {page} of {totalPages}</span>{page < totalPages && <a href={pageUrl(page + 1)}>Next →</a>}</nav>}
+        </> : <div class="dashboard-empty">No visual page collections are available for your role.</div>}
+      </section>
+    </div>
+  </div>
+</AdminLayout>

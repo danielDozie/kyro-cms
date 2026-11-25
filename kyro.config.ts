@@ -9,9 +9,9 @@ import { getAppSecret } from "./src/lib/secret.js";
 export default defineKyroConfig({
   organizations: [
     {
-      id: "org_acme_corp",
-      name: "Acme Media Global",
-      slug: "acme-media",
+      id: "org_kyro_corp",
+      name: "Kyro Media Global",
+      slug: "kyro-media",
       projects: [
         {
           id: "proj_corporate_site",

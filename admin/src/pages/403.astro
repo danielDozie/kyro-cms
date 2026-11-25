@@ -12,7 +12,7 @@ const userRole = user?.role || "";
 <AdminLayout title={i18next.t("pages." + "Access Denied".replace(/ /g, ""), { defaultValue: "Access Denied" })}>
   <div class="flex-1 flex items-center justify-center p-6 min-h-[calc(100vh-120px)]">
     <div
-      class="surface-tile max-w-md w-full p-8 rounded-2xl border border-[var(--kyro-border)] shadow-sm text-center space-y-6"
+      class="surface-tile max-w-md w-full p-8 rounded-2xl border border-[var(--kyro-border)]  text-center space-y-6"
     >
       <!-- Icon & Status Tag -->
       <div class="flex flex-col items-center gap-3">
@@ -37,7 +37,7 @@ const userRole = user?.role || "";
 
       <!-- Text Header -->
       <div class="space-y-1.5">
-        <h1 class="text-base font-semibold text-[var(--kyro-text-primary)]">Access Restricted</h1>
+        <h1 class="text-xl font-medium tracking-tight text-[var(--kyro-text-primary)]">Access Restricted</h1>
         <p class="text-xs text-[var(--kyro-text-secondary)] leading-relaxed max-w-xs mx-auto">
           Your current account role does not have permission to view or manage this resource.
         </p>

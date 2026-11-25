@@ -89,15 +89,15 @@ function SortableTag({ id, label, relation, onRemove, disabled }: SortableTagPro
     <span
       ref={setNodeRef}
       style={style}
-      className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[var(--kyro-sidebar-active)]/10 text-[var(--kyro-sidebar-active)] border border-transparent ${
-        isDragging ? "border-[var(--kyro-primary)] shadow-sm bg-[var(--kyro-sidebar-active)]/20" : ""
+      className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[var(--kyro-accent-soft)] text-[var(--kyro-accent-text)] border border-transparent ${
+        isDragging ? "border-[var(--kyro-primary)]  bg-[var(--kyro-sidebar-active)]/20" : ""
       }`}
     >
       {!disabled && (
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing hover:bg-[var(--kyro-sidebar-active)]/20 rounded p-0.5 text-[var(--kyro-sidebar-active)] opacity-70 flex items-center justify-center"
+          className="cursor-grab active:cursor-grabbing hover:bg-[var(--kyro-sidebar-active)]/20 rounded p-0.5 text-[var(--kyro-accent-text)] opacity-70 flex items-center justify-center"
         >
           <GripVertical className="w-2.5 h-2.5" />
         </div>
@@ -374,7 +374,7 @@ export function RelationshipField({
           return (
             <span
               key={`${rawId}-${idx}`}
-              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[var(--kyro-sidebar-active)]/10 text-[var(--kyro-sidebar-active)]"
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[var(--kyro-accent-soft)] text-[var(--kyro-accent-text)]"
             >
               {rel && <span className="opacity-60 mr-0.5">{rel}:</span>}
               {label}
@@ -419,9 +419,9 @@ export function RelationshipField({
                   setOptions([]);
                   setSearch("");
                 }}
-                className={`px-2 py-0.5 text-[10px] font-bold rounded transition-colors ${
+                className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
                   activeRelation === rel
-                    ? "kyro-btn-primary"
+                    ? "bg-[var(--kyro-accent-soft)] text-[var(--kyro-accent-text)]"
                     : "bg-[var(--kyro-surface-accent)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-border)]"
                 }`}
               >
@@ -464,7 +464,7 @@ export function RelationshipField({
         </div>
 
         {isOpen && (
-          <div className="relative z-20 w-full mt-1 border border-[var(--kyro-border)] rounded-lg shadow-lg bg-[var(--kyro-surface)] max-h-64 overflow-auto">
+          <div className="relative z-20 w-full mt-1 border border-[var(--kyro-border)] rounded-lg  bg-[var(--kyro-surface)] max-h-64 overflow-auto">
             {loading ? (
               <div className="p-4 text-center text-sm text-[var(--kyro-text-muted)]">
                 Loading...
@@ -480,14 +480,14 @@ export function RelationshipField({
                     onClick={() => handleSelect(opt)}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-[var(--kyro-surface-accent)] transition-colors ${
                       isSelected(opt)
-                        ? "bg-[var(--kyro-sidebar-active)]/10 text-[var(--kyro-sidebar-active)]"
+                        ? "bg-[var(--kyro-accent-soft)] text-[var(--kyro-accent-text)]"
                         : "text-[var(--kyro-text-primary)]"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span>{getLabel(opt)}</span>
                       {isSelected(opt) && (
-                        <span className="text-[var(--kyro-sidebar-active)]">
+                        <span className="text-[var(--kyro-accent-text)]">
                           ✓
                         </span>
                       )}

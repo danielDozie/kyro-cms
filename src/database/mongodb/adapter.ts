@@ -34,6 +34,7 @@ function getGlobalClientMap(): Map<string, GlobalMongoClientCacheEntry> {
 }
 
 export class MongoDBAdapter extends AbstractBaseAdapter {
+  readonly supportsProtectedRecovery = true;
   public dialect = 'mongodb' as const;
   public client: any;
   public db: any;
@@ -280,7 +281,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       processedDocs = await Promise.all(processedDocs.map(async (doc: any) => {
         const versionCollection = this.getMongoCollection(`${slug}_versions`);
         const version = await versionCollection.findOne(
-          { document_id: doc.id },
+          { document_id: doc.id, recovery: { $ne: true } },
           { sort: { createdAt: -1 } },
         );
         if (version) {
@@ -355,7 +356,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     if (draft) {
       const versionCollection = this.getMongoCollection(`${slug}_versions`);
       const version = await versionCollection.findOne(
-        { document_id: processedDoc.id },
+        { document_id: processedDoc.id, recovery: { $ne: true } },
         { sort: { createdAt: -1 } },
       );
       if (version) {
@@ -458,7 +459,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     if (draft) {
       const versionCollection = this.getMongoCollection(`${slug}_versions`);
       const version = await versionCollection.findOne(
-        { document_id: processedDoc.id },
+        { document_id: processedDoc.id, recovery: { $ne: true } },
         { sort: { createdAt: -1 } },
       );
       if (version) {
@@ -478,7 +479,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     const config = this.getCollectionConfig(slug);
     // Versions stored in a separate collection; exclude ephemeral autosave versions
     const versionCollection = this.getMongoCollection(`${slug}_versions`);
-    const filter: any = { document_id: documentId, autosave: { $ne: true } };
+    const filter: any = { document_id: documentId, autosave: { $ne: true }, recovery: args.recoveryOnly ? true : { $ne: true } };
     if (tenantId && config.tenantScoped) filter.tenant_id = tenantId;
 
     const skip = (page - 1) * limit;
@@ -514,6 +515,17 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     const config = this.getCollectionConfig(slug);
     const versionCollection = this.getMongoCollection(`${slug}_versions`);
 
+    if (args.recovery) {
+      const filter: any = { document_id: documentId, collection_slug: slug, recovery: true, tenant_id: tenantId && config.tenantScoped ? tenantId : null };
+      const existing = await versionCollection.findOne(filter, { sort: { createdAt: -1 } });
+      if (existing) {
+        const now = new Date().toISOString();
+        await versionCollection.updateOne({ _id: existing._id }, { $set: { data, createdAt: now, updatedAt: now, created_by: createdBy, change_description: changeDescription } });
+        await versionCollection.deleteMany({ ...filter, _id: { $ne: existing._id } });
+        return this.processResult({ ...existing, data, createdAt: now, updatedAt: now }, {} as CollectionConfig) as VersionRecord<T>;
+      }
+    }
+
     // Autosave: reuse existing autosave slot instead of creating a new row
     if (autosave) {
       const filter: any = { document_id: documentId, collection_slug: slug, autosave: true };
@@ -537,6 +549,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       data,
       status,
       autosave: autosave === true,
+      recovery: args.recovery === true,
       created_by: createdBy,
       change_description: changeDescription,
       createdAt: now,
@@ -574,7 +587,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
     const versionCollection = this.getMongoCollection(`${slug}_versions`);
 
     if (keepLatest) {
-      const filter: any = { document_id: documentId, autosave: { $ne: true } };
+      const filter: any = { document_id: documentId, autosave: { $ne: true }, recovery: { $ne: true } };
       if (tenantId && config.tenantScoped) filter.tenant_id = tenantId;
 
       const toKeep = await versionCollection
@@ -588,7 +601,7 @@ export class MongoDBAdapter extends AbstractBaseAdapter {
       if (keepIds.length > 0) {
         await versionCollection.deleteMany({
           document_id: documentId,
-          autosave: { $ne: true },
+          autosave: { $ne: true }, recovery: { $ne: true },
           _id: { $nin: keepIds },
           ...(tenantId && config.tenantScoped ? { tenant_id: tenantId } : {}),
         });

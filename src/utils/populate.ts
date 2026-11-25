@@ -57,6 +57,29 @@ function traverseFieldTree(
           const targetData = item.data && typeof item.data === "object" ? item.data : item;
           traverseFieldTree(targetData, blockDef.fields, onRelField);
         }
+        // Ensure nested Studio layout children and inline elements are traversed
+        const hasChildrenField = blockDef?.fields?.some((f: any) => f.name === "children");
+        if (!hasChildrenField && Array.isArray(item.children)) {
+          for (const child of item.children) {
+            if (!child || typeof child !== "object") continue;
+            const childType = child.type || child.blockType;
+            const childDef = (field as any).blocks?.find((b: any) => b.slug === childType);
+            if (childDef && Array.isArray(childDef.fields)) {
+              traverseFieldTree(child, childDef.fields, onRelField);
+            }
+          }
+        }
+        const hasElementsField = blockDef?.fields?.some((f: any) => f.name === "elements");
+        if (!hasElementsField && Array.isArray(item.elements)) {
+          for (const elem of item.elements) {
+            if (!elem || typeof elem !== "object") continue;
+            const elemType = elem.type || elem.blockType;
+            const elemDef = (field as any).blocks?.find((b: any) => b.slug === elemType);
+            if (elemDef && Array.isArray(elemDef.fields)) {
+              traverseFieldTree(elem, elemDef.fields, onRelField);
+            }
+          }
+        }
       }
     }
   }
@@ -92,7 +115,14 @@ function injectReferences(data: any, fields: Field[], fetchedDocs: Map<string, M
       const slugs = relTo ? [relTo] : targetSlugs;
       for (const slug of slugs) {
         const docMap = fetchedDocs.get(slug);
-        if (docMap && docMap.has(id)) return docMap.get(id);
+        if (docMap && docMap.has(id)) {
+          let doc = docMap.get(id);
+          if (slug === "forms") {
+            const { entries, webhooks, notificationEmails, secretKey, ...publicForm } = doc;
+            doc = publicForm;
+          }
+          return doc;
+        }
       }
       return null;
     };
@@ -105,13 +135,41 @@ function injectReferences(data: any, fields: Field[], fetchedDocs: Map<string, M
         const id = typeof v === "object" ? (v.value ?? v.id) : v;
         const relTo = typeof v === "object" ? v.relationTo : undefined;
         const doc = findDoc(id, relTo);
-        return doc ? doc : { id: id };
+        const metadata = typeof v === "object" ? v.metadata : undefined;
+        if (typeof v === "object" && v.relationTo) {
+          return doc ? {
+            ...doc,
+            relationTo: v.relationTo,
+            value: v.value ?? doc.id,
+            ...(metadata && typeof metadata === "object" ? { metadata: { ...(doc.metadata || {}), ...metadata } } : {})
+          } : v;
+        }
+        if (doc) {
+          return metadata && typeof metadata === "object"
+            ? { ...doc, metadata: { ...(doc.metadata || {}), ...metadata } }
+            : doc;
+        }
+        return typeof v === "object" ? v : { id: v };
       }));
-    } else if (typeof raw === "object") {
+    } else if (typeof raw === "object" && raw !== null) {
       const id = raw.value ?? raw.id;
       const relTo = raw.relationTo;
       const doc = findDoc(id, relTo);
-      setValue(doc ? doc : { id });
+      const metadata = raw.metadata;
+      if (raw.relationTo) {
+        setValue(doc ? {
+          ...doc,
+          relationTo: raw.relationTo,
+          value: raw.value ?? doc.id,
+          ...(metadata && typeof metadata === "object" ? { metadata: { ...(doc.metadata || {}), ...metadata } } : {})
+        } : raw);
+      } else if (doc) {
+        setValue(metadata && typeof metadata === "object"
+          ? { ...doc, metadata: { ...(doc.metadata || {}), ...metadata } }
+          : doc);
+      } else {
+        setValue(raw);
+      }
     }
   });
 }
@@ -148,36 +206,33 @@ export async function populateRelationships(
     const idArr = Array.from(idSet);
     const newDocs: any[] = [];
     
-    for (const id of idArr) {
-      try {
-        const batchResult = await db.find<Record<string, any>>({
-          collection: slug,
-          where: { id: { in: idArr } },
-          limit: idArr.length,
-          draft: true,
-        });
-        const docsList = batchResult?.docs || [];
-        for (const relDoc of docsList) {
-          if (relDoc && relDoc.id) {
-            docMap.set(String(relDoc.id), relDoc);
-            newDocs.push(relDoc);
-          }
-        }
-      } catch {
-        // Fallback to per-id fetching if batch query fails
-        for (const id of idArr) {
-          try {
-            const relDoc = await db.findByID({ collection: slug, id, draft: true });
-            if (relDoc) {
-              docMap.set(id, relDoc);
-              newDocs.push(relDoc);
-            }
-          } catch {
-            // ignore
-          }
+    try {
+      const batchResult = await db.find<Record<string, any>>({
+        collection: slug,
+        where: { id: { in: idArr } },
+        limit: idArr.length,
+        draft: true,
+      });
+      const docsList = batchResult?.docs || [];
+      for (const relDoc of docsList) {
+        if (relDoc && relDoc.id) {
+          docMap.set(String(relDoc.id), relDoc);
+          newDocs.push(relDoc);
         }
       }
-      break;
+    } catch {
+      // Fallback to per-id fetching if batch query fails
+      for (const id of idArr) {
+        try {
+          const relDoc = await db.findByID({ collection: slug, id, draft: true });
+          if (relDoc) {
+            docMap.set(String(id), relDoc);
+            newDocs.push(relDoc);
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
     
     fetchedDocs.set(slug, docMap);

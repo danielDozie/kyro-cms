@@ -1,3 +1,4 @@
+import { CustomSelect } from "./CustomSelect";
 import { Button } from "./Button";
 
 interface PaginationProps {
@@ -10,10 +11,10 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, totalPages, totalDocs, limit, onPageChange, onLimitChange }: PaginationProps) {
-  if (totalPages <= 1) return null;
+  if (!totalDocs && totalPages <= 1) return null;
 
   return (
-    <div className="surface-tile flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-[var(--kyro-border)] rounded-lg">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-[var(--kyro-border)] rounded-lg">
       {totalDocs !== undefined && limit ? (
         <span className="text-xs text-[var(--kyro-text-secondary)] font-medium">
           Showing {(page - 1) * limit + 1} to {Math.min(page * limit, totalDocs)} of {totalDocs}
@@ -23,7 +24,8 @@ export function Pagination({ page, totalPages, totalDocs, limit, onPageChange, o
       )}
       <div className="flex items-center gap-2 flex-wrap justify-center">
         {onLimitChange && (
-          <select
+          <CustomSelect
+            aria-label="Documents per page"
             value={limit}
             onChange={(e) => onLimitChange(Number(e.target.value))}
             className="text-xs border border-[var(--kyro-border)] rounded-lg px-2 py-1 bg-[var(--kyro-bg)] text-[var(--kyro-text-secondary)]"
@@ -32,7 +34,7 @@ export function Pagination({ page, totalPages, totalDocs, limit, onPageChange, o
             <option value={25}>25/page</option>
             <option value={50}>50/page</option>
             <option value={100}>100/page</option>
-          </select>
+          </CustomSelect>
         )}
         <span className="text-xs text-[var(--kyro-text-secondary)] font-medium">
           Page {page} of {totalPages}

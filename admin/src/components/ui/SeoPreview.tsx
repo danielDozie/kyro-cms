@@ -10,7 +10,7 @@ interface SeoPreviewProps {
 export const SeoPreview = ({ title, description, slug, collectionSlug }: SeoPreviewProps) => {
   const collectionName = collectionSlug || "posts";
   return (
-    <div className="bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg p-6 max-w-2xl shadow-sm transition-colors duration-300">
+    <div className="bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg p-6 max-w-2xl  transition-colors duration-300">
       <div className="flex items-center gap-2 mb-2">
         <div className="w-7 h-7 bg-[var(--kyro-bg-secondary)] rounded-full flex items-center justify-center text-[10px] text-[var(--kyro-text-primary)] font-medium border border-[var(--kyro-border)]">
           K

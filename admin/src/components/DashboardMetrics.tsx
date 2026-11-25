@@ -1,20 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useIsMounted } from "../hooks/useIsMounted";
+import { adminPath } from "../lib/paths";
 import { apiGet } from "../lib/api";
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
 } from "recharts";
 
 interface MetricsData {
@@ -43,8 +37,7 @@ function formatCurrency(n: number, currency = "USD") {
 
 function SkeletonCard() {
   return (
-    <div className="p-5 rounded-lg border border-[var(--kyro-border)] animate-pulse" style={{ background: "var(--kyro-surface-accent)" }}>
-      <div className="w-10 h-10 rounded-lg mb-3" style={{ background: "var(--kyro-bg-secondary)" }} />
+    <div className="dashboard-stat animate-pulse">
       <div className="h-7 w-20 rounded mb-2" style={{ background: "var(--kyro-bg-secondary)" }} />
       <div className="h-3 w-28 rounded" style={{ background: "var(--kyro-bg-secondary)" }} />
     </div>
@@ -53,7 +46,8 @@ function SkeletonCard() {
 
 function SkeletonSection() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="dashboard-stat-grid">
+      <SkeletonCard />
       <SkeletonCard />
       <SkeletonCard />
       <SkeletonCard />
@@ -65,7 +59,6 @@ function SkeletonSection() {
 // ─── Metric Card ──────────────────────────────────────────────────────────────
 
 function MetricCard({
-  icon,
   value,
   label,
   subtext,
@@ -78,54 +71,11 @@ function MetricCard({
   trend?: { value: string; up: boolean };
 }) {
   return (
-    <div
-      className="relative flex flex-col justify-between rounded-2xl p-5 overflow-hidden transition-all duration-200 hover:scale-[1.015]"
-      style={{
-        background: "var(--kyro-surface)",
-        border: "1px solid var(--kyro-border)",
-      }}
-    >
-      {/* Top row: icon + trend */}
-      <div className="flex items-start justify-between mb-5">
-        <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center"
-          style={{
-            background: "var(--kyro-bg-secondary)",
-            color: "var(--kyro-text-secondary)",
-          }}
-        >
-          {icon}
-        </div>
-        {trend && (
-          <span
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{
-              background: "var(--kyro-bg-secondary)",
-              color: trend.up ? "var(--kyro-text-secondary)" : "var(--kyro-text-muted)",
-            }}
-          >
-            {trend.up ? "↑" : "↓"} {trend.value}
-          </span>
-        )}
-      </div>
-
-      {/* Bottom row: number + label */}
-      <div>
-        <p
-          className="text-[26px] font-extrabold tracking-tight leading-none mb-1"
-          style={{ color: "var(--kyro-text-primary)" }}
-        >
-          {typeof value === "number" ? formatNumber(value) : value}
-        </p>
-        <p className="text-xs font-semibold" style={{ color: "var(--kyro-text-secondary)" }}>
-          {label}
-        </p>
-        {subtext && (
-          <p className="text-[10px] mt-0.5" style={{ color: "var(--kyro-text-muted)" }}>
-            {subtext}
-          </p>
-        )}
-      </div>
+    <div className="dashboard-stat">
+      <p className="dashboard-stat-label">{label}</p>
+      <p className="dashboard-stat-value">{typeof value === "number" ? formatNumber(value) : value}</p>
+      {subtext && <p className="dashboard-stat-note">{subtext}</p>}
+      {trend && <p className="dashboard-stat-note">{trend.value}</p>}
     </div>
   );
 }
@@ -136,7 +86,7 @@ function CustomTooltip({ active, payload, label, currency }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="rounded-xl shadow-2xl border px-4 py-3 text-sm"
+      className="rounded-xl  border px-4 py-3 text-sm"
       style={{
         background: "var(--kyro-bg-primary)",
         borderColor: "var(--kyro-border)",
@@ -167,6 +117,9 @@ export const RevenueChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [auth, setAuth] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
+  const [series, setSeries] = useState<"revenue" | "orders">("revenue");
+  const [failed, setFailed] = useState(false);
+  const [range, setRange] = useState<"6" | "12" | "all">("12");
 
   useEffect(() => {
     setMounted(true);
@@ -193,7 +146,7 @@ export const RevenueChart: React.FC = () => {
     }
     apiGet<any>("/api/analytics", { autoToast: false })
       .then(setData)
-      .catch(console.error)
+      .catch(() => setFailed(true))
       .finally(() => setLoading(false));
   }, [mounted, canReadOrders]);
 
@@ -208,28 +161,31 @@ export const RevenueChart: React.FC = () => {
 
   const hasChartData = data?.chartData?.length > 0;
   const currency = data?.currencyCode || "USD";
-  const totalRevenue = data?.totalRevenue || 0;
-  const totalOrders = data?.totalOrders || 0;
-  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  // Group the existing daily records for a readable monthly overview.
+  const monthly = new Map<string, { date: string; revenue: number; orders: number }>();
+  for (const record of data?.chartData || []) {
+    const month = String(record.date).slice(0, 7);
+    const previous = monthly.get(month) || { date: `${month}-01`, revenue: 0, orders: 0 };
+    previous.revenue += Number(record.revenue) || 0;
+    previous.orders += Number(record.orders) || 0;
+    monthly.set(month, previous);
+  }
+  const enrichedData = [...monthly.values()].sort((a, b) => a.date.localeCompare(b.date));
 
-  // Build order-count per month from chartData if present
-  const enrichedData = hasChartData
-    ? data.chartData.map((d: any) => ({
-      ...d,
-      orders: d.orders ?? Math.round(d.revenue / Math.max(avgOrderValue, 1)),
-    }))
-    : [];
+  const chartData = range === "all" ? enrichedData : enrichedData.slice(-Number(range));
+  const periodTotal = chartData.reduce((total, item) => total + item[series], 0);
+  const periodLabel = chartData.length ? `${new Date(`${chartData[0].date}T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" })} – ${new Date(`${chartData[chartData.length - 1].date}T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "numeric" })}` : "No activity yet";
 
-  // Donut data: order status breakdown
+  // Order status breakdown
   const STATUS_COLORS: Record<string, string> = {
     pending: "#fbbf24",    // Amber
     processing: "#38bdf8", // Sky
-    shipped: "#818cf8",    // Indigo
+    shipped: "#a1a1aa",    // Slate
     delivered: "#34d399",  // Emerald
     completed: "#10b981",  // Emerald Darker
     cancelled: "#f87171",  // Red
   };
-  const fallbackColors = ["#818cf8", "#94a3b8", "#fbbf24", "#f87171", "#c084fc", "#38bdf8"];
+  const fallbackColors = ["#ff9b6b", "#94a3b8", "#fbbf24", "#f87171", "#c084fc", "#38bdf8"];
 
   const statusData = data?.ordersByStatus
     ? Object.entries(data.ordersByStatus).map(([name, value]: any, i) => {
@@ -242,184 +198,54 @@ export const RevenueChart: React.FC = () => {
     })
     : [];
 
+  const statusOrder = ["Pending", "Processing", "Shipped", "Delivered", "Completed", "Cancelled"];
+  statusData.sort((a, b) => (statusOrder.indexOf(a.name) < 0 ? 99 : statusOrder.indexOf(a.name)) - (statusOrder.indexOf(b.name) < 0 ? 99 : statusOrder.indexOf(b.name)));
+  const statusTotal = statusData.reduce((sum, entry) => sum + Number(entry.value), 0);
   return (
-    <div className="mt-6 space-y-6">
-
-      {/* Main Area Chart */}
-      <div
-        className="rounded-2xl border p-6"
-        style={{ background: "var(--kyro-surface-accent)", borderColor: "var(--kyro-border)" }}
-      >
-        <div className="flex justify-between items-end mb-6">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight" style={{ color: "var(--kyro-text-primary)" }}>
-              Revenue Overview
-            </h2>
-            <p className="text-xs font-medium mt-1" style={{ color: "var(--kyro-text-secondary)" }}>
-              Revenue & order volume over time
-            </p>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#818cf8" }} /> Revenue</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "#94a3b8" }} /> Orders</span>
+    <section className="dashboard-analytics dashboard-analytics-refined" aria-label="Store analytics">
+      <div className="dashboard-chart">
+        <div className="analytics-heading">
+          <div><h2 className="dashboard-section-title">Store performance</h2><p className="dashboard-section-note">{periodLabel}</p></div>
+          <div className="analytics-range" aria-label="Chart date range">
+            {(["6", "12", "all"] as const).map(value => <button key={value} type="button" aria-pressed={range === value} onClick={() => setRange(value)}>{value === "all" ? "All time" : `${value} months`}</button>)}
           </div>
         </div>
-
-        <div className="h-72 w-full">
-          {!hasChartData ? (
-            <div
-              className=" flex flex-col items-center justify-center w-full h-full rounded-lg border border-dashed text-sm"
-              style={{ background: "var(--kyro-bg-secondary)", borderColor: "var(--kyro-border)", color: "var(--kyro-text-muted)" }}
-            >
-              <svg className="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              No chart data yet
-            </div>
+        <div className="analytics-summary">
+          <div><p className="analytics-period-total">{series === "revenue" ? formatCurrency(periodTotal, currency) : formatNumber(periodTotal)}</p><p className="dashboard-section-note">{series === "revenue" ? "Revenue in selected period" : "Orders in selected period"}</p></div>
+          <div className="dashboard-chart-tabs" aria-label="Chart metric">
+            <button type="button" aria-pressed={series === "revenue"} onClick={() => setSeries("revenue")}>Revenue</button>
+            <button type="button" aria-pressed={series === "orders"} onClick={() => setSeries("orders")}>Orders</button>
+          </div>
+        </div>
+        <div className="analytics-plot">
+          {failed ? <p className="dashboard-empty" role="status">Could not load analytics. Refresh the page to try again.</p> : !hasChartData ? (
+            <p className="dashboard-empty">Your sales activity will appear here once orders come in.</p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={enrichedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#818cf8" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradOrders" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--kyro-border)" />
-                <XAxis
-                  dataKey="date"
-                  stroke="var(--kyro-text-muted)"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  yAxisId="revenue"
-                  stroke="var(--kyro-text-muted)"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => formatCurrency(v, currency)}
-                />
-                <YAxis
-                  yAxisId="orders"
-                  orientation="right"
-                  stroke="var(--kyro-text-muted)"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                />
+              <AreaChart data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="var(--kyro-border)" strokeDasharray="3 4" />
+                <XAxis dataKey="date" stroke="var(--kyro-text-muted)" fontSize={11} tickLine={false} axisLine={false} minTickGap={32} tickFormatter={(date) => new Date(`${date}T00:00:00`).toLocaleDateString(undefined, { month: "short", year: "2-digit" })} />
+                <YAxis stroke="var(--kyro-text-muted)" fontSize={11} tickLine={false} axisLine={false} width={56} tickCount={4} allowDecimals={series === "revenue"} tickFormatter={(v) => series === "revenue" ? new Intl.NumberFormat("en", { style: "currency", currency, notation: "compact", maximumFractionDigits: 0 }).format(v) : String(v)} />
                 <Tooltip content={<CustomTooltip currency={currency} />} />
-                <Area
-                  yAxisId="revenue"
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#818cf8"
-                  strokeWidth={2.5}
-                  fill="url(#gradRevenue)"
-                  dot={false}
-                  activeDot={{ r: 5, fill: "#818cf8", stroke: "#fff", strokeWidth: 2 }}
-                />
-                <Area
-                  yAxisId="orders"
-                  type="monotone"
-                  dataKey="orders"
-                  stroke="#94a3b8"
-                  strokeWidth={2.5}
-                  fill="url(#gradOrders)"
-                  dot={false}
-                  activeDot={{ r: 5, fill: "#94a3b8", stroke: "#fff", strokeWidth: 2 }}
-                />
+                <Area type="monotone" dataKey={series} stroke="var(--kyro-chart)" strokeWidth={2} fill="transparent" dot={false} isAnimationActive={false} activeDot={{ r: 4, fill: "var(--kyro-chart)", stroke: "var(--kyro-surface)", strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
-
-      {/* Bottom Row: Bar Chart + Donut */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        {/* Monthly Bar Chart */}
-        <div
-          className="rounded-2xl border p-6"
-          style={{ background: "var(--kyro-surface-accent)", borderColor: "var(--kyro-border)" }}
-        >
-          <h3 className="text-base font-bold mb-1" style={{ color: "var(--kyro-text-primary)" }}>Monthly Revenue Bars</h3>
-          <p className="text-xs mb-5" style={{ color: "var(--kyro-text-secondary)" }}>Revenue breakdown by period</p>
-          <div className="h-48">
-            {!hasChartData ? (
-              <div className="flex items-center justify-center h-full text-xs" style={{ color: "var(--kyro-text-muted)" }}>No data</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={enrichedData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#a78bfa" />
-                      <stop offset="100%" stopColor="#818cf8" />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--kyro-border)" />
-                  <XAxis dataKey="date" stroke="var(--kyro-text-muted)" fontSize={10} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--kyro-text-muted)" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v, currency)} />
-                  <Tooltip content={<CustomTooltip currency={currency} />} />
-                  <Bar dataKey="revenue" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        {/* Order Status Donut */}
-        <div
-          className="rounded-2xl border p-6"
-          style={{ background: "var(--kyro-surface-accent)", borderColor: "var(--kyro-border)" }}
-        >
-          <h3 className="text-base font-bold mb-1" style={{ color: "var(--kyro-text-primary)" }}>Order Status</h3>
-          <p className="text-xs mb-5" style={{ color: "var(--kyro-text-secondary)" }}>Distribution by status</p>
-          {statusData.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-xs" style={{ color: "var(--kyro-text-muted)" }}>No status data</div>
-          ) : (
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={35}
-                    outerRadius={55}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {statusData.map((entry: any, i: number) => (
-                      <Cell key={i} fill={entry.color} stroke="transparent" />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--kyro-bg-primary)",
-                      border: "1px solid var(--kyro-border)",
-                      borderRadius: "10px",
-                      color: "var(--kyro-text-primary)",
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend
-                    iconType="circle"
-                    iconSize={8}
-                    wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-                    formatter={(v: string) => <span style={{ color: "var(--kyro-text-secondary)" }}>{v}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      <aside className="dashboard-status" aria-label="Order status">
+        <div className="analytics-heading"><h2 className="dashboard-section-title">Order overview</h2><a href={`${adminPath}/orders`} aria-label="View all orders">↗</a></div>
+        <p className="order-overview-total">{formatNumber(statusTotal)} <span>total orders</span></p>
+        {statusTotal > 0 && <div className="order-distribution" aria-hidden="true">{statusData.map(entry => <span key={entry.name} style={{ flex: Number(entry.value), background: entry.color }} />)}</div>}
+        {statusData.length === 0 ? <p className="dashboard-empty">{failed ? "Order status unavailable." : "No orders yet."}</p> : <ul>
+          {statusData.map(entry => <li key={entry.name}>
+            <span className="dashboard-status-dot" style={{ background: entry.color }} aria-hidden="true" />
+            <span>{entry.name}</span><strong>{entry.value}</strong>
+          </li>)}
+        </ul>}
+        <p className="dashboard-section-note order-scope-note">Across all recorded orders</p>
+      </aside>
+    </section>
   );
 };
 
@@ -427,11 +253,12 @@ export const RevenueChart: React.FC = () => {
 
 export interface DashboardMetricsProps {
   isEcommerce?: boolean;
+  allowedCollections?: string[];
 }
 
 import { ClientOnly } from "./ui/ClientOnly";
 
-const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce }) => {
+const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce, allowedCollections }) => {
   const [data, setData] = useState<MetricsData | null>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -495,9 +322,9 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
   const currency = analyticsData?.currencyCode || "USD";
 
   const productCount =
-    (data?.collectionCounts?.["products"] || 0) +
-    (data?.collectionCounts?.["food-menu"] || 0) +
-    (data?.collectionCounts?.["menu"] || 0);
+    ((!allowedCollections || allowedCollections.includes("products")) ? (data?.collectionCounts?.["products"] || 0) : 0) +
+    ((!allowedCollections || allowedCollections.includes("food-menu")) ? (data?.collectionCounts?.["food-menu"] || 0) : 0) +
+    ((!allowedCollections || allowedCollections.includes("menu")) ? (data?.collectionCounts?.["menu"] || 0) : 0);
 
   const ecommerceCards = [
     {
@@ -508,8 +335,8 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
         ? new Intl.NumberFormat("en-US", { style: "currency", currency }).format(analyticsData.totalRevenue)
         : "$0",
       label: "Total Revenue",
-      subtext: "From system orders",
-      visible: isAdmin || permissions?.collections?.orders?.read === true,
+      subtext: "Across all recorded orders",
+      visible: (isAdmin || permissions?.collections?.orders?.read === true) && (!allowedCollections || allowedCollections.includes("orders")),
     },
     {
       id: "products",
@@ -517,8 +344,8 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
       gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
       value: productCount,
       label: "Products",
-      subtext: "Active inventory",
-      visible: isAdmin || permissions?.collections?.products?.read === true,
+      subtext: "In your catalog",
+      visible: (isAdmin || permissions?.collections?.products?.read === true) && (!allowedCollections || allowedCollections.some((c: string) => ["products", "food-menu", "menu"].includes(c))),
     },
     {
       id: "orders",
@@ -527,7 +354,7 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
       value: analyticsData?.totalOrders !== undefined ? analyticsData.totalOrders : (data?.collectionCounts?.["orders"] || 0),
       label: "Orders",
       subtext: "Total orders placed",
-      visible: isAdmin || permissions?.collections?.orders?.read === true,
+      visible: (isAdmin || permissions?.collections?.orders?.read === true) && (!allowedCollections || allowedCollections.includes("orders")),
     },
     {
       id: "customers",
@@ -536,7 +363,7 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
       value: data?.collectionCounts?.["customers"] || 0,
       label: "Customers",
       subtext: "Registered shoppers",
-      visible: isAdmin || permissions?.collections?.customers?.read === true || permissions?.collections?.users?.read === true,
+      visible: (isAdmin || permissions?.collections?.customers?.read === true || permissions?.collections?.users?.read === true) && (!allowedCollections || allowedCollections.includes("customers")),
     },
     {
       id: "reviews",
@@ -545,7 +372,7 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
       value: data?.collectionCounts?.["reviews"] || 0,
       label: "Reviews",
       subtext: "Customer feedback",
-      visible: isAdmin || permissions?.collections?.reviews?.read === true,
+      visible: (isAdmin || permissions?.collections?.reviews?.read === true) && (!allowedCollections || allowedCollections.includes("reviews")),
     },
   ].filter((c) => c.visible);
 
@@ -553,6 +380,7 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
   const activeCustomCollections = data?.collectionCounts
     ? Object.entries(data.collectionCounts)
       .filter(([slug, count]) => count > 0 && !["users", "audit_logs", "media"].includes(slug))
+      .filter(([slug]) => !allowedCollections || allowedCollections.includes(slug))
       .filter(([slug]) => isAdmin || permissions?.collections?.[slug]?.read === true)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
@@ -570,14 +398,21 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
     };
   });
 
+  const scopedDocumentCount = allowedCollections
+    ? Object.entries(data?.collectionCounts || {})
+      .filter(([slug]) => allowedCollections.includes(slug))
+      .reduce((sum, [, count]) => sum + count, 0)
+    : data?.totalDocuments || 0;
+  const scopedCollectionsCount = allowedCollections ? allowedCollections.length : (data?.collections || 0);
+
   const baseCmsCards = [
     {
       id: "documents",
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
       gradient: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-      value: data?.totalDocuments || 0,
+      value: scopedDocumentCount,
       label: "Documents",
-      subtext: `Across ${data?.collections || 0} collection${data?.collections !== 1 ? "s" : ""}`,
+      subtext: `Across ${scopedCollectionsCount} collection${scopedCollectionsCount !== 1 ? "s" : ""}`,
       visible: true,
     },
     {
@@ -613,31 +448,9 @@ const DashboardMetricsInner: React.FC<DashboardMetricsProps> = ({ isEcommerce })
 
   return (
     <div
-      className="rounded-2xl border overflow-hidden"
-      style={{ background: "var(--kyro-surface-accent)", borderColor: "var(--kyro-border)" }}
+      className="dashboard-metrics"
     >
-      {/* Header */}
-      <div
-        className="px-6 py-5 border-b flex items-center justify-between"
-        style={{ borderColor: "var(--kyro-border)" }}
-      >
-        <div>
-          <h2 className="text-xl font-bold tracking-tight" style={{ color: "var(--kyro-text-primary)" }}>
-            {isEcommerce ? "Commerce Overview" : "Metrics"}
-          </h2>
-          <p className="text-xs font-medium mt-0.5" style={{ color: "var(--kyro-text-secondary)" }}>
-            Real-time content, performance & system health
-          </p>
-        </div>
-        {data && (
-          <span className="text-[10px] font-mono px-2 py-1 rounded-lg" style={{ background: "var(--kyro-bg-secondary)", color: "var(--kyro-text-muted)" }}>
-            {new Date(data.timestamp).toLocaleTimeString()}
-          </span>
-        )}
-      </div>
-
-      {/* Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 p-6">
+      <div className="dashboard-stat-grid">
         {loading
           ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
           : data

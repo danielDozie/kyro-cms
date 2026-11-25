@@ -1,0 +1,13 @@
+---
+import { PanelsTopLeft, ArrowUpRight } from "lucide-react";
+interface Props { href: string }
+const { href } = Astro.props;
+---
+<div class="sidebar-studio-launcher">
+  <a href={href} class="sidebar-studio-link" aria-label="Studio: Choose page editor" title="Choose how to edit pages">
+    <PanelsTopLeft className="sidebar-studio-icon" size={16} aria-hidden="true" />
+    <span class="sidebar-text sidebar-studio-label">Studio</span>
+    <span class="sidebar-text sidebar-studio-caption">Choose editor</span>
+    <ArrowUpRight className="sidebar-studio-arrow" size={14} aria-hidden="true" />
+  </a>
+</div>

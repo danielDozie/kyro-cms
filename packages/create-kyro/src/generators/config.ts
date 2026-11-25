@@ -48,7 +48,14 @@ export function generateKyroConfig(answers: Answers): string {
       ? '["kitchen-sink"]'
       : `.${answers.template}`;
 
-  const collectionsConfig = `  collections: templateCollections${collectionKey},`;
+  const collectionsConfig = `  collections: Object.fromEntries(
+    templateCollections${collectionKey}.map((collection) => [
+      collection.slug,
+      ["posts", "pages"].includes(collection.slug)
+        ? { ...collection, versions: { drafts: true, ...collection.versions } }
+        : collection,
+    ]),
+  ),`;
 
   let globalsConfig = "";
   if (answers.template === "minimal" || answers.template === "starter" || answers.template === "blog") {

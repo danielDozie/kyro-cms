@@ -1,3 +1,5 @@
+import { contentRepresentation, representationMode } from "../../../studio/representation.js";
+import { mountCompositionRoutes } from "./composition-routes.js";
 import { Hono } from "hono";
 import { verify, sign } from "hono/jwt";
 import type { KyroAppOptions } from "../kyro-app.js";
@@ -11,6 +13,10 @@ import { maskRestrictedFields } from "../../../utils/field-helpers.js";
 import { ApiError } from "../../../utils/errors.js";
 import { HookPipeline } from "../../../hooks/HookPipeline.js";
 import type { BaseAdapter } from "../../../registry/types.js";
+import { enforceStudioValidation } from "../../../studio/validation.js";
+import { checkOptimisticConcurrency } from "../../../studio/occ.js";
+import { getDeliveryCoordinator } from "../../../studio/delivery.js";
+import { randomUUID } from "crypto";
 
 export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw: any) {
   const {
@@ -21,6 +27,28 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
     tenantId,
     settings,
   } = options;
+
+  const studioEnabled = (options.studio || settings?.studio)?.enabled === true;
+  mountCompositionRoutes(app, options, authMw);
+  // Delivery defaults change with mode; canonical editor data requires an authenticated session.
+  app.use("/api/*", async (c, next) => {
+    const slug = c.req.path.split("/")[2];
+    if (!registry.hasCollection(slug) && slug !== "globals") return next();
+    const ctx = await resolveAuthContext(c.req.raw, authMw, user, tenantId);
+    const editor = c.req.header("x-kyro-admin") === "true" && !!ctx.user && !ctx.apiKeyContext;
+    let mode: "full" | "content";
+    try { mode = representationMode(studioEnabled, c.req.query("representation")); }
+    catch (error) { throw new ApiError(400, (error as Error).message); }
+    await next();
+    if (c.res.status < 400 && c.res.headers.get("content-type")?.includes("application/json")) {
+      c.header("Vary", "Cookie, Authorization, x-kyro-admin");
+      if (mode === "content" && (!editor || c.req.query("representation") === "content")) {
+        const body = await c.res.json();
+        c.res = new Response(JSON.stringify(contentRepresentation(body)), { status: c.res.status, headers: c.res.headers });
+        c.res.headers.delete("Content-Length");
+      }
+    }
+  });
 
   const enablePublicAccess = settings?.access?.enablePublicAccess ?? true;
   const defaultCollectionAccess = settings?.access?.defaultCollectionAccess ?? "none";
@@ -373,6 +401,12 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         if (!versionRec) {
           throw new ApiError(404, `Version '${versionId}' not found`);
         }
+        if (versionRec.recovery) throw new ApiError(400, "Use composition recovery to restore this protected snapshot as a draft");
+        if (!studioEnabled) {
+          const existingDoc = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
+          const restoreData = typeof versionRec.data === "string" ? JSON.parse(versionRec.data) : versionRec.data;
+          enforceStudioValidation(restoreData, collection, { studioEnabled: false, originalDoc: existingDoc as any });
+        }
         const versionData = typeof versionRec.data === "string" ? JSON.parse(versionRec.data) : versionRec.data;
         const { id: _ignoreId, createdAt: _ignoreCreated, updatedAt: _ignoreUpdated, ...restoreFields } = versionData;
 
@@ -458,6 +492,12 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const id = c.req.param("id");
       const versionId = c.req.param("versionId");
 
+      const targetVersion = await db.findVersionByID({ collection: slug, versionId, tenantId: ctxTenantID });
+      if (targetVersion?.recovery) throw new ApiError(400, "Use composition recovery to restore this protected snapshot as a draft");
+      if (!studioEnabled && targetVersion) {
+        const existingDoc = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
+        enforceStudioValidation(targetVersion.data as any, collection, { studioEnabled: false, originalDoc: existingDoc as any });
+      }
       if (typeof (db as any).restoreVersion === "function") {
         try {
           const restored = await (db as any).restoreVersion({
@@ -476,6 +516,12 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         const versionRec = await (db as any).findVersionByID({ collection: slug, versionId, tenantId: ctxTenantID });
         if (!versionRec) {
           throw new ApiError(404, `Version '${versionId}' not found`);
+        }
+        if (versionRec.recovery) throw new ApiError(400, "Use composition recovery to restore this protected snapshot as a draft");
+        if (!studioEnabled) {
+          const existingDoc = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
+          const restoreData = typeof versionRec.data === "string" ? JSON.parse(versionRec.data) : versionRec.data;
+          enforceStudioValidation(restoreData, collection, { studioEnabled: false, originalDoc: existingDoc as any });
         }
         const versionData = typeof versionRec.data === "string" ? JSON.parse(versionRec.data) : versionRec.data;
         const { id: _ignoreId, createdAt: _ignoreCreated, updatedAt: _ignoreUpdated, ...restoreFields } = versionData;
@@ -653,6 +699,18 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
 
       let body = await c.req.json();
 
+      if (!body.id) {
+        body.id = randomUUID();
+      }
+
+      // Enforce Studio recursive schema, layout grammar, and resource limits
+      body = enforceStudioValidation(body, collection, {
+        studioEnabled: studioEnabled,
+        isPublish: body.status === "published",
+        user: ctxUser,
+        req: c.req.raw as any,
+      });
+
       // Execute beforeChange collection hooks
       if (collection.hooks?.beforeChange && collection.hooks.beforeChange.length > 0) {
         const pipeline = new HookPipeline(collection.hooks.beforeChange);
@@ -701,7 +759,10 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         });
       }
 
-      const sanitized = sanitizeDoc(created);
+      const docToReturn = collection.versions
+        ? (await db.findByID({ collection: slug, id: (created as any)?.id || body.id, tenantId: ctxTenantID, draft: true })) || created
+        : created;
+      const sanitized = sanitizeDoc(docToReturn);
       return c.json({ doc: sanitized, data: sanitized, message: "Document created successfully" }, 201);
     });
 
@@ -729,13 +790,47 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
       const isDraft = url.searchParams.get("draft") === "true" || c.req.header("x-draft") === "true" || body.draft === true;
       const isDraftEnabled = collection.versions?.drafts === true;
 
+      const existing = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
+      if (!existing) {
+        throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+      }
+
+      // Concurrency check (OCC)
+      const baseUpdatedAt = body.baseUpdatedAt || c.req.header("x-base-updated-at") || c.req.header("if-match") || null;
+      const baseRevision = body.baseRevision || c.req.header("x-base-revision") || null;
+      const force = body.force === true || c.req.header("x-force") === "true";
+
+      checkOptimisticConcurrency({
+        existingDoc: existing,
+        baseUpdatedAt,
+        baseRevision,
+        force,
+      });
+
+      // Remove internal OCC / transient parameters from persisting payload
+      delete body.baseUpdatedAt;
+      delete body.baseRevision;
+      delete body.force;
+      delete body.updatedAt;
+      delete body.createdAt;
+
+      const isPublishing = body.status === "published" || (!isDraft && body.status !== "draft" && (existing.status === "draft" || body.status === "published"));
+
+      // Enforce Studio recursive schema, layout grammar, and resource limits
+      body = enforceStudioValidation(body, collection, {
+        studioEnabled: studioEnabled,
+        isPublish: isPublishing,
+        user: ctxUser,
+        req: c.req.raw as any,
+        originalDoc: existing,
+      });
+
       // Execute beforeChange collection hooks
       if (collection.hooks?.beforeChange && collection.hooks.beforeChange.length > 0) {
-        const originalDoc = await db.findByID({ collection: slug, id, tenantId: ctxTenantID });
         const pipeline = new HookPipeline(collection.hooks.beforeChange);
         body = await pipeline.execute({
           data: body,
-          originalDoc: originalDoc || undefined,
+          originalDoc: existing,
           collection: slug,
           operation: 'update',
           req: c.req.raw as any,
@@ -759,10 +854,6 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
         }
         updated = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
       } else {
-        const existing = await db.findByID({ collection: slug, id, tenantId: ctxTenantID, draft: true });
-        if (!existing) {
-          throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
-        }
         const mergedData = { ...existing, ...body };
 
         if (collection.versions && typeof (db as any).createVersion === "function") {
@@ -791,6 +882,32 @@ export function mountCollectionRoutes(app: Hono, options: KyroAppOptions, authMw
 
         if (!updated) {
           throw new ApiError(404, `Document '${id}' not found in '${slug}'`);
+        }
+
+        if (!isAutosave && (body.status === "published" || isPublishing)) {
+          if (typeof (db as any).clearAutosave === "function") {
+            try {
+              await (db as any).clearAutosave(slug, id, ctxTenantID);
+            } catch (e) {
+              console.warn(`[clearAutosave] Failed clearing autosave for ${slug}/${id}:`, e);
+            }
+          }
+        }
+      }
+
+      // If published, trigger delivery coordinator
+      if (isPublishing) {
+        try {
+          const coordinator = getDeliveryCoordinator();
+          await coordinator.triggerPublishDelivery({
+            collection: slug,
+            documentId: id,
+            revision: String(updated?.updatedAt || Date.now()),
+            slug: updated?.slug,
+            docData: updated,
+          });
+        } catch (e) {
+          console.warn(`[PublishDelivery] Trigger failed for ${slug}/${id}:`, e);
         }
       }
 

@@ -1,3 +1,4 @@
+import { CustomSelect } from "../ui/CustomSelect";
 import "../../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { Search, Loader2, X } from "../ui/icons";
@@ -115,7 +116,7 @@ export const RelationshipBlockField: React.FC<RelationshipBlockFieldProps> = ({
                 Loading...
               </div>
             ) : (
-              <select
+              <CustomSelect
                 value={relationTo}
                 onChange={(e) => onChange("relationTo", e.target.value)}
                 className={selectClass}
@@ -126,7 +127,7 @@ export const RelationshipBlockField: React.FC<RelationshipBlockFieldProps> = ({
                     {col}
                   </option>
                 ))}
-              </select>
+              </CustomSelect>
             )}
           </>
         )}
@@ -169,7 +170,7 @@ export const RelationshipBlockField: React.FC<RelationshipBlockFieldProps> = ({
         </div>
 
         {isOpen && (
-          <div className="absolute z-20 w-full mt-1 border border-[var(--kyro-border)] rounded-lg shadow-lg bg-[var(--kyro-surface)] max-h-48 overflow-auto">
+          <div className="absolute z-20 w-full mt-1 border border-[var(--kyro-border)] rounded-lg  bg-[var(--kyro-surface)] max-h-48 overflow-auto">
             {loading ? (
               <div className="p-3 text-center text-sm text-[var(--kyro-text-muted)]">
                 Loading...

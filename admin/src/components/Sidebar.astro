@@ -1,14 +1,16 @@
 ---
 import "../styles/main.css";
-import { nonAuthCollections, projects, organizations } from "../lib/config";
+import { nonAuthCollections, projects, organizations, isStudioEnabled } from "../lib/config";
 import { adminPath } from "../lib/paths";
 import { getSiteSettings, getBrandSettings } from "../lib/globals";
 import { getAuthServer } from "../lib/auth-server";
+import { isStudioCollection } from "../lib/studio";
 
 import SidebarHeader from "./sidebar/SidebarHeader.astro";
 import ProjectSwitcher from "./sidebar/ProjectSwitcher.astro";
 import SidebarNav, { type NavSection } from "./sidebar/SidebarNav.astro";
 import SidebarFooter from "./sidebar/SidebarFooter.astro";
+import StudioLauncher from "./sidebar/StudioLauncher.astro";
 import type { NavItem } from "./sidebar/SidebarNavItem.astro";
 
 interface Props {
@@ -44,6 +46,7 @@ nonAuthCollections
   .forEach((col) => {
     const item: NavItem = {
       href: `${adminPath}/${col.slug}`,
+      projectScoped: true,
       label: col.label || col.slug,
       icon: (col.admin?.icon as string) || "collection",
       order: typeof col.admin?.order === "number" ? col.admin.order : 999,
@@ -77,12 +80,19 @@ const isServerAdmin = serverRole === "admin" || isServerSuperAdmin;
 const isServerEditor = serverRole === "editor";
 const isServerAuthor = serverRole === "author";
 const isServerCustomer = serverRole === "customer";
+const studioCollections = isStudioEnabled
+  ? nonAuthCollections.filter((collection) =>
+      isStudioCollection(collection) &&
+      (isServerAdmin || serverPermissions?.collections?.[collection.slug]?.read === true),
+    )
+  : [];
+const studioEntryCollection = studioCollections.find(({ slug }) => slug === "pages") ?? studioCollections[0];
 
 const navSectionsRaw: NavSection[] = [
   {
     label: "Dashboard",
     items: [
-      { href: adminPath, label: "nav.dashboard", icon: "home" },
+      { href: adminPath, label: "Overview", icon: "home" },
       {
         href: adminPath + "/media",
         label: "nav.media",
@@ -95,6 +105,8 @@ const navSectionsRaw: NavSection[] = [
     label: "Settings",
     items: [
       { href: adminPath + "/users", label: "nav.users", icon: "users" },
+      { href: adminPath + "/roles", label: "Roles", icon: "users" },
+      { href: adminPath + "/audit", label: "Activity log", icon: "collection" },
       {
         href: adminPath + "/settings",
         label: "nav.settings",
@@ -144,7 +156,7 @@ const navSections: NavSection[] = navSectionsRaw
 
 <aside
   id="kyro-sidebar"
-  class="surface-tile rounded-r-lg rounded-l-none md:rounded-l-lg w-[280px] flex flex-col flex-shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r border-[var(--kyro-border)]"
+  class="admin-sidebar w-[240px] flex flex-col flex-shrink-0 fixed md:static inset-y-0 left-0 z-50 md:z-auto transition-transform duration-300 -translate-x-full md:translate-x-0 h-[100dvh] md:h-auto border-r border-[var(--kyro-border)]"
 >
   <SidebarHeader
     siteLogo={siteLogo}
@@ -160,7 +172,12 @@ const navSections: NavSection[] = navSectionsRaw
     organizations={organizations}
     projects={projects}
     allProjects={allProjects}
+    canManage={isServerAdmin}
   />
+
+  {studioEntryCollection && (
+    <StudioLauncher href={`${adminPath}/${encodeURIComponent(studioEntryCollection.slug)}`} />
+  )}
 
   <SidebarNav
     navSections={navSections}
@@ -181,10 +198,11 @@ const navSections: NavSection[] = navSectionsRaw
 
 <style is:global>
   #kyro-sidebar {
+    z-index: 50;
     transition:
       width 300ms cubic-bezier(0.4, 0, 0.2, 1),
       transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-x: hidden !important;
+    overflow: visible !important;
   }
 
   #kyro-sidebar #sidebar-nav {
@@ -196,7 +214,7 @@ const navSections: NavSection[] = navSectionsRaw
     width: 76px !important;
     min-width: 76px !important;
     max-width: 76px !important;
-    overflow-x: hidden !important;
+    overflow: visible !important;
   }
   #kyro-sidebar[data-minimized="true"] #sidebar-nav,
   #kyro-sidebar[data-minimized="true"] #sidebar-nav > div,
@@ -246,11 +264,9 @@ const navSections: NavSection[] = navSectionsRaw
     max-height: 28px !important;
   }
 
-  /* Hide text, section headers, and workspace switcher cleanly */
+  /* Hide labels and the project picker in the collapsed rail. */
   #kyro-sidebar[data-minimized="true"] .sidebar-text,
-  #kyro-sidebar[data-minimized="true"] .sidebar-section-toggle,
-  #kyro-sidebar[data-minimized="true"] .sidebar-tenancy-box,
-  #kyro-sidebar[data-minimized="true"] [data-section] > div:first-child {
+  #kyro-sidebar[data-minimized="true"] .sidebar-tenancy-box {
     display: none !important;
     width: 0 !important;
     height: 0 !important;

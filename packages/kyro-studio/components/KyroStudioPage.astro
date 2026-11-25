@@ -1,0 +1,7 @@
+---
+import { StudioPage, type StudioBlock } from "../src/index";
+/** Public frontend adapter. Fetch only the published page in the consuming route. */
+interface Props { blocks: StudioBlock[]; references?: Map<string, Record<string, any>>; theme?: "system" | "light" | "dark" }
+const { blocks, references = new Map(), theme = "system" } = Astro.props;
+---
+<StudioPage blocks={blocks} context={{ references }} theme={theme} client:load />

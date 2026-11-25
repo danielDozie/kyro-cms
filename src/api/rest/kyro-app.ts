@@ -1,3 +1,4 @@
+import packageInfo from "../../../package.json";
 import { Hono } from "hono";
 import { resolve } from "node:path";
 import type { BaseAdapter } from "../../registry/types.js";
@@ -11,7 +12,7 @@ import { InMemoryRateLimiter } from "../../auth/security/in-memory-rate-limit.js
 import { AuthRoutes } from "./auth-routes.js";
 import { SQLiteAuthAdapter } from "../../auth/sqlite-adapter.js";
 import { PostgresAuthAdapter } from "../../database/drizzle/postgres-auth-adapter.js";
-import { mountCollectionRoutes, mountGlobalRoutes, mountMediaRoutes, mountUserRoutes, mountSystemRoutes, mountAuthEndpoints, mountDesignTokensRoutes } from "./routes/index.js";
+import { mountCollectionRoutes, mountGlobalRoutes, mountMediaRoutes, mountUserRoutes, mountSystemRoutes, mountAuthEndpoints, mountDesignTokensRoutes, mountStudioRoutes } from "./routes/index.js";
 import { D1AuthAdapter } from "../../database/drizzle/d1-auth-adapter.js";
 import { MongoDBAdapter } from "../../database/mongodb/adapter.js";
 import { MongoDBAuthAdapter } from "../../database/mongodb/mongo-auth-adapter.js";
@@ -39,7 +40,16 @@ export interface KyroAppOptions {
     credentials?: boolean;
   };
   webhookService?: ReturnType<typeof createWebhookService>;
+  studio?: import("../../registry/types.js").StudioConfig;
   settings?: {
+    studio?: import("../../registry/types.js").StudioConfig;
+    deployment?: {
+      mode?: "ssr" | "ssg";
+      webhookUrl?: string;
+      webhookSecret?: string;
+      cachePurgeUrl?: string;
+      cachePurgeTags?: string[];
+    };
     access?: {
       enablePublicAccess?: boolean;
       defaultCollectionAccess?: string;
@@ -638,10 +648,12 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
     const action = c.req.query("action") || undefined;
     const userId = c.req.query("userId") || undefined;
     const resource = c.req.query("resource") || undefined;
+    const successParam = c.req.query("success");
     const result = await sessionAuthAdapter.findAuditLogs({
       action,
       userId,
       resource,
+      success: successParam === "true" ? true : successParam === "false" ? false : undefined,
       limit,
       offset: (page - 1) * limit,
     });
@@ -854,7 +866,7 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
   app.get("/api/health", (c) => {
     return c.json({
       status: "ok",
-      version: "0.13.0",
+      version: packageInfo.version,
       collections: registry.getCollectionSlugs(),
       timestamp: new Date().toISOString(),
     });
@@ -940,14 +952,22 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
 
   // Design Token synchronization routes
   mountDesignTokensRoutes(app, options);
+
+  // Studio routes (Capabilities, preview sessions, references, form submissions, publish delivery)
+  mountStudioRoutes(app, options, authMw);
   // Centralized error handling
   app.onError((err, c) => {
     const status = Number((err as any)?.statusCode || (err as any)?.status || 500);
     if (status >= 500) {
       console.error(`[API Error] ${c.req.method} ${c.req.path}:`, err);
     }
+    const metadata = (err as any)?.metadata || {};
     return c.json(
-      { error: err.message || "Internal server error", code: status >= 500 ? "INTERNAL_ERROR" : "BAD_REQUEST" },
+      {
+        error: err.message || "Internal server error",
+        code: (err as any)?.code || metadata.code || (status >= 500 ? "INTERNAL_ERROR" : "BAD_REQUEST"),
+        ...metadata,
+      },
       status as any,
     );
   });
@@ -962,26 +982,11 @@ export async function createKyroApp(options: KyroAppOptions): Promise<Hono> {
 export async function createRESTAPI(
   registry: Registry,
   db: BaseAdapter,
-  options?: {
-    authSecret?: string;
-    user?: User;
-    req?: Request;
-    tenantId?: string;
-    cors?: {
-      origins?: string[];
-      credentials?: boolean;
-    };
-    webhookService?: ReturnType<typeof createWebhookService>;
-  },
+  options?: Partial<KyroAppOptions>,
 ): Promise<Hono> {
   return createKyroApp({
     registry,
     db,
-    authSecret: options?.authSecret,
-    user: options?.user,
-    req: options?.req,
-    tenantId: options?.tenantId,
-    cors: options?.cors,
-    webhookService: options?.webhookService,
+    ...options,
   });
 }

@@ -175,3 +175,9 @@ export {
 export { createImgixStorage, type ImgixConfig } from "./imgix.js";
 export { createBunnyStorage, type BunnyStorageConfig } from "./bunny.js";
 export { createFtpStorage, type FtpStorageConfig } from "./ftp.js";
+export {
+  imageFrame,
+  type ImageRegion,
+  type MediaPlacement,
+  type MediaPlacementMetadata,
+} from "./image-framing.js";

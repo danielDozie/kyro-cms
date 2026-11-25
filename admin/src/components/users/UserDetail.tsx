@@ -1,3 +1,4 @@
+import { CustomSelect } from "../ui/CustomSelect";
 import "../../lib/i18n";
 import { useState, useEffect } from "react";
 import { apiGet, apiPatch, apiDelete } from "../../lib/api";
@@ -195,7 +196,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
             )}
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tighter text-[var(--kyro-text-primary)]">
+            <h1 className="text-2xl font-medium tracking-tight text-[var(--kyro-text-primary)]">
               {name || user.email}
             </h1>
             <p className="text-sm text-[var(--kyro-text-secondary)] font-medium mb-2">
@@ -207,13 +208,13 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
           <div className="flex gap-2">
             <button
               onClick={handleLockToggle}
-              className="px-4 py-2 border border-[var(--kyro-border)] rounded-xl text-sm font-bold text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+              className="px-4 py-2 border border-[var(--kyro-border)] rounded-md text-sm font-medium text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
             >
               {isLocked ? "Unlock User" : "Lock User"}
             </button>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 border border-red-200 rounded-xl text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+              className="px-4 py-2 border border-red-200 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               Delete
             </button>
@@ -254,7 +255,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
               const isSuperAdmin = currentUserRole === "super_admin";
               return (
                 <div>
-                  <select
+                  <CustomSelect
                     value={role}
                     disabled={!isSuperAdmin}
                     onChange={(e) => setRole(e.target.value)}
@@ -265,7 +266,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
                         {r}
                       </option>
                     ))}
-                  </select>
+                  </CustomSelect>
                   {!isSuperAdmin && (
                     <p className="text-[11px] text-[var(--kyro-text-secondary)] mt-1 font-medium">
                       Only Super Admin can modify user roles.
@@ -361,7 +362,7 @@ export function UserDetail({ user, apiPath, adminPath }: UserDetailProps) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="kyro-btn kyro-btn-primary px-6 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+            className="kyro-btn kyro-btn-primary px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save Changes"}
           </button>

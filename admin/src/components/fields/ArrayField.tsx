@@ -82,7 +82,7 @@ function SortableArrayFieldItem({
         ref={setNodeRef}
         style={style}
         className={`border border-[var(--kyro-border)] rounded-lg overflow-hidden group bg-[var(--kyro-surface)] ${
-          isDragging ? "border-[var(--kyro-primary)] shadow-md" : ""
+          isDragging ? "border-[var(--kyro-primary)] " : ""
         }`}
       >
         <div className="w-full flex items-center justify-between p-2.5 bg-[var(--kyro-surface-accent)] hover:bg-[var(--kyro-sidebar-active)]/10 transition-colors">
@@ -166,7 +166,7 @@ function SortableArrayFieldItem({
       ref={setNodeRef}
       style={style}
       className={`border border-[var(--kyro-border)] rounded-lg overflow-hidden group bg-[var(--kyro-surface)] ${
-        isDragging ? "border-[var(--kyro-primary)] shadow-md" : ""
+        isDragging ? "border-[var(--kyro-primary)] " : ""
       }`}
     >
       <div className="w-full flex items-center justify-between p-3 bg-[var(--kyro-surface-accent)] hover:bg-[var(--kyro-sidebar-active)]/10 transition-colors">

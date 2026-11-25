@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center">
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
-          <h3 className="text-lg font-bold text-[var(--kyro-text-primary)]">
+          <h3 className="text-base font-semibold text-[var(--kyro-text-primary)]">
             {this.props.fallbackTitle || "Something went wrong"}
           </h3>
           <p className="text-sm text-[var(--kyro-text-secondary)] text-center max-w-md">
@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               type="button"
               onClick={this.handleReload}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-[var(--kyro-border)] hover:bg-[var(--kyro-surface-accent)] transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Reload Page
@@ -78,7 +78,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               type="button"
               onClick={this.handleCopyToClipboard}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl bg-[var(--kyro-primary)]/10 text-[var(--kyro-primary)] hover:bg-[var(--kyro-primary)]/20 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-[var(--kyro-primary)]/10 text-[var(--kyro-primary)] hover:bg-[var(--kyro-primary)]/20 transition-colors"
             >
               <Copy className="w-4 h-4" />
               Copy Details

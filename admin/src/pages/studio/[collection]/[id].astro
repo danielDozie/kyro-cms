@@ -1,0 +1,21 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { AutoForm } from "../../../components/AutoForm";
+import { collections, isStudioEnabled } from "../../../lib/config";
+import { getAuthServer } from "../../../lib/auth-server";
+import { isStudioCollection } from "../../../lib/studio";
+import { adminPath } from "../../../lib/paths";
+const { collection, id } = Astro.params;
+const config = collection ? collections[collection] : undefined;
+if (!isStudioEnabled || !config || !isStudioCollection(config)) return Astro.redirect(collection && config ? `${adminPath}/${collection}/${id}` : adminPath);
+const { user, permissions } = await getAuthServer(Astro.request);
+if (!user) return Astro.redirect(`${adminPath}/login`);
+const isAdmin = ["admin", "super_admin"].includes(user.role);
+const canCreate = isAdmin || permissions?.collections?.[collection!]?.create === true;
+const canRead = isAdmin || permissions?.collections?.[collection!]?.read === true;
+const canUpdate = isAdmin || permissions?.collections?.[collection!]?.update === true;
+if (id === "new" ? !canCreate : !canRead) return Astro.redirect(`${adminPath}/403`);
+---
+<AdminLayout title="Page Studio" studioCanvas>
+  <AutoForm client:only="react" config={config} collectionSlug={collection} documentId={id === "new" ? undefined : id} studio disabled={id === "new" ? !canCreate : !canUpdate} />
+</AdminLayout>

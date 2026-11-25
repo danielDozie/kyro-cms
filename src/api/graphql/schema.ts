@@ -1,3 +1,4 @@
+import { contentRepresentation, representationMode, contentFields } from "../../studio/representation.js";
 import {
   GraphQLSchema,
   GraphQLObjectType,
@@ -31,6 +32,8 @@ import { hasApiKeyPermission } from "../../auth/api-key.js";
 import { hasPermission } from "../../auth/rbac/checker.js";
 
 import { RelationLoader } from "./dataloader.js";
+import { enforceStudioValidation } from "../../studio/validation.js";
+import { checkOptimisticConcurrency } from "../../studio/occ.js";
 export { RelationLoader };
 
 // ============================================================================
@@ -709,12 +712,13 @@ function buildFieldConfig(
       type: gqlType,
       description: field.admin?.description || field.label,
       deprecationReason,
-      resolve: (source: any) => {
+      resolve: (source: any, _args: any, ctx: any) => {
         let items = source?.[field.name as string];
         if (typeof items === "string") {
           try { items = JSON.parse(items); } catch {}
         }
         if (!Array.isArray(items)) return items;
+        if (ctx.studioEnabled !== true || ctx.representation === "content") items = contentRepresentation(items);
         return items.map((item: any) => {
           if (item && item.data && item.type) {
             return {
@@ -736,12 +740,12 @@ function buildFieldConfig(
     type: gqlType,
     description: field.admin?.description || field.label,
     deprecationReason,
-    resolve: (source: any) => {
+    resolve: (source: any, _args: any, ctx: any) => {
       let val = source?.[field.name as string];
       if (typeof val === "string" && ["array", "group", "tabs", "blocks", "json", "richtext", "list"].includes(field.type)) {
         try { val = JSON.parse(val); } catch {}
       }
-      return val;
+      return ctx.studioEnabled !== true || ctx.representation === "content" ? contentRepresentation(val) : val;
     }
   };
 }
@@ -785,7 +789,7 @@ export function buildGraphQLSchema(
       name: toPascal(toSingular(collection.slug)),
       fields: () => ({
         id: { type: GraphQLString },
-        ...buildFieldsFromCollection(collection, registry, collectionTypes, schemaCache),
+        ...buildFieldsFromCollection(settings?.studio?.enabled === true ? collection : { ...collection, fields: contentFields(collection.fields) }, registry, collectionTypes, schemaCache),
         ...(collection.timestamps
           ? {
               createdAt: { type: GraphQLString },
@@ -826,7 +830,7 @@ export function buildGraphQLSchema(
       fields: () => ({
         id: { type: GraphQLString },
         ...buildFieldsFromCollection(
-          { slug: global.slug, fields: global.fields } as CollectionConfig,
+          { slug: global.slug, fields: settings?.studio?.enabled === true ? global.fields : contentFields(global.fields) } as CollectionConfig,
           registry,
           collectionTypes,
         ),
@@ -878,6 +882,8 @@ export function buildGraphQLSchema(
         draft: { type: GraphQLBoolean },
       },
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         const access = await checkGraphQLAccess(collection, "read", {
           user: context.user,
           req: context.req,
@@ -926,6 +932,8 @@ export function buildGraphQLSchema(
         draft: { type: GraphQLBoolean },
       },
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         if (!args.id && !args.slug) {
           throw new Error("Either id or slug is required");
         }
@@ -979,6 +987,8 @@ export function buildGraphQLSchema(
         where: { type: GraphQLString },
       },
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         const access = await checkGraphQLAccess(collection, "read", {
           user: context.user,
           req: context.req,
@@ -1012,6 +1022,8 @@ export function buildGraphQLSchema(
     queryFields[toCamel(toSingular(global.slug))] = {
       type,
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         const access = await checkGlobalAccess(global, "read", {
           user: context.user,
           req: context.req,
@@ -1059,6 +1071,8 @@ export function buildGraphQLSchema(
         data: { type: new GraphQLNonNull(inputType) },
       },
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         const access = await checkGraphQLAccess(collection, "create", {
           user: context.user,
           req: context.req,
@@ -1073,7 +1087,16 @@ export function buildGraphQLSchema(
         }
         const schema = registry.getCreateZodSchema(collection.slug);
 
-        const validated = schema.parse(args.data);
+        let validated = schema.parse(args.data);
+        const colConfig = registry.getCollection(collection.slug);
+        if (colConfig) {
+          validated = enforceStudioValidation(validated, colConfig, {
+            studioEnabled: settings?.studio?.enabled === true,
+            isPublish: args.data?.status === "published",
+            user: context.user,
+            req: context.req,
+          });
+        }
 
         const doc = await db.create({
           collection: collection.slug,
@@ -1100,6 +1123,8 @@ export function buildGraphQLSchema(
         baseUpdatedAt: { type: GraphQLString },
       },
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         const access = await checkGraphQLAccess(collection, "update", {
           user: context.user,
           req: context.req,
@@ -1113,7 +1138,7 @@ export function buildGraphQLSchema(
           db.setTenantContext({ tenantId: context.tenantId, userId: context.user?.id ?? '', role: context.user?.role, isSuperAdmin: context.user?.role === 'super_admin' });
         }
 
-        // Revision conflict detection
+        // Concurrency check (OCC)
         if (args.baseUpdatedAt) {
           const originalDoc = await db.findByID<Record<string, any>>({
             collection: collection.slug,
@@ -1121,14 +1146,26 @@ export function buildGraphQLSchema(
             tenantId: context.tenantId,
             draft: true,
           });
-          if (originalDoc && originalDoc.updatedAt && args.baseUpdatedAt !== originalDoc.updatedAt) {
-            throw new Error(`Revision conflict: document has changed since ${args.baseUpdatedAt}. Current updatedAt: ${originalDoc.updatedAt}`);
-          }
+          checkOptimisticConcurrency({
+            existingDoc: originalDoc,
+            baseUpdatedAt: args.baseUpdatedAt,
+          });
         }
 
+        const editingDoc = await db.findByID<Record<string, any>>({ collection: collection.slug, id: args.id, tenantId: context.tenantId, draft: true });
         const schema = registry.getUpdateZodSchema(collection.slug);
 
-        const validated = schema.parse(args.data);
+        let validated = schema.parse(args.data);
+        const colConfig = registry.getCollection(collection.slug);
+        if (colConfig) {
+          validated = enforceStudioValidation(validated, colConfig, {
+            studioEnabled: settings?.studio?.enabled === true,
+            originalDoc: editingDoc || undefined,
+            isPublish: args.data?.status === "published",
+            user: context.user,
+            req: context.req,
+          });
+        }
 
         const doc = await db.update({
           collection: collection.slug,
@@ -1154,6 +1191,8 @@ export function buildGraphQLSchema(
         id: { type: new GraphQLNonNull(GraphQLString) },
       },
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         const access = await checkGraphQLAccess(collection, "delete", {
           user: context.user,
           req: context.req,
@@ -1194,6 +1233,8 @@ export function buildGraphQLSchema(
         data: { type: new GraphQLNonNull(inputType) },
       },
       resolve: async (_: any, args: any, context: any) => {
+        context.studioEnabled = settings?.studio?.enabled === true;
+        context.representation = representationMode(context.studioEnabled, new URL(context.req?.url || "http://localhost").searchParams.get("representation"));
         const access = await checkGlobalAccess(global, "update", {
           user: context.user,
           req: context.req,
@@ -1213,18 +1254,19 @@ export function buildGraphQLSchema(
           tenantId: context.tenantId,
         });
 
+        const nextData = enforceStudioValidation(args.data, global as any, { studioEnabled: settings?.studio?.enabled === true, originalDoc: doc || undefined });
         let result;
         if (doc) {
           result = await db.update({
             collection: `_globals_${global.slug}`,
             id: doc.id,
-            data: args.data,
+            data: nextData,
             tenantId: context.tenantId,
           });
         } else {
           result = await db.create({
             collection: `_globals_${global.slug}`,
-            data: args.data,
+            data: nextData,
             tenantId: context.tenantId,
           });
         }

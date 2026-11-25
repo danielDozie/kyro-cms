@@ -153,9 +153,9 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
               <p className="text-[10px] font-bold  tracking-[0.2em] opacity-40 mb-1">
                 {stat.label}
               </p>
-              <h3 className="text-3xl font-bold tracking-tighter">
+              <div className="text-2xl font-semibold tracking-tight">
                 {loading ? <Shimmer variant="text" className="w-16" /> : stat.value}
-              </h3>
+              </div>
             </div>
             <div
               className={`p-3 rounded-2xl bg-[var(--kyro-bg-secondary)] group-hover:scale-110 transition-transform duration-500 ${stat.color}`}
@@ -170,7 +170,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
         {/* Main Content Area: Collections & Insights */}
         <div className="space-y-8 min-w-0">
           <section className="surface-tile p-8">
-            <h2 className="text-xl font-bold mb-1 tracking-tight flex items-center gap-2">
+            <h2 className="text-lg font-medium mb-1 tracking-tight flex items-center gap-2">
               <LayoutDashboard className="w-5 h-5 opacity-40" />
               {t("dashboard.contentGrowth", { defaultValue: "Content Growth" })}
             </h2>
@@ -217,7 +217,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
                   strokeWidth="4"
                   strokeLinecap="round"
                   vectorEffect="non-scaling-stroke"
-                  className="filter drop-shadow-[0_0_8px_var(--kyro-primary)]"
+                  className="filter "
                 />
               </svg>
               <div className="flex justify-between mt-4 text-[10px] font-bold opacity-30 tracking-widest ">
@@ -239,7 +239,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
                   className="p-6 rounded-2xl border border-[var(--kyro-border)] hover:border-[var(--kyro-primary)] bg-[var(--kyro-bg-secondary)] hover:bg-[var(--kyro-surface)] transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-lg tracking-tight group-hover:text-[var(--kyro-primary)] transition-colors">
+                    <h3 className="font-medium text-base tracking-tight group-hover:text-[var(--kyro-primary)] transition-colors">
                       {(config.label as string) || slug}
                     </h3>
                     <ArrowUpRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
@@ -263,7 +263,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <section className="surface-tile p-6 border border-[var(--kyro-border)] hover:border-[var(--kyro-primary)] transition-all cursor-pointer group">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold tracking-tight group-hover:text-[var(--kyro-primary)] transition-colors flex items-center gap-2">
+                <h3 className="text-base font-medium tracking-tight group-hover:text-[var(--kyro-primary)] transition-colors flex items-center gap-2">
                   <Plus className="w-5 h-5" />
                   {t("dashboard.quickLinks", { defaultValue: "Quick Links" })}
                 </h3>
@@ -275,7 +275,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
                     <button type="button"
                       key={slug}
                       onClick={() => onNavigate("new", slug)}
-                      className="w-full flex items-center justify-between p-4 bg-[var(--kyro-bg-secondary)] border border-[var(--kyro-border)] rounded-xl hover:bg-[var(--kyro-surface-accent)] hover:border-[var(--kyro-primary)] transition-all group/btn"
+                      className="w-full flex items-center justify-between p-4 bg-[var(--kyro-bg-secondary)] border border-[var(--kyro-border)] rounded-md hover:bg-[var(--kyro-surface-accent)] hover:border-[var(--kyro-primary)] transition-all group/btn"
                     >
                       <span className="text-sm font-medium text-[var(--kyro-text-primary)]">
                         {t("dashboard.newAction", { defaultValue: "New {{item}}", item: (collections[slug] as Record<string, unknown>)?.singularLabel || (collections[slug] as Record<string, unknown>)?.label || slug })}
@@ -289,9 +289,9 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
               </div>
             </section>
 
-            <div className="surface-tile p-8 bg-[#0f172a] text-white border-none shadow-2xl shadow-blue-500/10 overflow-hidden relative group cursor-pointer">
+            <div className="surface-tile p-8 bg-[#0f172a] text-white border-none   overflow-hidden relative group cursor-pointer">
               <div className="relative z-10">
-                <h3 className="text-2xl font-bold tracking-tighter mb-2">
+                <h3 className="text-lg font-semibold tracking-tight mb-2">
                   {t("dashboard.mediaLibrary", { defaultValue: "Media Library" })}
                 </h3>
                 <p className="opacity-80 text-sm font-medium mb-6">
@@ -310,7 +310,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
         {/* Sidebar Area: Recent Activity */}
         <div className="space-y-6">
           <section className="surface-tile p-8">
-            <h2 className="text-xl font-bold mb-6 tracking-tight flex items-center gap-2">
+            <h2 className="text-lg font-medium mb-4 tracking-tight flex items-center gap-2">
               <ClockIcon className="w-5 h-5 opacity-40" />
               {t("dashboard.recentActivity", { defaultValue: "Recent Activity" })}
             </h2>
@@ -346,13 +346,13 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
                 </div>
               ))}
             </div>
-            <button type="button" className="w-full mt-6 py-3 text-xs font-bold  tracking-widest text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors border-t border-[var(--kyro-border)] pt-6">
+            <button type="button" className="w-full mt-6 py-2 text-xs font-medium  tracking-widest text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] transition-colors border-t border-[var(--kyro-border)] pt-6">
               {t("dashboard.viewAuditLogs", { defaultValue: "View Audit Logs" })}
             </button>
           </section>
 
           <section className="surface-tile p-8">
-            <h2 className="text-xl font-bold mb-6 tracking-tight flex items-center gap-2">
+            <h2 className="text-lg font-medium mb-4 tracking-tight flex items-center gap-2">
               <Activity className="w-5 h-5 opacity-40" />
               {t("dashboard.systemStatus", { defaultValue: "System Status" })}
             </h2>
@@ -387,7 +387,7 @@ export function Dashboard({ collections, onNavigate, user }: DashboardProps) {
                       {sys.status}
                     </span>
                     <div
-                      className={`w-2 h-2 rounded-full ${sys.pulse} animate-pulse shadow-[0_0_8px] shadow-current`}
+                      className={`w-2 h-2 rounded-full ${sys.pulse} animate-pulse  `}
                     />
                   </div>
                 </div>

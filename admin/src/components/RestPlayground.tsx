@@ -1,3 +1,5 @@
+import { CustomSelect } from "./ui/CustomSelect";
+import "../styles/playground-workspace.css";
 import "../lib/i18n";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUIStore, toast } from "../lib/stores";
@@ -112,6 +114,14 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
   const [saveToFolderId, setSaveToFolderId] = useState("");
   const [saveRequestName, setSaveRequestName] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const [showSidebar, setShowSidebar] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<"editor" | "response">("editor");
   const [splitPos, setSplitPos] = useState(50);
@@ -354,29 +364,31 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
   const methodColor = METHOD_COLORS[currentRequest.method] || "#6b7280";
 
   return (
-    <div ref={containerRef} className="h-full flex flex-col bg-[var(--kyro-bg)] overflow-hidden rounded-lg border border-[var(--kyro-border)]">
+    <div ref={containerRef} className="playground-workspace h-full flex flex-col bg-[var(--kyro-bg)] overflow-hidden rounded-md border border-[var(--kyro-border)]">
       {/* Compact top bar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)] shrink-0">
         <button
           onClick={() => setShowSidebar(!showSidebar)}
-          className="p-1 rounded-lg text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
+          className="p-1 rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
           title={t("tooltips.toggleSidebar", { defaultValue: "Toggle sidebar" })}
         >
           <ChevronRight className={`w-4 h-4 transition-transform ${showSidebar ? "rotate-180" : ""}`} />
         </button>
-        <select
+        <CustomSelect
+          aria-label="HTTP method"
           value={currentRequest.method}
           onChange={(e) => setCurrentRequest({ ...currentRequest, method: e.target.value })}
-          className="px-2 py-1 text-[10px] font-bold rounded-md border-0 text-white"
+          className="px-2 py-1 text-[10px] font-medium rounded-md border-0 text-white"
           style={{ backgroundColor: methodColor }}
         >
           <option value="GET">GET</option>
           <option value="POST">POST</option>
           <option value="PATCH">PATCH</option>
           <option value="DELETE">DELETE</option>
-        </select>
+        </CustomSelect>
         <input
           ref={inputRef}
+          aria-label="Request URL"
           type="text"
           value={currentRequest.url}
           onChange={(e) => setCurrentRequest({ ...currentRequest, url: e.target.value })}
@@ -386,14 +398,14 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowSaveModal(true)}
-            className="px-2.5 py-1.5 text-[10px] font-semibold rounded-md border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-all"
+            className="px-2.5 py-1.5 text-[10px] font-medium rounded-md border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)] transition-all"
           >
             Save
           </button>
           <button
             onClick={handleSend}
             disabled={loading || !currentRequest.url}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] text-xs font-semibold hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)] text-xs font-medium hover:opacity-90 disabled:opacity-50 transition-all "
           >
             <Play className="w-3 h-3" />
             {loading ? "..." : "Send"}
@@ -418,11 +430,12 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                 <button
                   key={p.key}
                   onClick={() => setSidebarTab(p.key)}
-                  className={`flex-1 px-1 py-1.5 text-[9px] font-semibold tracking-wider transition-all ${
+                  className={`flex-1 px-1 py-1.5 text-[9px] font-medium tracking-wider transition-all rounded-none ${
                     sidebarTab === p.key
                       ? "text-[var(--kyro-primary)] border-b-2 border-[var(--kyro-primary)] bg-[var(--kyro-surface-accent)]"
                       : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)]"
                   }`}
+                  style={{ borderRadius: 0 }}
                 >
                   {p.label}
                 </button>
@@ -434,7 +447,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                 <div className="space-y-2">
                   {collections.map((col) => (
                     <div key={col.slug}>
-                      <h3 className="text-[10px] font-bold text-[var(--kyro-text-muted)] mb-1 px-2">{col.name}</h3>
+                      <h3 className="text-[10px] font-medium text-[var(--kyro-text-muted)] mb-1 px-2">{col.name}</h3>
                       {[
                         { method: "GET", path: col.endpoints.list, name: "List" },
                         { method: "POST", path: col.endpoints.create, name: "Create" },
@@ -451,7 +464,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                           className="w-full flex items-center gap-2 px-2 py-1 rounded text-[10px] hover:bg-[var(--kyro-surface-accent)] transition-colors"
                         >
                           <span
-                            className="text-white px-1 py-0.5 rounded text-[8px] font-bold"
+                            className="text-white px-1 py-0.5 rounded text-[8px] font-medium"
                             style={{ backgroundColor: METHOD_COLORS[ep.method] }}
                           >
                             {ep.method}
@@ -467,7 +480,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
               {sidebarTab === "saved" && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between px-2 mb-1">
-                    <button onClick={() => setShowFolderModal(true)} className="text-[10px] font-semibold text-[var(--kyro-primary)] hover:underline flex items-center gap-1">
+                    <button onClick={() => setShowFolderModal(true)} className="text-[10px] font-medium text-[var(--kyro-primary)] hover:underline flex items-center gap-1">
                       <Plus className="w-3 h-3" /> Folder
                     </button>
                     <div className="flex gap-2">
@@ -484,7 +497,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                   {folders.map((folder) => (
                     <div key={folder.id}>
                       <div className="flex items-center justify-between px-2 mb-1">
-                        <h3 className="text-[10px] font-bold text-[var(--kyro-text-muted)]">{folder.name}</h3>
+                        <h3 className="text-[10px] font-medium text-[var(--kyro-text-muted)]">{folder.name}</h3>
                         <button onClick={() => deleteFolder(folder.id)} className="text-[var(--kyro-text-muted)] hover:text-[var(--kyro-danger)]">
                           <X className="w-3 h-3" />
                         </button>
@@ -500,7 +513,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                           onClick={() => loadRequest(req)}
                         >
                           <span
-                            className="text-white px-1 py-0.5 rounded text-[8px] font-bold"
+                            className="text-white px-1 py-0.5 rounded text-[8px] font-medium"
                             style={{ backgroundColor: METHOD_COLORS[req.method] }}
                           >
                             {req.method}
@@ -523,7 +536,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
               {sidebarTab === "history" && (
                 <div className="space-y-1">
                   <div className="flex justify-end px-2 mb-1">
-                    <button onClick={() => setHistory([])} className="text-[9px] font-semibold text-[var(--kyro-danger)] hover:underline">Clear</button>
+                    <button onClick={() => setHistory([])} className="text-[9px] font-medium text-[var(--kyro-danger)] hover:underline">Clear</button>
                   </div>
                   {history.map((item) => (
                     <div
@@ -532,11 +545,11 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                       onClick={() => { setCurrentRequest((prev) => ({ ...prev, method: item.method, url: item.url })); setResponse(null); }}
                     >
                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <span className="text-white px-1 py-0.5 rounded text-[8px] font-bold" style={{ backgroundColor: METHOD_COLORS[item.method] }}>
+                        <span className="text-white px-1 py-0.5 rounded text-[8px] font-medium" style={{ backgroundColor: METHOD_COLORS[item.method] }}>
                           {item.method}
                         </span>
                         <span
-                          className="text-white px-1 py-0.5 rounded text-[8px] font-bold"
+                          className="text-white px-1 py-0.5 rounded text-[8px] font-medium"
                           style={{ backgroundColor: item.status < 400 ? METHOD_COLORS.GET : METHOD_COLORS.DELETE }}
                         >
                           {item.status}
@@ -555,13 +568,13 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
               {sidebarTab === "env" && (
                 <div className="space-y-3">
                   <div className="flex justify-between items-center px-2">
-                    <h3 className="text-[10px] font-bold text-[var(--kyro-text-muted)]">Variables</h3>
-                    <button onClick={clearAllData} className="text-[9px] text-[var(--kyro-danger)] font-semibold hover:underline">Reset</button>
+                    <h3 className="text-[10px] font-medium text-[var(--kyro-text-muted)]">Variables</h3>
+                    <button onClick={clearAllData} className="text-[9px] text-[var(--kyro-danger)] font-medium hover:underline">Reset</button>
                   </div>
                   {envVars.map((env, i) => (
-                    <div key={i} className="p-2 bg-[var(--kyro-surface-accent)] rounded-lg border border-[var(--kyro-border)] space-y-1.5">
+                    <div key={i} className="p-2 bg-[var(--kyro-surface-accent)] rounded-md border border-[var(--kyro-border)] space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-bold text-[var(--kyro-text-muted)]">{env.key}</span>
+                        <span className="text-[9px] font-medium text-[var(--kyro-text-muted)]">{env.key}</span>
                         <input type="checkbox" checked={env.enabled} onChange={() => { const n = [...envVars]; n[i].enabled = !n[i].enabled; setEnvVars(n); }} className="accent-[var(--kyro-primary)]" />
                       </div>
                       <input type="text" value={env.value} onChange={(e) => { const n = [...envVars]; n[i].value = e.target.value; setEnvVars(n); }}
@@ -570,7 +583,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                     </div>
                   ))}
                   <button onClick={() => setEnvVars([...envVars, { key: "", value: "", enabled: true }])}
-                    className="w-full py-1.5 border-2 border-dashed border-[var(--kyro-border)] rounded-lg text-[10px] text-[var(--kyro-text-muted)] hover:border-[var(--kyro-primary)] hover:text-[var(--kyro-primary)] transition-all"
+                    className="w-full py-1.5 border-2 border-dashed border-[var(--kyro-border)] rounded-md text-[10px] text-[var(--kyro-text-muted)] hover:border-[var(--kyro-primary)] hover:text-[var(--kyro-primary)] transition-all"
                   >
                     + Add Variable
                   </button>
@@ -586,7 +599,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
           <div className="flex md:hidden border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)] px-3 py-1.5 gap-1">
             <button
               onClick={() => setMobilePanel("editor")}
-              className={`flex-1 px-3 py-1 text-[10px] font-semibold rounded-md transition-all ${
+              className={`flex-1 px-3 py-1 text-[10px] font-medium rounded-md transition-all ${
                 mobilePanel === "editor"
                   ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
                   : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
@@ -596,7 +609,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
             </button>
             <button
               onClick={() => setMobilePanel("response")}
-              className={`flex-1 px-3 py-1 text-[10px] font-semibold rounded-md transition-all ${
+              className={`flex-1 px-3 py-1 text-[10px] font-medium rounded-md transition-all ${
                 mobilePanel === "response"
                   ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
                   : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
@@ -609,7 +622,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
           {/* Left: Editor */}
           <div
             className={`${mobilePanel === "editor" ? "flex" : "hidden"} md:flex flex-col overflow-hidden border-r border-[var(--kyro-border)] w-full md:w-auto`}
-            style={{ width: typeof window !== "undefined" && window.innerWidth >= 768 ? `${splitPos}%` : undefined }}
+            style={{ width: isDesktop ? `${splitPos}%` : undefined }}
           >
             {/* Editor pills */}
             <div className="flex gap-0.5 px-3 py-1.5 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)]">
@@ -617,7 +630,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                 <button
                   key={p.key}
                   onClick={() => setActiveEditorTab(p.key)}
-                  className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${
+                  className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
                     activeEditorTab === p.key
                       ? "bg-[var(--kyro-primary)] text-[var(--kyro-sidebar-text-active)]"
                       : "text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]"
@@ -627,7 +640,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
                 </button>
               ))}
               {activeEditorTab === "body" && (
-                <button onClick={handlePrettifyBody} className="ml-auto px-2 py-1 text-[10px] font-semibold rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]">
+                <button onClick={handlePrettifyBody} className="ml-auto px-2 py-1 text-[10px] font-medium rounded-md text-[var(--kyro-text-muted)] hover:text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]">
                   Prettify
                 </button>
               )}
@@ -679,16 +692,16 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
           {/* Right: Response */}
           <div
             className={`${mobilePanel === "response" ? "flex" : "hidden"} md:flex flex-1 flex-col overflow-hidden min-w-0 w-full md:w-auto`}
-            style={{ width: typeof window !== "undefined" && window.innerWidth >= 768 ? (showSidebar ? `${100 - splitPos}%` : "50%") : undefined }}
+            style={{ width: isDesktop ? `${100 - splitPos}%` : undefined }}
           >
             <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[var(--kyro-border)] bg-[var(--kyro-surface)]">
-              <span className="text-[10px] font-semibold text-[var(--kyro-text-secondary)]">Response</span>
+              <span className="text-[10px] font-medium text-[var(--kyro-text-secondary)]">Response</span>
               {response && (
                 <>
                   {response.duration > 0 && (
                     <span className="text-[9px] font-mono text-[var(--kyro-text-muted)]">{response.duration}ms</span>
                   )}
-                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                  <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
                     (response.status as number) < 400 ? "bg-[var(--kyro-success-bg)] text-[var(--kyro-success)]" : "bg-[var(--kyro-danger-bg)] text-[var(--kyro-danger)]"
                   }`}>
                     {response.status as number}
@@ -721,7 +734,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
               ) : (
                 <div className="flex flex-col items-center justify-center h-full opacity-30">
                   <Play className="w-10 h-10 mb-2" />
-                  <p className="text-[11px] font-bold">Send a request</p>
+                  <p className="text-[11px] font-medium">Send a request</p>
                 </div>
               )}
             </div>
@@ -739,7 +752,7 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
         }
       >
         <input type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)}
-          placeholder={t("fields.folderName", { defaultValue: "Folder name..." })} className="w-full bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-lg px-3 py-2 text-sm text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]"
+          placeholder={t("fields.folderName", { defaultValue: "Folder name..." })} className="w-full bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-md px-3 py-2 text-sm text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]"
         />
       </Modal>
 
@@ -753,19 +766,19 @@ export function RestPlayground({ collections = [] }: RestPlaygroundProps) {
       >
         <div className="space-y-3">
           <div>
-            <label className="text-[10px] font-bold text-[var(--kyro-text-muted)] block mb-1">Request Name</label>
+            <label className="text-[10px] font-medium text-[var(--kyro-text-muted)] block mb-1">Request Name</label>
             <input type="text" value={saveRequestName} onChange={(e) => setSaveRequestName(e.target.value)}
-              placeholder="e.g. List Posts" className="w-full bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-lg px-3 py-2 text-sm text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]"
+              placeholder="e.g. List Posts" className="w-full bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-md px-3 py-2 text-sm text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]"
             />
           </div>
           <div>
-            <label className="text-[10px] font-bold text-[var(--kyro-text-muted)] block mb-1">Folder</label>
-            <select value={saveToFolderId} onChange={(e) => setSaveToFolderId(e.target.value)}
-              className="w-full bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-lg px-3 py-2 text-sm text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]"
+            <label className="text-[10px] font-medium text-[var(--kyro-text-muted)] block mb-1">Folder</label>
+            <CustomSelect value={saveToFolderId} onChange={(e) => setSaveToFolderId(e.target.value)}
+              className="w-full bg-[var(--kyro-surface-accent)] border border-[var(--kyro-border)] rounded-md px-3 py-2 text-sm text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]"
             >
               <option value="">Select Folder...</option>
               {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-            </select>
+            </CustomSelect>
           </div>
         </div>
       </Modal>

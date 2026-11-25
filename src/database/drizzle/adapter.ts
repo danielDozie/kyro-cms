@@ -64,6 +64,7 @@ export { fieldToDrizzleType, collectionToDrizzleSchema, processBlocksUploadField
 // ============================================================================
 
 export class DrizzleAdapter extends AbstractBaseAdapter {
+  readonly supportsProtectedRecovery = true;
   public client: any;
   private schema: any;
   private _schemaEnsured = false;
@@ -633,7 +634,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
           SELECT * FROM kyro_versions
           WHERE collection_slug = ${slug}
           AND document_id = ${doc.id}
-          ORDER BY created_at DESC
+          AND recovery = 0
+          ORDER BY updated_at DESC, created_at DESC
           LIMIT 1
         `);
         if (versions.length > 0) {
@@ -690,7 +692,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         SELECT * FROM kyro_versions
         WHERE collection_slug = ${slug}
         AND document_id = ${(doc as any).id}
-        ORDER BY created_at DESC
+        AND recovery = 0
+        ORDER BY updated_at DESC, created_at DESC
         LIMIT 1
       `);
       if (versions.length > 0) {
@@ -829,7 +832,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
           SELECT * FROM kyro_versions
           WHERE collection_slug = ${slug}
           AND document_id = ${globalSlug}
-          ORDER BY created_at DESC
+          AND recovery = 0
+          ORDER BY updated_at DESC, created_at DESC
           LIMIT 1
         `);
         if (versions.length > 0) {
@@ -859,6 +863,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       WHERE collection_slug = ${slug} 
       AND document_id = ${documentId}
       AND autosave = 0
+      ${args.recoveryOnly ? sql`AND recovery = 1` : sql`AND recovery = 0`}
       ${tenantId && config.tenantScoped ? sql`AND tenant_id = ${tenantId}` : sql``}
     `);
     const totalDocs = parseInt(countResult[0]?.count || '0');
@@ -869,6 +874,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       WHERE collection_slug = ${slug} 
       AND document_id = ${documentId}
       AND autosave = 0
+      ${args.recoveryOnly ? sql`AND recovery = 1` : sql`AND recovery = 0`}
       ${tenantId && config.tenantScoped ? sql`AND tenant_id = ${tenantId}` : sql``}
       ORDER BY created_at DESC
       LIMIT ${limit}
@@ -908,6 +914,17 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     const config = this.getCollection(args.collection);
     const now = new Date().toISOString();
 
+    if (args.recovery) {
+      const scope = sql`collection_slug = ${args.collection} AND document_id = ${args.documentId} AND recovery = 1 AND ${args.tenantId && config.tenantScoped ? sql`tenant_id = ${args.tenantId}` : sql`tenant_id IS NULL`}`;
+      const existing = await this.executeRaw(sql`SELECT id FROM kyro_versions WHERE ${scope} ORDER BY created_at DESC LIMIT 1`);
+      if (existing.length) {
+        const id = existing[0].id;
+        await this.executeRaw(sql`UPDATE kyro_versions SET data = ${JSON.stringify(args.data)}, created_at = ${now}, updated_at = ${now}, created_by = ${args.createdBy || null}, change_description = ${args.changeDescription || null} WHERE id = ${id}`);
+        await this.executeRaw(sql`DELETE FROM kyro_versions WHERE ${scope} AND id != ${id}`);
+        return this.findVersionByID({ collection: args.collection, versionId: id, tenantId: args.tenantId });
+      }
+    }
+
     // Autosave: reuse existing autosave slot instead of creating a new row
     if (args.autosave) {
       const existing = await this.executeRaw(sql`
@@ -935,10 +952,10 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     const serializedData = typeof args.data === 'string' ? args.data : JSON.stringify(args.data);
     await this.executeRaw(sql`
       INSERT INTO kyro_versions (
-        id, collection_slug, document_id, tenant_id, data, status, autosave, created_by, change_description, created_at, updated_at
+        id, collection_slug, document_id, tenant_id, data, status, autosave, recovery, created_by, change_description, created_at, updated_at
       ) VALUES (
         ${id}, ${args.collection}, ${args.documentId}, ${args.tenantId && config.tenantScoped ? args.tenantId : null}, 
-        ${serializedData}, ${args.status}, ${args.autosave ? 1 : 0}, ${args.createdBy || null}, 
+        ${serializedData}, ${args.status}, ${args.autosave ? 1 : 0}, ${args.recovery ? 1 : 0}, ${args.createdBy || null},
         ${args.changeDescription || null}, ${now}, ${now}
       )
     `);
@@ -974,6 +991,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
         WHERE collection_slug = ${args.collection}
         AND document_id = ${args.documentId}
         AND autosave = 0
+        AND recovery = 0
         ${args.tenantId && config.tenantScoped ? sql`AND tenant_id = ${args.tenantId}` : sql``}
         ORDER BY created_at DESC
         LIMIT ${args.keepLatest}
@@ -986,6 +1004,8 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
           WHERE collection_slug = ${args.collection}
           AND document_id = ${args.documentId}
           AND autosave = 0
+        AND recovery = 0
+          ${args.tenantId && config.tenantScoped ? sql`AND tenant_id = ${args.tenantId}` : sql``}
           AND id NOT IN (${sql.join(keepIds.map(id => sql`${id}`), sql`, `)})
         `);
       }
@@ -999,6 +1019,16 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
     }
   }
 
+  async clearAutosave(collection: string, documentId: string, tenantId?: string): Promise<void> {
+    const config = this.getCollection(collection);
+    await this.executeRaw(sql`
+      DELETE FROM kyro_versions
+      WHERE collection_slug = ${collection}
+      AND document_id = ${documentId}
+      AND autosave = 1
+      ${tenantId && config?.tenantScoped ? sql`AND tenant_id = ${tenantId}` : sql``}
+    `);
+  }
 
   // ========================================================================
   // Helper Methods
@@ -1244,6 +1274,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
           data text NOT NULL,
           status text NOT NULL DEFAULT 'draft',
           autosave integer NOT NULL DEFAULT 0,
+          recovery integer NOT NULL DEFAULT 0,
           created_by text,
           change_description text,
           created_at text DEFAULT (datetime('now')),
@@ -1260,6 +1291,7 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
           data text NOT NULL,
           status text NOT NULL,
           autosave integer NOT NULL DEFAULT 0,
+          recovery integer NOT NULL DEFAULT 0,
           created_by text,
           change_description text,
           created_at text NOT NULL,
@@ -1282,6 +1314,9 @@ export class DrizzleAdapter extends AbstractBaseAdapter {
       // Column already exists — safe to ignore
     }
 
+    try {
+      await this.executeRaw(sql.raw(`ALTER TABLE kyro_versions ADD COLUMN ${this.dialect === 'postgres' ? 'IF NOT EXISTS ' : ''}recovery integer NOT NULL DEFAULT 0`));
+    } catch { /* Already migrated. */ }
     this.versionsTableReady = true;
   }
 

@@ -1,9 +1,13 @@
+import { layoutBlockTypes, layoutSignature } from "@kyro-cms/core/client";
+import { isStudioEnabled } from "../../lib/config";
+import { apiGet } from "../../lib/api";
+import { useAutoFormStore } from "../../lib/autoform-store";
 import "../../lib/i18n";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useStore } from "zustand";
 import { BlocksContext, createBlocksStore, createNewBlock, type BlocksStoreApi, useBlockActions } from "./extensions/blocksStore";
-import { BlockDrawer, DraggableBlockType } from "../ui/BlockDrawer";
-import { Plus, Box, X, Copy, ChevronDown } from "../ui/icons";
+import { BlockDrawer, BlockPickerIcon, DraggableBlockType } from "../ui/BlockDrawer";
+import { Plus, X, Copy, ChevronDown } from "../ui/icons";
 import {
   BLOCK_COMPONENTS,
   getBlockComponent,
@@ -46,6 +50,8 @@ interface BlocksFieldProps {
   disabled?: boolean;
   documentStatus?: "draft" | "published" | "scheduled" | "archived";
   justSaved?: boolean;
+  collectionSlug?: string;
+  globalSlug?: string;
 }
 
 import { GripVertical } from "../ui/icons";
@@ -75,6 +81,7 @@ const SortableBlockComponent = ({
   setEditingBlockId,
   onDuplicate,
   compact,
+  unpublished,
 }: {
   block: Record<string, any>;
   index: number;
@@ -83,6 +90,7 @@ const SortableBlockComponent = ({
   setEditingBlockId: (id: string | null) => void;
   onDuplicate: (id: string) => void;
   compact?: boolean;
+  unpublished?: boolean;
 }) => {
   const { t } = useTranslation();
   const {
@@ -92,7 +100,7 @@ const SortableBlockComponent = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: block.id as string });
+  } = useSortable({ id: block.id as string, disabled: !isStudioEnabled && layoutBlockTypes.has(String(block.type)) });
 
   const { removeBlock, updateBlock } = useBlockActions();
   const isEditing = editingBlockId === block.id;
@@ -141,17 +149,18 @@ const SortableBlockComponent = ({
     opacity: isDragging ? 0.8 : 1,
   };
 
+  const readOnlyLayout = !isStudioEnabled && layoutBlockTypes.has(String(block.type));
   const itemLabel = getBlockDisplayLabel(block);
   const data = (block.data || {}) as Record<string, any>;
   const previewSnippet = getBlockPreviewSnippet(data, blockSchema);
 
   if (compact) {
     return (
-      <div ref={setNodeRef} style={style} className="relative group w-full">
+      <div ref={setNodeRef} style={style} data-unpublished={unpublished || undefined} title={unpublished ? "Changes differ from the published version" : undefined} className="relative group w-full draft-block-stack">
         <div
           onClick={() => setEditingBlockId(block.id as string)}
           className={`flex items-center gap-2 pl-7 pr-2 py-2 w-full bg-[var(--kyro-bg-secondary)] rounded-md border transition-colors cursor-pointer text-sm ${isEditing
-            ? `${(blockTheme[block.type as string] || blockTheme.default).border} bg-[var(--kyro-primary)]/5`
+            ? `border-[var(--kyro-primary)] bg-[var(--kyro-accent-soft)]`
             : "border-[var(--kyro-border)] hover:border-[var(--kyro-primary)]/50 hover:bg-[var(--kyro-primary)]/5"
             }`}
         >
@@ -184,6 +193,7 @@ const SortableBlockComponent = ({
             <span
               className="font-medium text-[var(--kyro-text-secondary)] flex-1 min-w-0 truncate transition-colors text-left"
             >
+              {readOnlyLayout && <span className="block-readonly-label">Read-only</span>}
               {itemLabel}
             </span>
           )}
@@ -269,11 +279,11 @@ const SortableBlockComponent = ({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group mb-2">
+    <div ref={setNodeRef} style={style} data-unpublished={unpublished || undefined} title={unpublished ? "Changes differ from the published version" : undefined} className="relative group mb-2 draft-block-stack">
       <div
         onClick={() => setEditingBlockId(block.id as string)}
         className={`flex items-center gap-3 p-3 bg-[var(--kyro-bg-secondary)] rounded-lg border transition-colors cursor-pointer ${isEditing
-          ? `${(blockTheme[block.type as string] || blockTheme.default).border} bg-[var(--kyro-primary)]/5`
+          ? `border-[var(--kyro-primary)] bg-[var(--kyro-accent-soft)]`
           : "border-[var(--kyro-border)] hover:border-[var(--kyro-primary)]/50 hover:bg-[var(--kyro-primary)]/5"
           }`}
       >
@@ -293,6 +303,7 @@ const SortableBlockComponent = ({
         )}
 
         <div className="flex-1 min-w-0">
+          {readOnlyLayout && <span className="block-readonly-label">Read-only</span>}
           {editingName ? (
             <input
               ref={nameInputRef}
@@ -318,7 +329,7 @@ const SortableBlockComponent = ({
           )}
           {!!blockSchema?.admin?.description && (
             <div className="text-[10px] text-[var(--kyro-text-muted)] mt-0.5 truncate opacity-80">
-              {blockSchema.admin.description as string}
+              {String(blockSchema.admin.description).replace(/^\s*([a-z])/, (_, letter) => letter.toUpperCase())}
             </div>
           )}
         </div>
@@ -423,14 +434,43 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
   disabled,
   documentStatus,
   justSaved,
+  collectionSlug,
+  globalSlug,
 }) => {
+  const lastSavedData = useAutoFormStore(state => state.lastSavedData);
+  const documentId = useAutoFormStore(state => state.formData.id);
+  const hasDraft = useAutoFormStore(state => state.formData._hasUnpublishedChanges);
+  const [publishedData, setPublishedData] = useState<Record<string, unknown> | null>(null);
+  useEffect(() => {
+    const abort = new AbortController();
+    setPublishedData(null);
+    if (!documentId) { setPublishedData({}); return; }
+    const url = globalSlug ? `/api/globals/${globalSlug}` : collectionSlug ? `/api/${collectionSlug}/${encodeURIComponent(String(documentId))}` : null;
+    if (!url) return;
+    apiGet<{ data?: Record<string, unknown> }>(url + "?draft=false&_=" + Date.now(), { signal: abort.signal, cache: "no-store", autoToast: false })
+      .then(result => { if (!abort.signal.aborted) setPublishedData(result.data || {}); })
+      .catch(() => { if (!abort.signal.aborted && lastSavedData.status === "draft") setPublishedData({}); });
+    return () => abort.abort();
+  }, [documentId, collectionSlug, globalSlug, hasDraft]);
+  const savedBlocks = React.useMemo(() => {
+    const found = new Map<string, unknown>();
+    const visit = (value: unknown) => {
+      if (!value || typeof value !== "object") return;
+      if (Array.isArray(value)) { value.forEach(visit); return; }
+      const record = value as Record<string, unknown>;
+      if (typeof record.id === "string" && record.type) found.set(record.id, record);
+      Object.values(record).forEach(visit);
+    };
+    visit(publishedData);
+    return found;
+  }, [publishedData]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pickerMode = (field as any).admin?.pickerMode || "drawer";
   const allowedBlocks = (field.blocks as any[]) || [];
 
-  const groupedBlocks = allowedBlocks.reduce((acc, block) => {
+  const groupedBlocks = allowedBlocks.filter((block: any) => block.slug !== "text" && (isStudioEnabled || !layoutBlockTypes.has(block.slug))).reduce((acc, block) => {
     const groupName = block.admin?.group || "Custom Blocks";
     if (!acc[groupName]) {
       acc[groupName] = [];
@@ -441,11 +481,12 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
 
   // Define a preferred ordering of core categories if possible
   const categoryOrder = [
+    "Layout",
+    "Basic Content Elements",
     "Structural Sections",
     "Marketing Grids",
     "Lead Capture & Interactive",
     "Dynamic Content",
-    "Basic Content Elements",
     "Custom Blocks",
   ];
 
@@ -460,7 +501,11 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
     })
     .map(([title, blocks]) => ({
       title,
-      blocks,
+      blocks: title === "Layout" ? [...blocks as any[]].sort((a, b) => {
+        const order = ["section", "container", "row", "column", "grid", "spacer", "divider"];
+        const rank = (slug: string) => order.includes(slug) ? order.indexOf(slug) : order.length;
+        return rank(a.slug) - rank(b.slug);
+      }) : blocks,
     }));
 
   const storeRef = useRef<BlocksStoreApi | null>(null);
@@ -562,7 +607,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
 
   // const handlePasteBlock = useCallback((parsedData: any) => {
   //   const allowedBlocks = (field.blocks as Array<{ slug: string }>) || [];
-  //   const isAllowed = allowedBlocks.some((b) => b.slug === parsedData.type);
+  //   const isAllowed = (isStudioEnabled || !layoutBlockTypes.has(parsedData.type)) && allowedBlocks.some((b) => b.slug === parsedData.type);
 
   //   if (!isAllowed) {
   //     alert(`The block type "${parsedData.type}" is not allowed in this collection.`);
@@ -583,7 +628,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
 
 
   const handlePasteBlock = useCallback((parsedData: any) => {
-    const isAllowed = allowedBlocks.some((b) => b.slug === parsedData.type);
+    const isAllowed = (isStudioEnabled || !layoutBlockTypes.has(parsedData.type)) && allowedBlocks.some((b) => b.slug === parsedData.type);
 
     if (!isAllowed) {
       alert(`The block type "${parsedData.type}" is not allowed in this collection.`);
@@ -597,6 +642,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
       type: parsedData.type,
     };
 
+    if (!isStudioEnabled && layoutSignature([...blocks, newBlock]) !== layoutSignature(blocks)) { toast.error("Enable Studio to paste blocks with layout settings."); return; }
     store.getState().setBlocks([...blocks, newBlock]);
     setIsDrawerOpen(false);
   }, [allowedBlocks, blocks, store]);
@@ -634,6 +680,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
       if (blockIndex === -1) return;
 
       const blockToClone = blocks[blockIndex];
+      if (!isStudioEnabled && layoutBlockTypes.has(String(blockToClone.type))) { toast.error("Enable Studio to duplicate layouts."); return; }
 
       const cloneBlock = (b: any): any => {
         const newId = Math.random().toString(36).substr(2, 9);
@@ -714,6 +761,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
         const newBlocks = [...blocks];
         const [movedBlock] = newBlocks.splice(oldIndex, 1);
         newBlocks.splice(newIndex, 0, movedBlock);
+        if (!isStudioEnabled && layoutSignature(newBlocks) !== layoutSignature(blocks)) { toast.error("Saved layouts are read-only while Studio is disabled."); return; }
         store.getState().setBlocks(newBlocks);
       }
     }
@@ -778,9 +826,9 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-full bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg shadow-xl z-50 py-2 max-h-80 overflow-y-auto">
+                  <div className="absolute right-0 top-full mt-1 w-full bg-[var(--kyro-surface)] border border-[var(--kyro-border)] rounded-lg  z-50 py-2 max-h-80 overflow-y-auto">
                     {dynamicCategories.map((category) => (
-                      <div key={category.title}>
+                      <div key={category.title} data-insert-group={category.title}>
                         {dynamicCategories.length > 1 && (
                           <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-[var(--kyro-text-muted)] uppercase">
                             {category.title}
@@ -796,9 +844,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
                             }}
                             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--kyro-text-primary)] hover:bg-[var(--kyro-surface-accent)]/50 transition-colors text-left"
                           >
-                            <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-[var(--kyro-text-muted)]">
-                              {blockIcons[block.slug as keyof typeof blockIcons] || <Box className="w-4 h-4" />}
-                            </span>
+                            <BlockPickerIcon>{blockIcons[block.slug]}</BlockPickerIcon>
                             <div className="min-w-0 flex-1">
                               <div className="text-xs font-semibold truncate">{block.label}</div>
                               {block.admin?.description && (
@@ -834,7 +880,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
             >
               <div className="space-y-4">
                 {dynamicCategories.map((category) => (
-                  <div key={category.title}>
+                  <div key={category.title} data-insert-group={category.title}>
                     <h3 className="text-xs font-semibold text-[var(--kyro-text-muted)] mb-2 tracking-wider">
                       {category.title}
                     </h3>
@@ -846,18 +892,10 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
                             type: block.slug,
                             label: block.label,
                             description: block.admin?.description || "",
-                            icon: null,
+                            icon: blockIcons[block.slug],
                           }}
                           onSelect={handleAddBlock}
-                        >
-                          <div className="w-6 h-6 flex items-center justify-center rounded group-hover:bg-[var(--kyro-primary)]/10 group-hover:text-[var(--kyro-primary)] transition-all duration-300">
-                            <span className="text-[var(--kyro-text-muted)]">
-                              {blockIcons[
-                                block.slug as keyof typeof blockIcons
-                              ] || <Box className="w-4 h-4" />}
-                            </span>
-                          </div>
-                        </DraggableBlockType>
+                        />
                       ))}
                     </div>
                   </div>
@@ -880,6 +918,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
                   <SortableBlock
                     key={block.id || index}
                     block={block}
+                    unpublished={publishedData !== null && !deepEqual(block, savedBlocks.get(String(block.id)))}
                     index={index}
                     blockSchema={blockSchema}
                     editingBlockId={editingBlockId}
@@ -898,7 +937,7 @@ export const BlocksField: React.FC<BlocksFieldProps> = ({
           </SortableContext>
           <DragOverlay>
             {activeDrag && activeBlock && (
-              <div className="bg-[var(--kyro-surface)] border border-[var(--kyro-primary)] rounded-md p-3 shadow-lg">
+              <div className="bg-[var(--kyro-surface)] border border-[var(--kyro-primary)] rounded-md p-3 ">
                 {(activeBlock as Record<string, unknown>).label as string || (activeBlock as any).type || "Block"}
               </div>
             )}

@@ -139,7 +139,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
         <section className="xl:col-span-2 space-y-6">
           <div className="flex items-center gap-2 px-2">
             <div className="w-1 h-4 bg-[var(--kyro-primary)] rounded-full" />
-            <h2 className="text-sm font-medium tracking-[0.2em] opacity-40 uppercase">Access Credentials</h2>
+            <h2 className="text-xs font-semibold text-[var(--kyro-text-muted)] uppercase tracking-normal">Access Credentials</h2>
           </div>
 
           <div className="space-y-4">
@@ -158,7 +158,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-4">
-                        <h3 className="text-lg font-bold group-hover:text-[var(--kyro-primary)] transition-colors truncate">
+                        <h3 className="text-base font-semibold text-[var(--kyro-text-primary)] group-hover:text-[var(--kyro-primary)] transition-colors truncate">
                           {key.name}
                         </h3>
                       </div>
@@ -211,7 +211,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
                     <button
                       type="button"
                       onClick={() => handleRevokeKey(key.id)}
-                      className="p-3.5 bg-red-500/5 text-red-500 rounded-2xl hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/30 self-start md:self-center"
+                      className="p-3.5 bg-red-500/5 text-red-500 rounded-md hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/30 self-start md:self-center"
                       title={t("tooltips.revokeKey", { defaultValue: "Revoke Key" })}
                     >
                       <Trash2 className="w-5 h-5" />
@@ -225,7 +225,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
 
         {/* Sidebar Info - Modernized */}
         <section className="space-y-6">
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-[var(--kyro-border)] bg-gradient-to-br from-[var(--kyro-primary)] to-[var(--kyro-primary)]/80 p-8 group shadow-2xl shadow-[var(--kyro-primary)]/20">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-[var(--kyro-border)] bg-gradient-to-br from-[var(--kyro-primary)] to-[var(--kyro-primary)]/80 p-8 group  /20">
             <div className="absolute top-0 right-0 p-8 opacity-[0.1] pointer-events-none group-hover:scale-110 transition-transform duration-700">
               <Terminal className="w-48 h-48 rotate-12" />
             </div>
@@ -233,15 +233,15 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
               <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
                 <Terminal className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-white text-2xl font-bold tracking-tight mb-3">
+              <h3 className="text-white text-lg font-semibold tracking-tight mb-2">
                 Endpoint Hub
               </h3>
-              <p className="text-white/80 text-sm font-medium leading-relaxed mb-8">
+              <p className="text-white/80 text-sm font-normal leading-relaxed mb-6">
                 Kyro CMS is built for high-performance content delivery. Use these endpoints to power your headless frontends.
               </p>
               <button
                 type="button"
-                className="w-full py-4 bg-white text-[var(--kyro-primary)] rounded-[1.2rem] font-bold text-xs uppercase tracking-widest hover:shadow-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                className="w-full py-2 bg-white text-[var(--kyro-primary)] rounded-[1.2rem] font-medium text-xs tracking-normal transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
               >
                 Full API Documentation
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -250,7 +250,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
           </div>
 
           <div className="rounded-[2.5rem] border border-[var(--kyro-border)] bg-[var(--kyro-surface)]/50 p-8 space-y-6">
-            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Environment Matrix</h4>
+            <h4 className="text-xs font-semibold text-[var(--kyro-text-muted)] uppercase tracking-normal">Environment Matrix</h4>
             <div className="space-y-5">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -290,7 +290,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
           
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 relative z-10">
             <div className="max-w-xl">
-              <h2 className="text-3xl font-bold tracking-tighter flex items-center gap-4 mb-3">
+              <h2 className="text-2xl font-medium tracking-tight flex items-center gap-4 mb-3">
                 <div className="w-12 h-12 bg-[var(--kyro-primary)]/10 rounded-2xl flex items-center justify-center">
                   <PlayCircle className="w-7 h-7 text-[var(--kyro-primary)]" />
                 </div>
@@ -302,7 +302,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
               </p>
             </div>
             
-            <div className="flex items-center gap-4 flex-1 lg:max-w-2xl bg-[var(--kyro-bg)] p-2 rounded-[2rem] border border-[var(--kyro-border)] shadow-2xl">
+            <div className="flex items-center gap-4 flex-1 lg:max-w-2xl bg-[var(--kyro-bg)] p-2 rounded-[2rem] border border-[var(--kyro-border)] ">
               <div className="flex-1 relative flex items-center pl-6">
                 <span className="text-[11px] font-bold opacity-30 uppercase tracking-widest mr-2 whitespace-nowrap">
                   GET {API_BASE}/
@@ -319,7 +319,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
                 type="button"
                 onClick={handleRunTest}
                 disabled={exploring || !testEndpoint}
-                className="kyro-btn kyro-btn-primary px-8 py-4 rounded-[1.5rem] font-bold text-sm shadow-xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] transition-all flex items-center gap-3 shrink-0"
+                className="kyro-btn kyro-btn-primary px-3 py-2 rounded-[1.5rem] font-medium text-sm  disabled:opacity-50 disabled:cursor-not-allowed  transition-all flex items-center gap-3 shrink-0"
               >
                 {exploring ? (
                   <RefreshCcw className="w-4 h-4 animate-spin" />
@@ -340,7 +340,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
                 </div>
                 <Badge variant="outline" className="text-[9px] font-mono px-3">200 OK</Badge>
               </div>
-              <div className="rounded-[2rem] overflow-hidden border border-[var(--kyro-border)] shadow-2xl bg-[#090b10]">
+              <div className="rounded-[2rem] overflow-hidden border border-[var(--kyro-border)]  bg-[#090b10]">
                 <div className="flex items-center gap-2 px-6 py-4 bg-[#11141d] border-b border-[var(--kyro-border)]/50">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20" />
@@ -358,7 +358,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
             </div>
           ) : (
             <div className="h-80 rounded-[3rem] border-2 border-dashed border-[var(--kyro-border)] flex flex-col items-center justify-center bg-[var(--kyro-surface-accent)]/20 transition-all duration-700">
-              <div className="w-20 h-20 bg-[var(--kyro-surface)] rounded-3xl flex items-center justify-center shadow-lg border border-[var(--kyro-border)] mb-6 opacity-20">
+              <div className="w-20 h-20 bg-[var(--kyro-surface)] rounded-3xl flex items-center justify-center  border border-[var(--kyro-border)] mb-6 opacity-20">
                 <Code2 className="w-10 h-10" />
               </div>
               <p className="font-bold text-sm opacity-30 uppercase tracking-[0.2em]">
@@ -389,7 +389,7 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
                 placeholder="e.g., Mobile App SDK, Production Server"
-                className="w-full px-6 py-4 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-2xl text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)] shadow-sm transition-all"
+                className="w-full px-6 py-4 bg-[var(--kyro-bg)] border border-[var(--kyro-border)] rounded-2xl text-[var(--kyro-text-primary)] focus:outline-none focus:border-[var(--kyro-primary)]  transition-all"
                 onKeyDown={(e) => e.key === "Enter" && confirmGenerateKey()}
               />
             </div>
@@ -399,14 +399,14 @@ export function DeveloperCenter({ collections }: { collections: Record<string, u
           <button
             type="button"
             onClick={() => setShowCreateModal(false)}
-            className="px-6 py-3 rounded-xl font-bold text-sm border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-all"
+            className="px-3 py-2 rounded-md font-medium text-sm border border-[var(--kyro-border)] text-[var(--kyro-text-secondary)] hover:bg-[var(--kyro-surface-accent)] transition-all"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={confirmGenerateKey}
-            className="kyro-btn kyro-btn-primary px-8 py-3 rounded-xl font-bold text-sm hover:opacity-90 shadow-lg shadow-[var(--kyro-primary)]/20 transition-all"
+            className="kyro-btn kyro-btn-primary px-3 py-2 rounded-md font-medium text-sm hover:opacity-90  /20 transition-all"
           >
             Generate Token
           </button>

@@ -129,6 +129,60 @@ describe("REST Collections API", () => {
     expect(restoreData.data.title).toBe("Test Post");
   });
 
+  it("handles autosave drafts, merges modifications on draft:true across devices, and clears draft on publish", async () => {
+    // 1. Initial state: Document is published
+    await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Live Published Title", status: "published" }),
+    }));
+
+    const initialGet = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}?draft=true`));
+    const initialData = await initialGet.json();
+    expect(initialData.data.title).toBe("Live Published Title");
+    expect(initialData.data._hasUnpublishedChanges).toBeFalsy();
+
+    // 2. Autosave edit (simulating Computer A typing in the background)
+    const autosaveRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}?autosave=true`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Draft": "true",
+      },
+      body: JSON.stringify({ title: "Edits From Computer A" }),
+    }));
+    expect(autosaveRes.status).toBe(200);
+
+    // 3. Computer B logs in and fetches document with draft:true
+    const computerBGet = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}?draft=true`));
+    expect(computerBGet.status).toBe(200);
+    const computerBData = await computerBGet.json();
+    expect(computerBData.data.title).toBe("Edits From Computer A");
+    expect(computerBData.data._hasUnpublishedChanges).toBe(true);
+
+    // 4. Computer B lists collection with draft:true
+    const listRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts?draft=true`));
+    expect(listRes.status).toBe(200);
+    const listData = await listRes.json();
+    const docInList = listData.docs.find((d: any) => d.id === createdId);
+    expect(docInList.title).toBe("Edits From Computer A");
+    expect(docInList._hasUnpublishedChanges).toBe(true);
+
+    // 5. Publish the modifications
+    const publishRes = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Final Published Title", status: "published" }),
+    }));
+    expect(publishRes.status).toBe(200);
+
+    // 6. Verify draft is cleared and document is cleanly published
+    const afterPublishGet = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}?draft=true`));
+    const afterPublishData = await afterPublishGet.json();
+    expect(afterPublishData.data.title).toBe("Final Published Title");
+    expect(afterPublishData.data._hasUnpublishedChanges).toBeFalsy();
+  });
+
   it("deletes a document", async () => {
     const res = await app.fetch(new Request(`http://localhost/api/rest_test_posts/${createdId}`, { method: "DELETE" }));
     expect(res.status).toBe(200);

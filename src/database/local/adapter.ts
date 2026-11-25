@@ -68,6 +68,7 @@ function getTableColumns(db: any, tableName: string): string[] {
 }
 
 export class LocalAdapter extends AbstractBaseAdapter {
+  readonly supportsProtectedRecovery = true;
   private db: any;
   private path?: string;
   private migrations: Map<string, boolean> = new Map();
@@ -251,6 +252,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
         version INTEGER NOT NULL,
         status TEXT NOT NULL DEFAULT 'draft',
         autosave INTEGER NOT NULL DEFAULT 0,
+        recovery INTEGER NOT NULL DEFAULT 0,
         data TEXT NOT NULL,
         created_by TEXT,
         change_description TEXT,
@@ -265,6 +267,8 @@ export class LocalAdapter extends AbstractBaseAdapter {
     } catch {
       // Column already exists — safe to ignore
     }
+
+    try { this.db.exec(`ALTER TABLE ${this.versionsTableName} ADD COLUMN recovery INTEGER NOT NULL DEFAULT 0`); } catch { /* Already migrated. */ }
 
     this.db.exec(
       `CREATE INDEX IF NOT EXISTS idx_${this.versionsTableName}_doc ON ${this.versionsTableName}(collection_slug, document_id)`,
@@ -513,11 +517,20 @@ export class LocalAdapter extends AbstractBaseAdapter {
     if (draft) {
       docs = await Promise.all(docs.map(async (doc: any) => {
         const version = this.db
-          .prepare(`SELECT * FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS NULL ORDER BY version DESC LIMIT 1`)
-          .get(slug, doc.id) as any;
+          .prepare(`SELECT * FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS ? AND recovery = 0 ORDER BY updated_at DESC, version DESC LIMIT 1`)
+          .get(slug, doc.id, tenantId ?? null) as any;
         if (version) {
           const versionData = version.data ? JSON.parse(version.data) : {};
-          return sanitizeDoc({ ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: version.status === 'draft' });
+          const vUpdatedAt = version.updated_at || version.created_at;
+          delete versionData.updatedAt;
+          delete versionData.createdAt;
+          return sanitizeDoc({
+            ...doc,
+            ...versionData,
+            ...(vUpdatedAt ? { updatedAt: vUpdatedAt } : {}),
+            status: doc.status,
+            _hasUnpublishedChanges: version.status === 'draft',
+          });
         }
         return doc;
       }));
@@ -580,11 +593,20 @@ export class LocalAdapter extends AbstractBaseAdapter {
     // If draft: true, merge the latest version (autosave or manual) into the response
     if (draft) {
       const version = this.db
-        .prepare(`SELECT * FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS NULL ORDER BY version DESC LIMIT 1`)
-        .get(slug, doc.id) as any;
+        .prepare(`SELECT * FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS ? AND recovery = 0 ORDER BY updated_at DESC, version DESC LIMIT 1`)
+        .get(slug, doc.id, tenantId ?? null) as any;
       if (version) {
         const versionData = version.data ? JSON.parse(version.data) : {};
-        doc = { ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: version.status === 'draft' };
+        const vUpdatedAt = version.updated_at || version.created_at;
+        delete versionData.updatedAt;
+        delete versionData.createdAt;
+        doc = {
+          ...doc,
+          ...versionData,
+          ...(vUpdatedAt ? { updatedAt: vUpdatedAt } : {}),
+          status: doc.status,
+          _hasUnpublishedChanges: version.status === 'draft',
+        };
       }
     }
 
@@ -607,7 +629,9 @@ export class LocalAdapter extends AbstractBaseAdapter {
     insertData.id = id;
     const now = new Date().toISOString();
     insertData.created_at = now;
+    insertData.createdAt = now;
     insertData.updated_at = now;
+    insertData.updatedAt = now;
 
     if (tenantId && (config as CollectionConfig).tenantScoped) {
       insertData.tenant_id = tenantId;
@@ -652,7 +676,9 @@ export class LocalAdapter extends AbstractBaseAdapter {
 
     const tableName = parsed.tableName;
     const updateData = this.prepareData(data, config);
-    updateData.updated_at = new Date().toISOString();
+    const now = new Date().toISOString();
+    updateData.updated_at = now;
+    updateData.updatedAt = now;
 
     // Filter data to only include valid columns
     const validColumns = getTableColumns(this.db, tableName);
@@ -781,11 +807,20 @@ export class LocalAdapter extends AbstractBaseAdapter {
         // If draft: true, merge the latest version (autosave or manual) into the response
         if (args.draft) {
           const version = this.db
-            .prepare(`SELECT * FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS NULL ORDER BY version DESC LIMIT 1`)
-            .get(args.collection, parsed.globalSlug) as any;
+            .prepare(`SELECT * FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS ? AND recovery = 0 ORDER BY updated_at DESC, version DESC LIMIT 1`)
+            .get(args.collection, parsed.globalSlug, args.tenantId ?? null) as any;
           if (version) {
             const versionData = version.data ? JSON.parse(version.data) : {};
-            doc = { ...doc, ...versionData, status: doc.status, _hasUnpublishedChanges: version.status === 'draft' };
+            const vUpdatedAt = version.updated_at || version.created_at;
+            delete versionData.updatedAt;
+            delete versionData.createdAt;
+            doc = {
+              ...doc,
+              ...versionData,
+              ...(vUpdatedAt ? { updatedAt: vUpdatedAt } : {}),
+              status: doc.status,
+              _hasUnpublishedChanges: version.status === 'draft',
+            };
           }
         }
         return doc;
@@ -805,6 +840,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
     const { collection, documentId, tenantId, limit = 20, page = 1 } = args;
     const conditions = [`collection_slug = ?`, `document_id = ?`, `autosave = 0`];
     const params: any[] = [collection, documentId];
+    conditions.push(args.recoveryOnly ? `recovery = 1` : `recovery = 0`);
 
     if (tenantId) {
       conditions.push(`tenant_id = ?`);
@@ -842,14 +878,24 @@ export class LocalAdapter extends AbstractBaseAdapter {
   async findVersionByID(args: { collection: string; versionId: string; tenantId?: string }): Promise<VersionRecord | null> {
     this.ensureVersionsTable();
     const row = this.db
-      .prepare(`SELECT * FROM ${this.versionsTableName} WHERE id = ? AND collection_slug = ? LIMIT 1`)
-      .get(args.versionId, args.collection) as any;
+      .prepare(`SELECT * FROM ${this.versionsTableName} WHERE id = ? AND collection_slug = ? AND tenant_id IS ? LIMIT 1`)
+      .get(args.versionId, args.collection, args.tenantId ?? null) as any;
     return row ? this.rowToVersion(row) : null;
   }
 
   async createVersion<T = Record<string, any>>(args: CreateVersionArgs<T>): Promise<VersionRecord<T>> {
     this.ensureVersionsTable();
     const now = new Date().toISOString();
+
+    // One protected pre-conversion snapshot per document. Replace it durably before removing older duplicates.
+    if (args.recovery) {
+      const existing = this.db.prepare(`SELECT id FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS ? AND recovery = 1 ORDER BY created_at DESC, version DESC LIMIT 1`).get(args.collection, args.documentId, args.tenantId ?? null) as any;
+      if (existing) {
+        this.db.prepare(`UPDATE ${this.versionsTableName} SET data = ?, created_at = ?, updated_at = ?, created_by = ?, change_description = ? WHERE id = ?`).run(JSON.stringify(args.data), now, now, args.createdBy ?? null, args.changeDescription ?? null, existing.id);
+        this.db.prepare(`DELETE FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND tenant_id IS ? AND recovery = 1 AND id != ?`).run(args.collection, args.documentId, args.tenantId ?? null, existing.id);
+        return (await this.findVersionByID({ collection: args.collection, versionId: existing.id, tenantId: args.tenantId })) as VersionRecord<T>;
+      }
+    }
 
     // Autosave: reuse existing autosave slot instead of creating a new row
     if (args.autosave) {
@@ -864,9 +910,14 @@ export class LocalAdapter extends AbstractBaseAdapter {
       sql += ` LIMIT 1`;
       const existing = this.db.prepare(sql).get(...params) as any;
       if (existing) {
+        const latestRow = this.db
+          .prepare(`SELECT version FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? ORDER BY version DESC LIMIT 1`)
+          .get(args.collection, args.documentId) as any;
+        const nextVersion = Math.max((latestRow?.version ?? 0) + 1, (existing.version || 0) + 1);
+
         this.db
-          .prepare(`UPDATE ${this.versionsTableName} SET data = ?, status = ?, updated_at = ? WHERE id = ?`)
-          .run(JSON.stringify(args.data), args.status, now, existing.id);
+          .prepare(`UPDATE ${this.versionsTableName} SET data = ?, status = ?, version = ?, updated_at = ? WHERE id = ?`)
+          .run(JSON.stringify(args.data), args.status, nextVersion, now, existing.id);
         const result = await this.findVersionByID({ collection: args.collection, versionId: existing.id });
         if (result) return result as VersionRecord<T>;
       }
@@ -883,8 +934,8 @@ export class LocalAdapter extends AbstractBaseAdapter {
     this.db
       .prepare(
         `INSERT INTO ${this.versionsTableName} (
-          id, collection_slug, document_id, tenant_id, version, status, autosave, data, created_by, change_description, published_at, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, collection_slug, document_id, tenant_id, version, status, autosave, recovery, data, created_by, change_description, published_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         id,
@@ -894,6 +945,7 @@ export class LocalAdapter extends AbstractBaseAdapter {
         nextVersion,
         args.status,
         args.autosave ? 1 : 0,
+        args.recovery ? 1 : 0,
         JSON.stringify(args.data),
         args.createdBy ?? null,
         args.changeDescription ?? null,
@@ -926,14 +978,14 @@ export class LocalAdapter extends AbstractBaseAdapter {
     if (keepLatest && keepLatest > 0) {
       // Delete all non-published, non-autosave versions beyond the keepLatest limit
       const rows = this.db
-        .prepare(`SELECT id, status, autosave FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? ORDER BY version DESC`)
+        .prepare(`SELECT id, status, autosave, recovery FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? ORDER BY version DESC`)
         .all(collection, documentId) as any[];
 
       // Always keep published and autosave versions; prune non-published beyond the limit
       let draftCount = 0;
       const toDelete: string[] = [];
       for (const row of rows) {
-        if (row.status === 'published' || row.autosave === 1) continue;
+        if (row.status === 'published' || row.autosave === 1 || row.recovery === 1) continue;
         draftCount++;
         if (draftCount > keepLatest) toDelete.push(row.id);
       }
@@ -950,6 +1002,17 @@ export class LocalAdapter extends AbstractBaseAdapter {
     }
   }
 
+  async clearAutosave(collection: string, documentId: string, tenantId?: string): Promise<void> {
+    this.ensureVersionsTable();
+    let sql = `DELETE FROM ${this.versionsTableName} WHERE collection_slug = ? AND document_id = ? AND autosave = 1`;
+    const params: any[] = [collection, documentId];
+    if (tenantId) {
+      sql += ` AND tenant_id = ?`;
+      params.push(tenantId);
+    }
+    this.db.prepare(sql).run(...params);
+  }
+
   private rowToVersion<T = Record<string, any>>(row: any): VersionRecord<T> {
     return {
       id: String(row.id),
@@ -957,6 +1020,8 @@ export class LocalAdapter extends AbstractBaseAdapter {
       documentId: row.document_id,
       version: row.version,
       status: row.status as DocumentStatus,
+      recovery: row.recovery === 1,
+      autosave: row.autosave === 1,
       data: row.data ? JSON.parse(row.data) : {},
       createdBy: row.created_by ?? undefined,
       changeDescription: row.change_description ?? undefined,
@@ -1001,7 +1066,12 @@ export class LocalAdapter extends AbstractBaseAdapter {
         if (Array.isArray(value)) {
           const items = value.map((v: any) => {
             if (typeof v === "string") return v;
-            if (typeof v === "object") return v.id || v._id || v;
+            if (typeof v === "object" && v) {
+              if (v.metadata && typeof v.metadata === "object") {
+                return { id: v.id || v._id, metadata: v.metadata };
+              }
+              return v.id || v._id || v;
+            }
             return String(v);
           });
           return JSON.stringify(items);

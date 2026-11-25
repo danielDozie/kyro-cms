@@ -26,6 +26,9 @@ export function normalizeUploadFields(value: unknown, isRoot = false): unknown {
     const hasMediaField = "url" in obj && ("filename" in obj || "mimeType" in obj);
     
     if (!isRoot && hasId && hasMediaField && keys.length <= 25) {
+      if (obj.metadata && typeof obj.metadata === "object" && Object.keys(obj.metadata).length > 0) {
+        return { id: obj.id, metadata: obj.metadata };
+      }
       return obj.id;
     }
 
@@ -33,12 +36,20 @@ export function normalizeUploadFields(value: unknown, isRoot = false): unknown {
     if (!isRoot && "relationTo" in obj && "value" in obj && typeof obj.value === "object" && obj.value !== null) {
       const valObj = obj.value as Record<string, unknown>;
       if ("id" in valObj && (typeof valObj.id === "string" || typeof valObj.id === "number")) {
-        return { relationTo: obj.relationTo, value: valObj.id };
+        const metadata = (obj.metadata || valObj.metadata);
+        return {
+          relationTo: obj.relationTo,
+          value: valObj.id,
+          ...(metadata && typeof metadata === "object" ? { metadata } : {})
+        };
       }
     }
 
     // Heuristic for regular populated relationships: must have id, createdAt, updatedAt
     if (!isRoot && hasId && "createdAt" in obj && "updatedAt" in obj) {
+      if (obj.metadata && typeof obj.metadata === "object" && Object.keys(obj.metadata).length > 0) {
+        return { id: obj.id, metadata: obj.metadata };
+      }
       return obj.id;
     }
 

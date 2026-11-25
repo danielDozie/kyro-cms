@@ -2,6 +2,7 @@ import "../../lib/i18n";
 import React, { useState, useEffect } from "react";
 import { CommandPalette } from "./CommandPalette";
 import { ConfirmModal } from "./Modal";
+import { setAppearanceMode } from "../../lib/theme-client";
 import { adminPath } from "../../lib/paths";
 import { useTranslation } from "react-i18next";
 
@@ -64,14 +65,7 @@ export function CommandPaletteWrapper({ collections, globals }: Props) {
     } else if (view === "rest") {
       window.location.href = `${adminPath}/rest-playground`;
     } else if (view === "theme") {
-      const isDark = document.documentElement.classList.contains("dark");
-      if (isDark) {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("theme", "light");
-      } else {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("theme", "dark");
-      }
+      setAppearanceMode(document.documentElement.classList.contains("dark") ? "light" : "dark");
     } else if (view === "logout") {
       setShowLogoutConfirm(true);
     }
